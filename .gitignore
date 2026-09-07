@@ -3,3 +3,15 @@ docs/leader
 docs/reviewer
 docs/references
 AGENTS.md
+
+# CMake/Ninja 构建与测试临时输出
+/build/
+/build-*/
+/cmake-build-*/
+/CMakeFiles/
+/CMakeCache.txt
+/Testing/
+/compile_commands.json
+/test-tmp/
+
+/.stage-tmp/
