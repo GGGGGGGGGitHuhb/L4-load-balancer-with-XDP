@@ -9,7 +9,7 @@
 ## 当前状态
 
 - 当前版本：未发布
-- 状态：V0.1/S1 已完成；S2 TCP 转发已完成（Completed，独立复审 PASS）；S3 未开始，V0.1 整体尚未完成
+- 状态：V0.1/S1 已完成；S2 TCP 转发已完成（Completed，独立复审 PASS）；S3 已完成（Completed，独立审查 PASS），V0.1 开发范围完成，S3 尚未提交、合并或发布
 - 主要能力：
   - 明确项目方向：C++ 用户态 L4 负载均衡器 + XDP/eBPF fast path
   - 明确基础技术栈：LLVM、CMake、Ninja、C++20、Linux socket、epoll
@@ -78,6 +78,19 @@ exec 3<&- 3>&-
 
 预期输出 `hello S2`。结束时在三个服务终端分别 Ctrl+C。代理的 SIGINT/SIGTERM 会立即关闭会话，**不保证在途数据排空**。示例后端是单连接顺序 echo fixture，不是产品依赖。详细限制见 [TCP 转发语义](docs/specs/tcp-forwarding-semantics.md)。
 
+## 自动产品验收（S3）
+
+默认测试构建完成后，可直接验证真实产品进程：
+
+```bash
+./build/bin/tcp_product_smoke ./build/bin/l4lb ./build/bin/tcp_echo_backend ./build/product-evidence
+ctest --test-dir build -L s3 --output-on-failure
+```
+
+正常退出 0 并输出 PASS 与本轮证据目录；失败退出 1，用法错误退出 2。新增入口覆盖二进制轮询、1 MiB + 17 字节半关闭、后端停机后恢复及启动失败，所有进程均有界清理。全套现有 6 项；echo 和验收程序仅在 BUILD_TESTING=ON 时生成。
+
+重复/并行运行、失败复现、生产独立构建和环境边界见[本地 TCP 验证手册](docs/runbooks/local-tcp-validation.md)，版本证据见[V0.1 验收矩阵](docs/specs/v0.1-acceptance.md)。S3 独立审查 PASS：Debug/Release 各 6/6、各连续 3 次产品测试和双实例并行通过，三类强制负向共 6 次准确退出 1 并清理。Leader 已收尾，V0.1 开发范围完成，尚未发布。
+
 ## 常用命令
 
 Release 构建与测试：
@@ -88,7 +101,7 @@ cmake --build build-release
 ctest --test-dir build-release --output-on-failure
 ```
 
-程序统一位于各构建目录的 `bin/`；测试临时文件位于其 `test-tmp/`。测试默认开启，可通过 `-DBUILD_TESTING=OFF` 关闭。
+程序统一位于各构建目录的 `bin/`；CLI、S2 和 S3 测试临时文件分别位于其 `test-tmp/`、`test-s2/` 和 `product-evidence/`。测试默认开启，可通过 `-DBUILD_TESTING=OFF` 关闭。
 
 ## 配置说明
 
@@ -167,7 +180,16 @@ ctest --test-dir build -L s2 --output-on-failure
 
 ## 当前阶段入口
 
-S1/S2 已完成；S2-D1 保持 Approved，Reviewer002 复审 PASS，S2-R001 已关闭；S3 未开始，V0.1 尚未整体完成。
+S3-D1 保持 Approved；S3 已完成，独立 Reviewer PASS，Leader 已核对 V0.1 七条完成标准。V0.1 开发范围完成，S3 尚未提交、合并或发布。
+
+- [S3 完成报告](docs/leader/reports/V0.1/S3-report-003.md)：批准、交付、独立验收与版本收尾。
+- [S3 审查报告](docs/reviewer/reports/V0.1/S3-report-001.md)：AC-01..07 PASS 与验证边界。
+
+- [S3 详细设计](docs/leader/designs/V0.1/S3-design.md)：真实产品验证与 V0.1 验收范围。
+- [S3 审查计划](docs/reviewer/reviews/V0.1/S3-review.md)：重复运行、失败判定与独立验收。
+- [S3 准备报告](docs/leader/reports/V0.1/S3-report-001.md)：前置检查和决策摘要。
+
+S1/S2 已完成；S2-D1 保持 Approved，Reviewer002 复审 PASS，S2-R001 已关闭；S3 已独立审查 PASS 并完成收尾，V0.1 开发范围完成。
 
 - [S2 完成报告](docs/leader/reports/V0.1/S2-report-004.md)：交付、验收与返工闭环。
 

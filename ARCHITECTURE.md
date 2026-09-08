@@ -611,6 +611,12 @@ XDP/eBPF 状态：
 - `net/fd.h`、`net/state.h` 承担 fd owner、有界缓冲、截止与 endpoint token。网络层复用已校验 Endpoint 类型，不读取配置或自行选后端。
 - 本阶段只实现 TCP 静态轮询；上文健康检查、指标、UDP/XDP 为长期架构，不表示当前已实现。用户语义以 `docs/specs/tcp-forwarding-semantics.md` 为准。
 
+## S3 当前验证边界
+
+- `tests/tcp_product_smoke.cpp` 通过独立进程启动真实产品与 echo fixture，不链接生产 reactor/control 内部；CMake 仅在 BUILD_TESTING 下生成该入口和 fixture，生产依赖不变。
+- fixture 动态端口、原子证据目录、有界 ready/I/O、明确进程回收和端口重绑用于可重复验收；它们不改变正式产品配置或 TCP 参数。
+- V0.1 开发范围已独立验收完成；复现入口见 `docs/runbooks/local-tcp-validation.md`，七条标准见 `docs/specs/v0.1-acceptance.md`。S3 尚未合并或发布，后续架构方向不代表当前已实现。
+
 ## 变更记录
 
 - `2026-05-21`：补充项目环境路线，明确 WSL2 用于用户态开发，云服务器用于 XDP/eBPF 功能验证与阶段收尾。
