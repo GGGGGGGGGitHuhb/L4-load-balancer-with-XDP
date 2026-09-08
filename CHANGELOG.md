@@ -4,6 +4,31 @@
 
 ## Unreleased
 
+### 2026-09-07 S2 设计准备
+
+- 新增 S2-D1 详细设计、审查计划和准备报告，明确 TCP 转发、背压、半关闭与核心验证边界；状态为 Draft，待开发批准。
+- 复查 S1 CTest 2/2通过、本机epoll及TCP半关闭可用；尚未实现或验收S2。
+- 更新 README 与阶段状态入口，详见 `docs/leader/reports/V0.1/S2-report-001.md`。
+
+### 2026-09-07 S1 实现与独立验收
+
+- 新增无第三方依赖的 C++20 CMake/Ninja 工程和 `l4lb` CLI；只检查配置，尚不转发流量。
+- 新增严格 IPv4 TCP 配置解析、首错行诊断、有界只读加载和示例配置；拒绝 FIFO/设备/目录，允许普通文件符号链接。
+- 新增配置规格、真实 README 命令及 Debug/Release CTest 基线：各 2 个测试通过，含 357 项单元检查和 22 个 CLI 用例。
+- 实际验证普通用户权限错误、配置 SHA256 不变和 Release 故意失败返回 1；原始证据及限制见 `docs/builder/reports/V0.1/S1-report-001.md`。独立验收记录见下一条。
+
+- Reviewer 独立干净 Debug/Release 构建均通过：各 CTest 2/2、357 项单元检查、22 个 CLI 用例；另有 56 项进程探针通过，首错、编码、大小及非阻塞文件路径符合 S1 契约。验收 PASS，Leader 已完成阶段收尾（Completed，见 `docs/leader/reports/V0.1/S1-report-003.md`）；仅 S1 完成，V0.1 尚未整体完成，详见 `docs/reviewer/reports/V0.1/S1-report-001.md`。
+
+### 2026-09-07 启动准备
+
+- 补齐 V0.1/S1 详细设计与审查计划，明确配置、CLI、测试基线及验收标准。
+- 修正角色指南路径引用为实际的 `GUIDE.md`，补充 README 当前阶段入口。
+- 增加 CMake 构建目录和测试临时文件忽略规则，保留原有本地协作文档忽略规则。
+- 验证临时 C++20 工程配置、编译、CTest、epoll 和本机 TCP 双向回环通信；项目实现及项目测试尚未开始。
+- 详细结果见 `docs/leader/reports/V0.1/S1-report-001.md`。
+
+以下通用条目保留初始化时的历史记录；当前实现状态以上述 S1 条目为准。
+
 ### 新增
 
 - 新增项目入口文档 `README.md`，说明项目定位、当前状态、环境要求、快速开始占位、项目结构、测试验证策略、文档索引、开发流程和已知限制。
@@ -11,19 +36,21 @@
 - 新增总体路线图 `ROADMAP.md`，定义从 `V0.1` 用户态 TCP 转发骨架到 `V1.2` XDP L4 fast path 原型的版本范围、阶段划分、禁止范围和完成标准。
 - 新增技术债跟踪文档 `TECH-DEBT-TRACKER.md`，记录初始化阶段需要跨阶段跟踪的构建命令、配置选择、XDP 环境和长期规格文档风险。
 - 新增仓库级 Agent 工作规则 `AGENTS.md`，说明文档权威来源、全局工作原则、文档语言要求和变更记录要求。
-- 新增 Leader、Builder 和 Reviewer 角色规则，分别位于 `docs/leader/AGENTS.md`、`docs/builder/AGENTS.md` 和 `docs/reviewer/AGENTS.md`。
+- 新增 Leader、Builder 和 Reviewer 角色规则，分别位于 `docs/leader/GUIDE.md`、`docs/builder/GUIDE.md` 和 `docs/reviewer/GUIDE.md`。
 - 为三个角色补充长期规格文档职责：Leader 负责规划，Builder 负责随实现维护，Reviewer 负责审查实现、测试、报告和文档是否一致。
 
 ### 变更
 
 - 将项目方向收敛为 C++20 用户态 TCP/UDP L4 负载均衡器优先，XDP/eBPF fast path 后续演进。
+- 明确项目与高性能 HTTP 服务器的分层区别：HTTP 服务器聚焦应用层协议处理，本项目聚焦传输层 TCP/UDP 四层转发、后端调度、UDP flow table、健康检查和 XDP/eBPF fast path。
 - 明确本仓库不引入 DPDK 数据面；DPDK L3 forwarding 或 NAT 可作为后续独立项目方向。
-- 明确 WSL2 适合用户态开发和基础验证，但不作为 XDP native mode 性能验证环境。
+- 明确 WSL2 适合用户态开发和基础验证，XDP/eBPF 阶段优先使用云服务器 Linux 环境进行功能验证和收尾。
+- 明确云服务器性能结果只代表对应云环境，不泛化为物理网卡 native XDP 极限性能。
 - 明确当前 README 中的 CMake/Ninja/CTest 命令属于目标工程形态，需等待 `V0.1 / S1` 工程骨架建立后变为真实可运行命令。
 
 ### 修复
 
-- 修正根 `AGENTS.md` 中角色文档路径示例，使其指向实际路径 `docs/leader/AGENTS.md`、`docs/builder/AGENTS.md` 和 `docs/reviewer/AGENTS.md`。
+- 修正根 `AGENTS.md` 中角色文档路径示例，使其指向实际路径 `docs/leader/GUIDE.md`、`docs/builder/GUIDE.md` 和 `docs/reviewer/GUIDE.md`。
 - 清理 `README.md` 初始化过程中的重复内容，保留单一中文版项目入口文档。
 
 ### 安全
@@ -37,7 +64,7 @@
 - 使用 `Get-Content -Encoding UTF8 ARCHITECTURE.md` 读回确认架构文档已写入并保持 UTF-8 可读。
 - 使用 `Get-Content -Encoding UTF8 ROADMAP.md` 读回确认路线图已写入版本范围、阶段划分和长期演进方向。
 - 使用 `Get-Content -Encoding UTF8 TECH-DEBT-TRACKER.md` 读回确认技术债条目、风险观察和下一阶段检查点已写入。
-- 使用 `Get-Content -Encoding UTF8 AGENTS.md` 及三个角色 `AGENTS.md` 读回确认职责补充已写入。
+- 使用 `Get-Content -Encoding UTF8 AGENTS.md` 及三个角色 `GUIDE.md` 读回确认职责补充已写入。
 
 ### 相关文档
 
@@ -46,6 +73,6 @@
 - 路线图：`ROADMAP.md`
 - 技术债：`TECH-DEBT-TRACKER.md`
 - 仓库规则：`AGENTS.md`
-- Leader 规则：`docs/leader/AGENTS.md`
-- Builder 规则：`docs/builder/AGENTS.md`
-- Reviewer 规则：`docs/reviewer/AGENTS.md`
+- Leader 规则：`docs/leader/GUIDE.md`
+- Builder 规则：`docs/builder/GUIDE.md`
+- Reviewer 规则：`docs/reviewer/GUIDE.md`
