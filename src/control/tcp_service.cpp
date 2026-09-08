@@ -1,0 +1,42 @@
+#include "control/tcp_service.h"
+
+#include <iostream>
+#include <system_error>
+
+#include "core/round_robin.h"
+#include "net/reactor.h"
+namespace l4lb {
+namespace {
+std::string endpoint_text(const Endpoint& e) {
+  return std::to_string(e.address[0]) + "." + std::to_string(e.address[1]) +
+         "." + std::to_string(e.address[2]) + "." +
+         std::to_string(e.address[3]) + ":" + std::to_string(e.port);
+}
+}  // namespace
+int run_tcp_service(const Config& config) {
+  RoundRobin scheduler(config.backends.size());
+  net::Callbacks callbacks;
+  callbacks.select_backend = [&] { return config.backends[scheduler.next()]; };
+  callbacks.ready = [&] {
+    std::cout << "TCP 服务已启动：" << endpoint_text(config.listen)
+              << std::endl;
+  };
+  callbacks.session = [](const net::SessionEvent& e) {
+    std::cerr << "session=" << e.id << " backend=" << endpoint_text(e.backend)
+              << " reason=" << e.reason;
+    if (!e.accepted)
+      std::cerr << " sent_c2b=" << e.sent[0] << " sent_b2c=" << e.sent[1];
+    if (e.error)
+      std::cerr << " errno=" << e.error << " "
+                << std::generic_category().message(e.error);
+    std::cerr << '\n';
+  };
+  callbacks.diagnostic = [](const std::string& operation, int error) {
+    std::cerr << operation << " errno=" << error << " "
+              << std::generic_category().message(error) << '\n';
+  };
+  auto result = net::run(config.listen, callbacks);
+  std::cerr << "TCP 服务已停止：全部会话已关闭（不保证在途数据排空）\n";
+  return result;
+}
+}  // namespace l4lb

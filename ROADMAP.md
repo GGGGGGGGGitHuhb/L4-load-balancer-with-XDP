@@ -6,7 +6,7 @@
 
 本项目与高性能 HTTP 服务器项目形成分层互补：HTTP 服务器聚焦应用层协议解析和请求响应处理，本项目聚焦传输层 TCP/UDP 转发、后端调度、UDP flow table、健康检查、控制面与数据面分离，以及 XDP/eBPF 包级 fast path 验证。
 
-当前项目处于初始化阶段，优先完成文档、架构边界和 C++ 工程骨架。总体技术方向如下：
+当前已完成 V0.1/S1 工程骨架与 S2 TCP 转发最小闭环，S3 尚未开始。总体技术方向如下：
 
 - C++20 优先。
 - WSL2 用户态开发优先，云服务器 Linux 环境用于 XDP/eBPF 功能验证和阶段收尾。
@@ -62,7 +62,7 @@
 
 ### V0.1 用户态 TCP 转发骨架
 
-状态：进行中；S1 已完成（2026-09-07，Reviewer PASS），S2 准备完成待开发批准，S2 实现与 S3 未开始，V0.1 尚未整体完成。
+状态：进行中；S1 已完成（2026-09-07，Reviewer PASS），S2 已完成（2026-09-08，Reviewer 复审 PASS），S3 未开始，V0.1 尚未整体完成。
 
 目标：
 
@@ -91,7 +91,7 @@
 阶段划分：
 
 - `S1 工程骨架与配置入口`（Completed）：建立 CMake 工程、目录结构、CLI 入口、配置模型和最小测试框架。详细设计文档：`docs/leader/designs/V0.1/S1-design.md`。
-- `S2 TCP 转发最小闭环`（设计准备完成，待开发批准）：实现 TCP 监听、后端连接、双向转发、连接关闭和基础日志。详细设计文档：`docs/leader/designs/V0.1/S2-design.md`。
+- `S2 TCP 转发最小闭环`（Completed）：实现 TCP 监听、后端连接、双向转发、连接关闭和基础日志。详细设计文档：`docs/leader/designs/V0.1/S2-design.md`。
 - `S3 TCP 转发验证与报告`：补充本地 echo 后端验证、集成测试、最小 README 运行命令和阶段报告。详细设计文档：`docs/leader/designs/V0.1/S3-design.md`。
 
 完成标准：
