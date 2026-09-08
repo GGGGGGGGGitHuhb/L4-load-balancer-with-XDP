@@ -1,16 +1,20 @@
+#include <exception>
 #include <iostream>
 #include <string_view>
 
 #include "config/config.h"
+#include "control/tcp_service.h"
 
 /** CLI 仅解释选项和展示配置模块结果。 */
 int main(int argc, char* argv[]) {
   if (argc == 2 && std::string_view(argv[1]) == "--help") {
-    std::cout << "用法：l4lb --help | --check-config <path>\n"
-                 "仅配置检查，尚不转发流量。路径相对于当前工作目录。\n";
+    std::cout << "用法：l4lb --help | --check-config <path> | --run <path>\n"
+                 "TCP 代理：固定轮询，无失败重试。路径相对于当前工作目录。\n";
     return 0;
   }
-  if (argc != 3 || std::string_view(argv[1]) != "--check-config" ||
+  if (argc != 3 ||
+      (std::string_view(argv[1]) != "--check-config" &&
+       std::string_view(argv[1]) != "--run") ||
       std::string_view(argv[2]).empty() ||
       std::string_view(argv[2]).starts_with("--")) {
     std::cerr << "用法错误：请使用 l4lb --help 查看帮助\n";
@@ -25,6 +29,14 @@ int main(int argc, char* argv[]) {
       std::cerr << "第 " << error->line << " 行：";
     std::cerr << error->message << '\n';
     return 1;
+  }
+  if (std::string_view(argv[1]) == "--run") {
+    try {
+      return l4lb::run_tcp_service(std::get<l4lb::Config>(result));
+    } catch (const std::exception& error) {
+      std::cerr << "服务错误：" << error.what() << '\n';
+      return 1;
+    }
   }
   std::cout << "配置有效：TCP，后端数量="
             << std::get<l4lb::Config>(result).backends.size() << '\n';

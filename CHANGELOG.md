@@ -4,10 +4,21 @@
 
 ## Unreleased
 
+### 2026-09-08 S2-R001 测试返工与独立复审
+
+- 修复反向半关闭后端断言未传播的假阳性：父测试通过独立管道在2秒内确认后端完整字节校验成功；失败消息、异常退出及未完成均失败。
+- Debug/Release全套各5/5、s2标签各3/3；临时强制退出4、错误预期和后端异常三个负向副本均按预期退出1并明确诊断。只修复测试及交接文档，产品契约未变；详见 `docs/builder/reports/V0.1/S2-report-002.md`。Reviewer独立复审PASS：Debug/Release全套各5/5、标签各3/3；退出/错误数据/异常/缺消息四类负向副本共八次均准确退出1，S2-R001关闭。见 `docs/reviewer/reports/V0.1/S2-report-002.md`，Leader已收尾，S2 Completed；见 `docs/leader/reports/V0.1/S2-report-004.md`。
+
+### 2026-09-08 S2 实现与首轮审查（历史，返工已关闭）
+
+- 新增 `--run`、固定顺序轮询和单线程 LT epoll 双向 TCP 转发；非阻塞 connect 查询 SO_ERROR，单会话错误不终止服务。
+- 新增每方向64KiB队列、背压恢复、排空后半关闭、5秒连接/60秒空闲截止、1024会话上限、token隔离及信号退出；停止不保证在途字节排空。
+- 新增真实TCP集成、定向HUP/旧token状态验证、TCP语义规格及前台echo演示fixture。Builder Debug/Release各5/5、s2 label复跑3/3和README冒烟通过；逐项证据见 `docs/builder/reports/V0.1/S2-report-001.md`。Reviewer独立Debug/Release各5/5、s2 3/3及补充产品探针通过，但故意失败的reverse-fin后端断言仍导致总测试PASS；首轮审查FAIL，当时 S2-R001 要求 Builder 修复断言传播后复审；现已由上方复审记录关闭。详见 `docs/reviewer/reports/V0.1/S2-report-001.md`；不代表S2验收完成或V0.1整体完成。
+
 ### 2026-09-07 S2 设计准备
 
-- 新增 S2-D1 详细设计、审查计划和准备报告，明确 TCP 转发、背压、半关闭与核心验证边界；状态为 Draft，待开发批准。
-- 复查 S1 CTest 2/2通过、本机epoll及TCP半关闭可用；尚未实现或验收S2。
+- 新增 S2-D1 详细设计、审查计划和准备报告，明确 TCP 转发、背压、半关闭与核心验证边界；当时状态为 Draft，待开发批准；2026-09-08 已批准并完成，保留准备历史。
+- 复查 S1 CTest 2/2通过、本机epoll及TCP半关闭可用；当时尚未实现或验收S2。
 - 更新 README 与阶段状态入口，详见 `docs/leader/reports/V0.1/S2-report-001.md`。
 
 ### 2026-09-07 S1 实现与独立验收
@@ -27,7 +38,7 @@
 - 验证临时 C++20 工程配置、编译、CTest、epoll 和本机 TCP 双向回环通信；项目实现及项目测试尚未开始。
 - 详细结果见 `docs/leader/reports/V0.1/S1-report-001.md`。
 
-以下通用条目保留初始化时的历史记录；当前实现状态以上述 S1 条目为准。
+以下通用条目保留初始化时的历史记录；当前实现状态以上述 S2 完成及 S1 条目为准。
 
 ### 新增
 

@@ -9,7 +9,7 @@
 ## 当前状态
 
 - 当前版本：未发布
-- 状态：V0.1/S1 配置检查与工程骨架已完成（Completed），独立审查 PASS；V0.1 整体尚未完成
+- 状态：V0.1/S1 已完成；S2 TCP 转发已完成（Completed，独立复审 PASS）；S3 未开始，V0.1 整体尚未完成
 - 主要能力：
   - 明确项目方向：C++ 用户态 L4 负载均衡器 + XDP/eBPF fast path
   - 明确基础技术栈：LLVM、CMake、Ninja、C++20、Linux socket、epoll
@@ -17,9 +17,9 @@
 
 ## 功能概览
 
-当前提供离线 C++20 构建、静态 TCP 配置检查和自动化测试。仅配置检查，尚不转发流量。
+当前提供离线 C++20 构建、静态 TCP 配置检查、固定轮询 TCP 双向转发、有界背压及半关闭。
 
-TCP/UDP 转发、后端调度、健康检查、指标和 XDP/eBPF 由后续阶段引入，范围见 `ROADMAP.md`。
+UDP、健康检查、指标和 XDP/eBPF 由后续阶段引入，范围见 `ROADMAP.md`。
 
 ## 环境要求
 
@@ -53,6 +53,31 @@ ctest --test-dir build --output-on-failure
 
 配置检查预期输出：`配置有效：TCP，后端数量=2`。这只表示配置有效，不表示后端可达。
 
+## TCP 最短运行示例
+
+默认开启测试时构建的 `tcp_echo_backend` 是前台演示 fixture。依次在三个终端运行：
+
+```bash
+# 终端 1
+./build/bin/tcp_echo_backend 9001
+# 终端 2
+./build/bin/tcp_echo_backend 9002
+# 终端 3：见到“TCP 服务已启动”再连接
+./build/bin/l4lb --run configs/example.conf
+```
+
+第四个 Bash 终端发送并读取相同字节（无需安装 nc）：
+
+```bash
+exec 3<>/dev/tcp/127.0.0.1/8080
+printf 'hello S2\n' >&3
+IFS= read -r reply <&3
+printf '%s\n' "$reply"
+exec 3<&- 3>&-
+```
+
+预期输出 `hello S2`。结束时在三个服务终端分别 Ctrl+C。代理的 SIGINT/SIGTERM 会立即关闭会话，**不保证在途数据排空**。示例后端是单连接顺序 echo fixture，不是产品依赖。详细限制见 [TCP 转发语义](docs/specs/tcp-forwarding-semantics.md)。
+
 ## 常用命令
 
 Release 构建与测试：
@@ -83,6 +108,9 @@ ctest --test-dir build-release --output-on-failure
     ├── CMakeLists.txt
     ├── src/cli/
     ├── src/config/
+    ├── src/core/
+    ├── src/net/
+    ├── src/control/
     ├── tests/
     ├── configs/example.conf
     ├── README.md
@@ -116,7 +144,15 @@ ctest --test-dir build-release --output-on-failure
 
 CTest 包含配置单元测试和 CLI 进程集成测试，覆盖合法输入、拒绝规则、端点顺序、64 KiB 边界、精确退出码与输出、FIFO 超时、普通文件符号链接及配置内容不变。
 
-普通用户还验证不可读文件；root 环境会明确输出该权限用例未验证。Debug/Release 使用显式检查，不依赖 `assert`。网络转发及性能测试属于后续阶段。
+普通用户还验证不可读文件；root 环境会明确输出该权限用例未验证。Debug/Release 使用显式检查，不依赖 `assert`。S2 增加真实 TCP 进程集成与定向状态测试，覆盖双向二进制、ABCABC/并发、半关闭/RST、超时、慢读背压、容量、fd/token 回收及 HUP 退避。性能验证属于后续阶段。
+
+S2 可单独运行：
+
+```bash
+ctest --test-dir build -L s2 --output-on-failure
+```
+
+完整测试包含 `config_unit`、`cli_integration`、`s2_net_unit`、`s2_tcp_integration`、`s2_reactor_state`。各测试有总超时，无外网依赖。进程集成的配置、stdout/stderr 和分支 trace 保存到构建目录 `test-s2/`；测试只管理自己创建的子进程和 fd。
 
 ## 文档索引
 
@@ -131,8 +167,14 @@ CTest 包含配置单元测试和 CLI 进程集成测试，覆盖合法输入、
 
 ## 当前阶段入口
 
-S1 已完成；S2 准备完成，待开发批准，尚未实现 TCP 转发。
+S1/S2 已完成；S2-D1 保持 Approved，Reviewer002 复审 PASS，S2-R001 已关闭；S3 未开始，V0.1 尚未整体完成。
 
+- [S2 完成报告](docs/leader/reports/V0.1/S2-report-004.md)：交付、验收与返工闭环。
+
+- [S2 返工报告](docs/builder/reports/V0.1/S2-report-002.md)：S2-R001 后端断言传播修复及正负验证。
+- [S2 实现报告](docs/builder/reports/V0.1/S2-report-001.md)：逐项自测、原始证据与限制。
+- [S2 复审报告](docs/reviewer/reports/V0.1/S2-report-002.md)：PASS，八次负向验证准确失败，S2-R001 已关闭。
+- [S2 首轮审查](docs/reviewer/reports/V0.1/S2-report-001.md)：保留首轮 FAIL 与问题复现历史。
 - [S2 详细设计](docs/leader/designs/V0.1/S2-design.md)：转发、背压、关闭与验收契约。
 - [S2 审查计划](docs/reviewer/reviews/V0.1/S2-review.md)：错误路径和动态证据要求。
 - [S2 准备报告](docs/leader/reports/V0.1/S2-report-001.md)：范围、限制与下一步。
@@ -159,9 +201,9 @@ S1 已完成；S2 准备完成，待开发批准，尚未实现 TCP 转发。
 
 ## 已知限制
 
-- 当前仅支持配置检查，不启动网络服务。
+- TCP 代理采用单线程与固定资源上限，停止时不等待在途字节排空。
 - 仅支持静态数字 IPv4 TCP 端点，不支持 DNS、IPv6 或热加载。
-- 尚未提供网络转发和性能测试。
+- 当前只提供 TCP 静态轮询转发，不提供 UDP、健康检查、失败切换或性能承诺。
 - WSL2 不适合作为 XDP/eBPF native mode 的最终性能验证环境。
 - XDP/eBPF 阶段计划使用云服务器进行功能验证和收尾；性能结论必须标注云环境限制。
 - 本项目主线聚焦 L4 负载均衡与 XDP/eBPF，不包含 DPDK 实现。

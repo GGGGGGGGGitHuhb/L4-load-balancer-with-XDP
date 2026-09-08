@@ -1,6 +1,6 @@
 # S1 配置规格
 
-适用 V0.1/S1：静态 TCP 配置检查。当前不启动监听、不连接后端，不检查可达性。
+适用 V0.1/S1 至 S2：静态 TCP 配置格式。`--check-config` 不启动监听、不连接后端，也不检查可达性；S2 的 `--run` 在校验后启动服务。
 
 ## 格式与字段
 
@@ -37,9 +37,11 @@ backend=127.0.0.1:9002
 
 ## CLI
 
-- `l4lb --help`：stdout 显示用法和“仅配置检查，尚不转发流量”，退出 0，不读配置。
+- `l4lb --help`：stdout 显示 help/check-config/run 用法和 TCP 固定轮询边界，退出 0，不读配置。
 - `l4lb --check-config <path>`：成功 stdout 为 `配置有效：TCP，后端数量=N`（末尾换行），stderr 为空，退出 0。
 - 参数错误（无参数、未知参数、缺路径、重复选项、额外参数、help 混用）退出 2，stdout 为空，stderr 为用法错误和 help 提示。
 - 文件或配置错误退出 1，stdout 为空，stderr 包含原因。
 
 目前不支持权重、健康检查、协议切换、热加载。未来格式变化必须记录兼容性及示例迁移。
+
+- S2 新增 `l4lb --run <path>`：复用同一只读加载与错误规则，校验成功后启动 TCP 服务；与 check-config/help 互斥。详见 [TCP 转发语义](tcp-forwarding-semantics.md)，配置格式及默认值未变。

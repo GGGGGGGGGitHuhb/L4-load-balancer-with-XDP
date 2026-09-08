@@ -119,7 +119,7 @@ XDP/eBPF 数据面层是后续用于包级 fast path 的可选数据路径。它
 
 ## 模块职责
 
-当前 S1 已实现 `src/cli/`、`src/config/`、`tests/`、`configs/` 和 CMake 工程，并通过独立验收。当前调用链为 argv → CLI 参数验证 → 有界只读配置加载 → 纯解析与完整校验 → 摘要或错误；不创建网络 socket。以下其他模块及网络调用链属于长期架构边界，随后续阶段实现，职责边界应保持稳定。
+当前 S1/S2 已实现 CLI、配置、固定轮询 core、control 服务组装和 net 单线程 TCP reactor，并通过独立验收。配置检查调用链仍为 argv → CLI 参数验证 → 有界只读配置加载 → 纯解析与完整校验 → 摘要或错误；--run 在校验后进入 control → net 完成监听、后端连接与双向转发。后续健康检查、UDP、指标和 XDP 仍为长期架构，职责边界保持稳定。
 
 ### `src/cli/`
 
@@ -604,6 +604,12 @@ XDP/eBPF 状态：
 - 架构变更落地后必须更新 `ARCHITECTURE.md`。
 - 如果变更带来暂时无法解决的问题，应同步记录到 `TECH-DEBT-TRACKER.md`。
 - 如果变更影响用户可见行为或命令，应同步更新 `README.md` 和 `CHANGELOG.md`。
+
+## S2 当前落地边界
+
+- `core/round_robin.h` 是固定顺序纯索引逻辑；`control/tcp_service.*` 组装选择回调与结构化会话日志；`net/reactor.*` 独占 LT epoll、会话与信号/截止，产品保持单线程。
+- `net/fd.h`、`net/state.h` 承担 fd owner、有界缓冲、截止与 endpoint token。网络层复用已校验 Endpoint 类型，不读取配置或自行选后端。
+- 本阶段只实现 TCP 静态轮询；上文健康检查、指标、UDP/XDP 为长期架构，不表示当前已实现。用户语义以 `docs/specs/tcp-forwarding-semantics.md` 为准。
 
 ## 变更记录
 

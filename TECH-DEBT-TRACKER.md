@@ -1,11 +1,11 @@
 # 当前概况
 
-V0.1/S1 工程骨架与配置入口已完成（Completed，2026-09-07），Reviewer 结论 PASS。V0.1 整体尚未完成，S2 设计准备完成待开发批准，S2 实现与 S3 未开始。
+V0.1/S1 工程骨架与配置入口已完成（Completed，2026-09-07），Reviewer 结论 PASS。V0.1 整体尚未完成，S2 已完成（2026-09-08，Reviewer002 PASS），S3 未开始。
 
-- 已具备 C++20 CMake/Ninja 工程、CLI、严格静态配置加载、示例、配置规格和 Debug/Release 自动化测试。
+- 已具备 C++20 工程、CLI、严格静态配置、固定轮询 TCP 双向转发、有界背压与半关闭，以及 Debug/Release 自动化测试。
 - TD-001/TD-002 已关闭；TD-003 XDP 环境按原计划持续跟踪，TD-004 剩余规格随对应阶段产出。
-- `docs/specs/config-schema.md` 与 `docs/runbooks/local-dev-env.md` 已存在；benchmark 文档仍属后续阶段。
-- 无本阶段阻塞或新增技术债；S2 准备报告为 `docs/leader/reports/V0.1/S2-report-001.md`；下一步等待 S2 开发批准。
+- `docs/specs/config-schema.md`、`docs/specs/tcp-forwarding-semantics.md` 与 `docs/runbooks/local-dev-env.md` 已存在；benchmark 文档仍属后续阶段。
+- 无本阶段阻塞或新增技术债；S2-R001 已修复并复审关闭，完成报告为 `docs/leader/reports/V0.1/S2-report-004.md`；下一阶段为尚未启动的 S3。
 
 ## 阶段状态
 
@@ -26,33 +26,20 @@ V0.1/S1 工程骨架与配置入口已完成（Completed，2026-09-07），Revie
 
 ### V0.1 / S2 TCP 转发最小闭环
 
-状态：准备完成，Awaiting PM Decision；S2-D1 为 Draft，尚未实现。
+状态：Completed；S2-D1 保持 Approved，批准见 Leader003，收尾见 Leader004。
 
-原计划目标：
+原计划目标与实际结果：TCP 监听、后端连接、固定轮询、双向转发、背压、半关闭、超时与信号停止、基础日志和 TCP 语义规格全部交付。
 
-实现 TCP 监听、后端连接、双向转发、连接关闭和基础日志。
+验证情况：Reviewer 独立 Debug/Release 全套各 5/5、s2 标签各 3/3；AC-01 至 AC-08 全部通过。两方向真实慢读确认背压，220 次循环 fd 回基线且 session/token 归零；实际 TCP 与确定性注入证据分开记录。
 
-已完成内容：
+返工闭环：首轮 S2-R001（P2）发现反向半关闭测试断言传播缺失；Builder002 修复，Reviewer002 正向及八项负向验证通过并关闭。不是延期技术债，无遗留阻塞。
 
-- 详细设计与审查计划已建立；本机 epoll/TCP 半关闭准备验证通过。
-- 尚未开始实现。
+相关证据：
 
-待处理内容：
-
-- S1 已完成；S2-D1 待开发批准，之后按 M1/M2/M3 实现。
-- 开发前明确当前未提交 S1 工作树的承接，避免丢失前置实现。
-
-验证情况：
-
-- 准备复查：S1 CTest 2/2；仅环境探测通过，不代表 S2 产品通过。
-- 尚无 Builder 报告。
-- 尚无 Reviewer 报告。
-
-相关文档：
-
-- 设计文档：`docs/leader/designs/V0.1/S2-design.md`
-- 实现报告：`docs/builder/reports/V0.1/`
-- 审查报告：`docs/reviewer/reports/V0.1/`
+- 设计：`docs/leader/designs/V0.1/S2-design.md`
+- 实现：`docs/builder/reports/V0.1/S2-report-001.md`、`S2-report-002.md`
+- 审查：`docs/reviewer/reports/V0.1/S2-report-001.md`（历史 FAIL）、`S2-report-002.md`（PASS）
+- 完成报告：`docs/leader/reports/V0.1/S2-report-004.md`
 
 ### V0.1 / S3 TCP 转发验证与报告
 
@@ -200,7 +187,7 @@ V0.1/S1 工程骨架与配置入口已完成（Completed，2026-09-07），Revie
 
 问题描述：
 
-项目已经明确后续需要网络语义、配置 schema、UDP flow table、XDP map schema、运行手册和性能方法等长期文档，S1 已创建并验证 `docs/specs/config-schema.md`，启动阶段已有 `docs/runbooks/local-dev-env.md`。网络语义、UDP、XDP 和 benchmark 文档仍按下列原定阶段推进，不提前写未实现行为。
+项目已经明确后续需要网络语义、配置 schema、UDP flow table、XDP map schema、运行手册和性能方法等长期文档，S1 已创建并验证 `docs/specs/config-schema.md`，启动阶段已有 `docs/runbooks/local-dev-env.md`。S2 已补齐并验证 `docs/specs/tcp-forwarding-semantics.md`；UDP、XDP 和 benchmark 文档仍按下列原定阶段推进，不提前写未实现行为。
 
 风险：
 
