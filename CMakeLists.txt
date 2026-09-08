@@ -49,3 +49,11 @@ if(BUILD_TESTING)
   add_executable(tcp_echo_backend tests/tcp_echo_backend.cpp)
   target_include_directories(tcp_echo_backend PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
 endif()
+
+if(BUILD_TESTING)
+  add_executable(tcp_product_smoke tests/tcp_product_smoke.cpp)
+  target_compile_options(tcp_product_smoke PRIVATE -Wall -Wextra -Wpedantic)
+  add_test(NAME s3_product_smoke COMMAND tcp_product_smoke
+    "$<TARGET_FILE:l4lb>" "$<TARGET_FILE:tcp_echo_backend>" "${CMAKE_BINARY_DIR}/product-evidence")
+  set_tests_properties(s3_product_smoke PROPERTIES LABELS s3 TIMEOUT 60)
+endif()

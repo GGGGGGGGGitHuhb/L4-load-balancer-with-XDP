@@ -12,12 +12,16 @@ int main(int argc, char** argv) {
   std::string_view value(argv[1]);
   auto [end, error] =
       std::from_chars(value.data(), value.data() + value.size(), port);
-  if (error != std::errc{} || end != value.data() + value.size() || port < 1 ||
+  if (error != std::errc{} || end != value.data() + value.size() || port < 0 ||
       port > 65535)
     return 2;
   l4lb::net::Fd listener(socket(AF_INET, SOCK_STREAM | SOCK_CLOEXEC, 0));
   int yes = 1;
-  setsockopt(listener.get(), SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes));
+  if (listener.get() < 0 || setsockopt(listener.get(), SOL_SOCKET, SO_REUSEADDR,
+                                       &yes, sizeof(yes)) < 0) {
+    std::cerr << "echo socket/setsockopt errno=" << errno << '\n';
+    return 1;
+  }
   sockaddr_in addr{};
   addr.sin_family = AF_INET;
   addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
@@ -28,6 +32,13 @@ int main(int argc, char** argv) {
     std::cerr << "echo bind/listen errno=" << errno << '\n';
     return 1;
   }
+  socklen_t length = sizeof(addr);
+  if (getsockname(listener.get(), reinterpret_cast<sockaddr*>(&addr), &length) <
+      0) {
+    std::cerr << "echo getsockname errno=" << errno << '\n';
+    return 1;
+  }
+  port = ntohs(addr.sin_port);
   std::cout << "echo ready 127.0.0.1:" << port << std::endl;
   for (;;) {
     l4lb::net::Fd client(
