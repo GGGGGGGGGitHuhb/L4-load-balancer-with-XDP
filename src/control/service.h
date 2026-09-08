@@ -1,6 +1,6 @@
 #pragma once
 #include "config/config.h"
 namespace l4lb {
-/** 在任何网络资源创建前分派协议；当前 UDP 抛 invalid_argument。 */
+/** 按已校验协议分派 TCP/UDP；未知协议在网络资源创建前拒绝。 */
 int run_service(const Config& config);
 }  // namespace l4lb

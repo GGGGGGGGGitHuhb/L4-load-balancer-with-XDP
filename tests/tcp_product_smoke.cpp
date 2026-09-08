@@ -342,38 +342,6 @@ void stage_scenarios(Run& run) {
                  "next sessions exact B bytes, no retry\n";
   a->stop();
   b->stop();
-  for (bool occupied : {false, true}) {
-    Fd tcp(socket(AF_INET, SOCK_STREAM | SOCK_CLOEXEC, 0));
-    int used = occupied ? bind_port(tcp.value, 0) : reserve_port();
-    if (occupied) require(listen(tcp.value, 1) == 0, "UDP guard occupied TCP");
-    Fd udp(socket(AF_INET, SOCK_DGRAM | SOCK_CLOEXEC, 0));
-    if (occupied) bind_port(udp.value, used);
-    Fd probe(socket(AF_INET, SOCK_STREAM | SOCK_CLOEXEC, 0));
-    int backend = bind_port(probe.value, 0);
-    require(listen(probe.value, 1) == 0, "check backend probe");
-    auto conf = run.config(used, {backend});
-    write(conf, "protocol=udp\nscheduler=round_robin\n" + read(conf));
-    auto& check =
-        run.start({run.product, "--check-config", conf}, "udp-check", true);
-    require(check.wait() == 0 &&
-                read(check.base + ".out") == "配置有效：UDP，后端数量=1\n" &&
-                read(check.base + ".err").empty(),
-            "UDP check outcome");
-    auto& denied = run.start({run.product, "--run", conf}, "udp-run", true);
-    require(denied.wait() == 1 && read(denied.base + ".out").empty() &&
-                read(denied.base + ".err") ==
-                    "服务错误：当前阶段尚不支持 UDP 转发\n",
-            "UDP run outcome");
-    pollfd event{probe.value, POLLIN, 0};
-    require(poll(&event, 1, 0) == 0, "check/run connected backend");
-    if (!occupied) {
-      bind_port(tcp.value, used);
-      bind_port(udp.value, used);
-    }
-    run.summary << "V02 AC04 PASS UDP check/run occupied=" << occupied
-                << " exact stdout/stderr/code, backend queue empty, TCP/UDP "
-                   "ports controlled\n";
-  }
 }
 void scenarios(Run& run) {
   auto [a, ap] = run.backend();

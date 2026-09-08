@@ -6,7 +6,7 @@
 
 本项目与高性能 HTTP 服务器项目形成分层互补：HTTP 服务器聚焦应用层协议解析和请求响应处理，本项目聚焦传输层 TCP/UDP 转发、后端调度、UDP flow table、健康检查、控制面与数据面分离，以及 XDP/eBPF 包级 fast path 验证。
 
-当前已完成 V0.1 的 S1 工程骨架、S2 TCP 转发与 S3 产品验证，V0.1 开发范围完成；本地 main 已包含 S3 合并提交 544c8d8；V0.2/S1 已完成 Completed（Reviewer002 PASS、Leader003 收尾），S2/S3 未开始，远端发布状态本轮未核验。总体技术方向如下：
+当前已完成 V0.1 的 S1 工程骨架、S2 TCP 转发与 S3 产品验证，V0.1 开发范围完成；本地 main 已包含 S3 合并提交 544c8d8；V0.2/S1 已完成 Completed（Reviewer002 PASS、Leader003 收尾），S2 Completed（Reviewer001 PASS、Leader003 收尾），S3 未开始；S1 已合并并有远端注释标签 v0.2-s1（53236b1）。总体技术方向如下：
 
 - C++20 优先。
 - WSL2 用户态开发优先，云服务器 Linux 环境用于 XDP/eBPF 功能验证和阶段收尾。
@@ -62,7 +62,7 @@
 
 ### V0.1 用户态 TCP 转发骨架
 
-状态：开发范围 Completed（2026-09-08）；S1/S2/S3 全部完成，S3 Reviewer001 PASS、Leader003 收尾。七条完成标准均满足，见 `docs/specs/v0.1-acceptance.md`。本地 main 已包含 S3 合并提交 544c8d8；远端发布状态本轮未核验。V0.2/S1 已完成，S2/S3 未开始。
+状态：开发范围 Completed（2026-09-08）；S1/S2/S3 全部完成，S3 Reviewer001 PASS、Leader003 收尾。七条完成标准均满足，见 `docs/specs/v0.1-acceptance.md`。本地 main 已包含 S3 合并提交 544c8d8；当前 S1 合并与标签已核验（53236b1）。V0.2/S1 已完成，S2 已完成，S3 未开始。
 
 目标：
 
@@ -113,7 +113,7 @@
 
 ### V0.2 UDP 转发与调度策略
 
-状态：S1 Completed（2026-09-08），V0.2-S1-D1 保持 Approved；Reviewer002 PASS、Leader003 收尾，S2/S3 未开始，V0.2 整体未完成。分支 `v0.2-s1`。
+状态：S1 Completed（2026-09-08），V0.2-S1-D1 保持 Approved；Reviewer002 PASS、Leader003 收尾；S1 已合并至 main 并标注 v0.2-s1（53236b1）。S2 Completed，V0.2-S2-D1 保持 Approved、Reviewer001 PASS、Leader003 收尾；S3 未开始，V0.2 整体未完成。当前分支 `codex/v0.2-s2`。
 
 目标：
 
@@ -140,7 +140,7 @@
 阶段划分：
 
 - `S1 调度抽象与配置扩展`（Completed）：明确 listener、backend pool 和 scheduler 的配置关系，抽象调度接口。详细设计文档：`docs/leader/designs/V0.2/S1-design.md`。
-- `S2 UDP flow table`：实现 UDP flow key、后端绑定、超时清理和响应回传。详细设计文档：`docs/leader/designs/V0.2/S2-design.md`。
+- `S2 UDP flow table`（Completed）：实现 UDP flow key、后端绑定、超时清理和响应回传。详细设计文档：`docs/leader/designs/V0.2/S2-design.md`。
 - `S3 UDP 验证与语义文档`：补充 UDP 集成测试、手动验证命令和 flow table 规格文档。详细设计文档：`docs/leader/designs/V0.2/S3-design.md`。
 
 完成标准：

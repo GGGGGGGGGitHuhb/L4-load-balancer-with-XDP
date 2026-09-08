@@ -19,7 +19,9 @@ ctest --test-dir build-release --output-on-failure
 ctest --test-dir build-release -L s3 --repeat until-fail:3 --output-on-failure
 ```
 
-预期：两种构建全套各 7/7（V0.2/S1 新增 `v02_scheduler_unit`），退出 0；s3 标签恰有一个产品用例，重复 3 次均通过。直接入口最后输出中文 `PASS` 与原子唯一的 `run-XXXXXX` 目录，退出 0。该目录保留配置、各子进程 `.out`/`.err` 和 `result.txt`；后者记录 PID、动态端口、场景结果和重绑结果。测试失败退出 1，用法错误退出 2。不要把外部超时 124 当作断言成功。
+预期：两种构建全套各 9/9（V0.2/S1 新增 `v02_scheduler_unit`，V0.2/S2 新增 `v02_udp_state` 和 `v02_udp_product`），退出 0；s3 标签恰有一个产品用例，重复 3 次均通过。直接入口最后输出中文 `PASS` 与原子唯一的 `run-XXXXXX` 目录，退出 0。该目录保留配置、各子进程 `.out`/`.err` 和 `result.txt`；后者记录 PID、动态端口、场景结果和重绑结果。测试失败退出 1，用法错误退出 2。不要把外部超时 124 当作断言成功。
+
+若当前执行环境把 127/8 经代理接口转发，可能出现 send 成功但大 UDP 包被丢弃。可在临时用户/网络命名空间验证真实回环，不修改宿主路由：`unshare --user --map-root-user --net sh -c 'ip link set lo up && ctest --test-dir build'`。此时命名空间内 uid=0，文件读取权限用例会跳过；另在原普通用户环境运行 `ctest --test-dir build -R cli_integration` 补齐。只有在独立回环完整通过后才能将测试记为通过，不能缩小 65507 字节边界。
 
 每次使用动态后端端口和新证据目录；代理配置仍使用正式非零端口。就绪由完整 ready 行与子进程状态确认，不用探测连接消耗轮询位置。普通 I/O 和单次就绪截止 3 秒，CTest 总截止 60 秒。只对明确的代理 bind 地址占用重试，最多 5 次。失败保留证据，测试仅停止和回收自己的子进程。
 
@@ -75,4 +77,4 @@ cmake --build build-production
 
 临时副本的错误数据、fixture 提前退出和缺少 ready 在 Debug/Release 共 6 次均退出 1（缺 ready 由内部 3 秒截止触发）；另外无效产品路径各退出 1、用法错误各退出 2。外部核验没有存活子进程，已记录端口均可重绑。以上为 Builder 自测；Reviewer 使用独立目录复跑全部强制项并 PASS，Leader 已完成收尾。独立证据位于 `.stage-tmp/v0.1-s3/reviewer/`，Debug/Release 各 6/6、各 s3 连续 3 次、并行、生产构建、手动路径及三类负向共 6 次均满足预期；该目录同样不作为普通克隆前提。
 
-测试不证明公网可达性、跨主机性能或吞吐指标。产品仍是单线程、IPv4、用户态 TCP 代理；UDP、健康检查和 XDP 属后续版本。语义以 [TCP 规范](../specs/tcp-forwarding-semantics.md)为准。
+测试不证明公网可达性、跨主机性能或吞吐指标。上述历史记录针对 V0.1/S3 TCP 路径；当前 V0.2/S2 另提供 UDP flow 转发，见 [UDP flow 规格](../specs/udp-flow-table.md)。健康检查和 XDP 属后续版本。语义以 [TCP 规范](../specs/tcp-forwarding-semantics.md)为准。

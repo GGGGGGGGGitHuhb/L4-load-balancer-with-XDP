@@ -4,6 +4,29 @@
 
 ## Unreleased
 
+### 2026-09-08 V0.2/S2 完成收尾
+
+- Reviewer001 PASS 后，Leader 核验 D1 批准、31 文件指纹、独立 9/9 及清理证据，完成阶段/路线图/债项同步；S2 Completed，D1 保持 Approved。见 `docs/leader/reports/V0.2/S2-report-003.md`。
+- TD-004 的最小 UDP flow 规格义务完成；无返工、新增技术债或未解决发现。S3 完整语义/产品矩阵未开始，V0.2 整体未完成；本阶段未提交发布。以下交接记录保留当时状态。
+
+### 2026-09-08 V0.2/S2 独立审查
+
+- Reviewer 独立最终源码 Debug/Release 全套各 9/9（14.07/14.54 秒），普通用户纯测试各 3/3；Production Release 无测试构建、24 项 CLI 和真实 UDP 冒烟通过。网络验证使用临时 user/net namespace 的独立 lo，未改变宿主网络。
+- 真实 ICMP、wildcard 源地址、零长/65507/截断及实际 fd 复用验证通过；错误回包、零长误作 EOF、错误选择三类实际产品 Release 临时突变均在目标断言退出 1，54 条产品子 PID 全部回收。
+- 独立结论 PASS，无新增阻塞或技术债；见 `docs/reviewer/reports/V0.2/S2-report-001.md`。当前 Closing，交 Leader 最终同步；S3 尚未开始，未提交或发布。
+
+### 2026-09-08 V0.2/S2 实现与 Builder 自测
+
+- 新增独立 UDP reactor、IP_PKTINFO 实际目标 flow key 和回复源 IP、每 flow 已连接后端 socket；复用统一 Scheduler，无新配置键或 TCP reactor 变化。
+- 明确零长/65507/截断、立即发送整包丢弃、60 秒空闲、1024 容量、错误隔离及 token 生命周期，新增最小 UDP flow 规格和必要测试。
+- Builder Debug/Release 全套各 9/9（最终 14.10/14.39 秒）；Production Release 构建、CLI 及真实 UDP 冒烟通过；三个 Release 负向模型准确失败并清理。大包测试在临时网络命名空间独立 lo 完成，保留外部 loopback0 路由丢弃大包的环境证据，未改宿主网络。
+- 当前 Ready for Review，待独立 Reviewer 和 Leader 收尾；S3 尚未开展，未提交或发布。证据见 `docs/builder/reports/V0.2/S2-report-001.md`。
+
+### 2026-09-08 V0.2/S2 准备与 S1 标签核验
+
+- S1 已合并至 53236b1，远端 main 与注释标签 v0.2-s1 的 peeled commit 一致；用户已完成标签推送，未据此声称创建 GitHub Release。下方阶段未提交/发布措辞保留其当时事实。
+- 基于该提交切换 codex/v0.2-s2，形成 V0.2-S2-D1 Draft 设计、审查计划和准备报告，Awaiting PM Decision；UDP 实现未开始，无提交推送。已核对 16 个 S1 源码指纹一致，无需重复历史回归。
+
 ### 2026-09-08 V0.2/S1 完成收尾
 
 - Reviewer002 PASS、F-001 Closed 后，Leader 核验源码指纹与验收证据，完成阶段、路线图及技术债状态同步；V0.2/S1 Completed，基线 D1 保持 Approved。见 `docs/leader/reports/V0.2/S1-report-003.md`。

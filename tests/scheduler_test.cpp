@@ -6,6 +6,7 @@
 
 #include "control/service.h"
 #include "control/tcp_service.h"
+#include "control/udp_service.h"
 namespace {
 int checks = 0;
 void check(bool ok) {
@@ -44,7 +45,7 @@ int main(int argc, char**) {
     // 空池证明协议拒绝早于调度创建，更早于 reactor 资源获取。
     l4lb::Config config;
     config.protocol = l4lb::Protocol::kUdp;
-    for (auto entry : {l4lb::run_service, l4lb::run_tcp_service}) {
+    for (auto entry : {l4lb::run_tcp_service}) {
       try {
         entry(config);
         check(false);
@@ -53,9 +54,12 @@ int main(int argc, char**) {
               std::string(e.what()).find("UDP 转发") != std::string::npos);
       }
     }
+    config.protocol = l4lb::Protocol::kTcp;
+    rejected([&] { l4lb::run_udp_service(config); });
     config.protocol = static_cast<l4lb::Protocol>(99);
     rejected([&] { l4lb::run_service(config); });
     rejected([&] { l4lb::run_tcp_service(config); });
+    rejected([&] { l4lb::run_udp_service(config); });
     std::cout << "PASS scheduler/control checks=" << checks << '\n';
     return 0;
   } catch (const std::exception& e) {
