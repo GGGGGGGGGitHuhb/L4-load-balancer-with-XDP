@@ -157,8 +157,9 @@ struct Run {
     summary << "child pid=" << children.back()->pid << " log=" << path << '\n';
     return *children.back();
   }
-  std::pair<Child*, int> backend(int port = 0) {
-    auto& c = start({echo, std::to_string(port)}, "echo", false);
+  std::pair<Child*, int> backend(int port = 0, int mask = 0) {
+    auto& c = start({echo, std::to_string(port), std::to_string(mask)}, "echo",
+                    false);
     auto value = c.ready("echo ready 127.0.0.1:");
     size_t used = 0;
     int actual = std::stoi(value, &used);
@@ -177,10 +178,13 @@ struct Run {
     write(path, text);
     return path;
   }
-  std::pair<Child*, int> proxy(const std::vector<int>& backends) {
+  std::pair<Child*, int> proxy(const std::vector<int>& backends,
+                               bool explicit_fields = false) {
     for (int attempt = 0; attempt < 5; ++attempt) {
       int port = reserve_port();
       auto conf = config(port, backends);
+      if (explicit_fields)
+        write(conf, "protocol=tcp\nscheduler=round_robin\n" + read(conf));
       auto& check = start({product, "--check-config", conf}, "check", true);
       require(check.wait() == 0, "check-config failed");
       auto& c = start({product, "--run", conf}, "proxy", true);
@@ -259,7 +263,7 @@ void connect_to(int fd, int port, Clock::time_point end) {
 }
 /** Interleave nonblocking sends and receives, with one deadline and EOF proof.
  */
-void exchange(int port, size_t size) {
+void exchange(int port, size_t size, int mask = 0) {
   Fd fd(socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0));
   auto end = Clock::now() + 3s;
   connect_to(fd.value, port, end);
@@ -295,6 +299,7 @@ void exchange(int port, size_t size) {
               "recv");
     wait_io(fd.value, static_cast<short>(POLLIN | (shut ? 0 : POLLOUT)), end);
   }
+  for (char& byte : payload) byte ^= mask;
   require(shut && received == payload, "payload mismatch after EOF");
 }
 void failed_session(int port) {
@@ -309,6 +314,65 @@ void failed_session(int port) {
         n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR),
         "failed session returned data");
     wait_io(fd.value, POLLIN, end);
+  }
+}
+void stage_scenarios(Run& run) {
+  auto [a, ap] = run.backend(0, 0x55);
+  auto [b, bp] = run.backend(0, 0xaa);
+  for (bool explicit_fields : {false, true}) {
+    auto [proxy, port] = run.proxy({ap, bp}, explicit_fields);
+    for (int i = 0; i < 4; ++i)
+      exchange(port, 8192 + i, i % 2 == 0 ? 0x55 : 0xaa);
+    proxy->stop();
+    run.summary << "V02 AC01/05 PASS "
+                << (explicit_fields ? "explicit" : "default")
+                << " TCP A/B/A/B verified by exact XOR binary bytes; restart "
+                   "starts A\n";
+  }
+  // 持有已绑定但未 listen 的 socket，避免被其他进程抢占失败后端端口。
+  Fd refused(socket(AF_INET, SOCK_STREAM | SOCK_CLOEXEC, 0));
+  int dead = bind_port(refused.value, 0);
+  auto [proxy, port] = run.proxy({dead, bp}, true);
+  failed_session(port);
+  exchange(port, 16385, 0xaa);
+  failed_session(port);
+  exchange(port, 16386, 0xaa);
+  proxy->stop();
+  run.summary << "V02 AC05 PASS failed/B/failed/B: failures return no data; "
+                 "next sessions exact B bytes, no retry\n";
+  a->stop();
+  b->stop();
+  for (bool occupied : {false, true}) {
+    Fd tcp(socket(AF_INET, SOCK_STREAM | SOCK_CLOEXEC, 0));
+    int used = occupied ? bind_port(tcp.value, 0) : reserve_port();
+    if (occupied) require(listen(tcp.value, 1) == 0, "UDP guard occupied TCP");
+    Fd udp(socket(AF_INET, SOCK_DGRAM | SOCK_CLOEXEC, 0));
+    if (occupied) bind_port(udp.value, used);
+    Fd probe(socket(AF_INET, SOCK_STREAM | SOCK_CLOEXEC, 0));
+    int backend = bind_port(probe.value, 0);
+    require(listen(probe.value, 1) == 0, "check backend probe");
+    auto conf = run.config(used, {backend});
+    write(conf, "protocol=udp\nscheduler=round_robin\n" + read(conf));
+    auto& check =
+        run.start({run.product, "--check-config", conf}, "udp-check", true);
+    require(check.wait() == 0 &&
+                read(check.base + ".out") == "配置有效：UDP，后端数量=1\n" &&
+                read(check.base + ".err").empty(),
+            "UDP check outcome");
+    auto& denied = run.start({run.product, "--run", conf}, "udp-run", true);
+    require(denied.wait() == 1 && read(denied.base + ".out").empty() &&
+                read(denied.base + ".err") ==
+                    "服务错误：当前阶段尚不支持 UDP 转发\n",
+            "UDP run outcome");
+    pollfd event{probe.value, POLLIN, 0};
+    require(poll(&event, 1, 0) == 0, "check/run connected backend");
+    if (!occupied) {
+      bind_port(tcp.value, used);
+      bind_port(udp.value, used);
+    }
+    run.summary << "V02 AC04 PASS UDP check/run occupied=" << occupied
+                << " exact stdout/stderr/code, backend queue empty, TCP/UDP "
+                   "ports controlled\n";
   }
 }
 void scenarios(Run& run) {
@@ -394,6 +458,7 @@ int main(int argc, char** argv) {
     std::string failure;
     try {
       scenarios(run);
+      stage_scenarios(run);
     } catch (const std::exception& e) {
       failure = e.what();
     }

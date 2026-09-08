@@ -3,13 +3,14 @@
 #include <string_view>
 
 #include "config/config.h"
-#include "control/tcp_service.h"
+#include "control/service.h"
 
 /** CLI 仅解释选项和展示配置模块结果。 */
 int main(int argc, char* argv[]) {
   if (argc == 2 && std::string_view(argv[1]) == "--help") {
     std::cout << "用法：l4lb --help | --check-config <path> | --run <path>\n"
-                 "TCP 代理：固定轮询，无失败重试。路径相对于当前工作目录。\n";
+                 "TCP 代理：固定轮询，无失败重试。TCP 可运行，UDP "
+                 "仅配置校验。路径相对于当前工作目录。\n";
     return 0;
   }
   if (argc != 3 ||
@@ -32,13 +33,17 @@ int main(int argc, char* argv[]) {
   }
   if (std::string_view(argv[1]) == "--run") {
     try {
-      return l4lb::run_tcp_service(std::get<l4lb::Config>(result));
+      return l4lb::run_service(std::get<l4lb::Config>(result));
     } catch (const std::exception& error) {
       std::cerr << "服务错误：" << error.what() << '\n';
       return 1;
     }
   }
-  std::cout << "配置有效：TCP，后端数量="
-            << std::get<l4lb::Config>(result).backends.size() << '\n';
+  std::cout << "配置有效："
+            << (std::get<l4lb::Config>(result).protocol == l4lb::Protocol::kTcp
+                    ? "TCP"
+                    : "UDP")
+            << "，后端数量=" << std::get<l4lb::Config>(result).backends.size()
+            << '\n';
   return 0;
 }

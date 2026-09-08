@@ -72,6 +72,8 @@ ConfigResult parse_config(std::string_view text) {
     return ConfigError{ErrorKind::kFile, 0, false, "配置超过 65536 字节"};
   Config config;
   bool has_listen = false;
+  bool has_protocol = false;
+  bool has_scheduler = false;
   std::size_t line_number = 0;
   while (!text.empty()) {
     ++line_number;
@@ -101,6 +103,25 @@ ConfigResult parse_config(std::string_view text) {
     const auto value = trim(line.substr(equal + 1));
     if (key.empty() || value.empty())
       return fail(ErrorKind::kSyntax, "键和值不能为空");
+    if (key == "protocol") {
+      if (has_protocol) return fail(ErrorKind::kField, "protocol 不能重复");
+      if (value == "tcp")
+        config.protocol = Protocol::kTcp;
+      else if (value == "udp")
+        config.protocol = Protocol::kUdp;
+      else
+        return fail(ErrorKind::kField, "protocol 仅支持 tcp/udp");
+      has_protocol = true;
+      continue;
+    }
+    if (key == "scheduler") {
+      if (has_scheduler) return fail(ErrorKind::kField, "scheduler 不能重复");
+      if (value != "round_robin")
+        return fail(ErrorKind::kField, "scheduler 仅支持 round_robin");
+      config.scheduler = SchedulerKind::kRoundRobin;
+      has_scheduler = true;
+      continue;
+    }
     if (key != "listen" && key != "backend")
       return fail(ErrorKind::kField, "未知配置键");
     if (key == "listen" && has_listen)

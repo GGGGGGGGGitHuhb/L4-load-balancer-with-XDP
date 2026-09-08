@@ -85,3 +85,10 @@ if(NOT example_before STREQUAL example_after OR NOT valid_before STREQUAL valid_
   message(FATAL_ERROR "配置被改写")
 endif()
 message(STATUS "CLI 用例数=${count}，配置 SHA256 前后相同")
+
+file(WRITE "${TMP}/udp.conf" "protocol=udp\nscheduler=round_robin\n${valid}")
+run_case(udp_check 0 "^配置有效：UDP，后端数量=1\n$" EMPTY --check-config udp.conf)
+run_case(udp_run 1 EMPTY "^服务错误：当前阶段尚不支持 UDP 转发\n$" --run udp.conf)
+file(WRITE "${TMP}/tcp.conf" "scheduler=round_robin\nprotocol=tcp\n${valid}")
+run_case(tcp_explicit 0 "^配置有效：TCP，后端数量=1\n$" EMPTY --check-config tcp.conf)
+message(STATUS "扩展后 CLI 用例数=${count}")

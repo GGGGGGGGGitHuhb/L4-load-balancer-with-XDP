@@ -9,7 +9,7 @@
 ## 当前状态
 
 - 当前版本：未发布
-- 状态：V0.1/S1 已完成；S2 TCP 转发已完成（Completed，独立复审 PASS）；S3 已完成（Completed，独立审查 PASS），V0.1 开发范围完成，S3 尚未提交、合并或发布
+- 状态：V0.1/S1 已完成；S2 TCP 转发已完成（Completed，独立复审 PASS）；S3 已完成（Completed，独立审查 PASS），V0.1 开发范围完成；本地 main 已包含 S3 合并提交 544c8d8，远端发布状态本轮未核验
 - 主要能力：
   - 明确项目方向：C++ 用户态 L4 负载均衡器 + XDP/eBPF fast path
   - 明确基础技术栈：LLVM、CMake、Ninja、C++20、Linux socket、epoll
@@ -17,9 +17,9 @@
 
 ## 功能概览
 
-当前提供离线 C++20 构建、静态 TCP 配置检查、固定轮询 TCP 双向转发、有界背压及半关闭。
+当前提供离线 C++20 构建、静态 TCP/UDP 配置检查、固定轮询 TCP 双向转发、有界背压及半关闭。
 
-UDP、健康检查、指标和 XDP/eBPF 由后续阶段引入，范围见 `ROADMAP.md`。
+UDP 数据面、健康检查、指标和 XDP/eBPF 由后续阶段引入，范围见 `ROADMAP.md`。
 
 ## 环境要求
 
@@ -108,6 +108,8 @@ ctest --test-dir build-release --output-on-failure
 使用限定的 `key=value` 行格式：必填一个 `listen` 和 1 至 256 个有序 `backend`，均为数字 IPv4:端口，没有默认端点。
 
 - [示例配置](configs/example.conf)。
+- 可选 `protocol=tcp|udp`（默认 `tcp`）、`scheduler=round_robin`（默认同值），每项至多一次，键值区分大小写；UDP 仅允许 `--check-config`，`--run` 在创建网络资源前退出 1。
+- [调度规格](docs/specs/scheduler.md)：独立轮询状态、失败仍推进一次且不重试。
 - [配置规格](docs/specs/config-schema.md)：严格数字、空白、注释、大小限制与错误规则。
 - 配置路径相对当前工作目录，空格路径需要 shell 引号；不搜索默认配置。
 - 成功退出 0；文件或配置错误退出 1；CLI 用法错误退出 2。失败信息写入 stderr。
@@ -180,7 +182,19 @@ ctest --test-dir build -L s2 --output-on-failure
 
 ## 当前阶段入口
 
-S3-D1 保持 Approved；S3 已完成，独立 Reviewer PASS，Leader 已核对 V0.1 七条完成标准。V0.1 开发范围完成，S3 尚未提交、合并或发布。
+V0.2/S1 已批准（分支 `v0.2-s1`，V0.2-S1-D1 Approved），当前 Completed，独立 Reviewer002 复审 PASS（Debug/Release 各 7/7），F-001 已关闭，Leader 已完成最终状态同步。S1 聚焦调度抽象和配置扩展，UDP 转发留在 S2。
+
+- [V0.2/S1 已批准设计](docs/leader/designs/V0.2/S1-design.md)
+- [V0.2/S1 审查计划](docs/reviewer/reviews/V0.2/S1-review.md)
+- [V0.2/S1 准备报告](docs/leader/reports/V0.2/S1-report-001.md)
+- [V0.2/S1 批准登记](docs/leader/reports/V0.2/S1-report-002.md)
+- [V0.2/S1 首轮审查](docs/reviewer/reports/V0.2/S1-report-001.md)：保留首轮 FAIL，F-001 已关闭。
+- [V0.2/S1 复审报告](docs/reviewer/reports/V0.2/S1-report-002.md)：PASS，F-001 Closed。
+- [V0.2/S1 完成报告](docs/leader/reports/V0.2/S1-report-003.md)：Completed；S2/S3 未开始。
+
+以下保留 V0.1 阶段交付入口。
+
+S3-D1 保持 Approved；S3 已完成，独立 Reviewer PASS，Leader 已核对 V0.1 七条完成标准。V0.1 开发范围完成；本地 main 已包含 S3 合并提交 544c8d8，远端发布状态本轮未核验。
 
 - [S3 完成报告](docs/leader/reports/V0.1/S3-report-003.md)：批准、交付、独立验收与版本收尾。
 - [S3 审查报告](docs/reviewer/reports/V0.1/S3-report-001.md)：AC-01..07 PASS 与验证边界。

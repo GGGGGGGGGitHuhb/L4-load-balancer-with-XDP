@@ -30,6 +30,35 @@ int main(int argc, char**) {
   }
   const std::string listen = "listen=0.0.0.0:1\n";
   const std::string backend = "backend=127.0.0.1:65535\n";
+  for (const std::string protocol : {"", "protocol=tcp\n", "protocol=udp\n"}) {
+    for (const std::string scheduler : {"", "scheduler=round_robin\n"}) {
+      for (bool reversed : {false, true}) {
+        auto result = l4lb::parse_config(
+            reversed ? scheduler + backend + protocol + listen
+                     : listen + protocol + backend + scheduler);
+        auto* parsed = std::get_if<l4lb::Config>(&result);
+        check(parsed &&
+                  parsed->protocol == (protocol == "protocol=udp\n"
+                                           ? l4lb::Protocol::kUdp
+                                           : l4lb::Protocol::kTcp) &&
+                  parsed->scheduler == l4lb::SchedulerKind::kRoundRobin,
+              "协议策略默认、乱序与独立省略");
+      }
+    }
+  }
+  for (const std::string field :
+       {"protocol=", "protocol=TCP", "protocol=UDP", "protocol=other",
+        "Protocol=tcp", "scheduler=", "scheduler=Round_Robin",
+        "scheduler=ROUND_ROBIN", "scheduler=random", "Scheduler=round_robin"})
+    invalid(listen + field + "\n" + backend, 2, false, "新增字段非法 " + field);
+  for (const std::string fields :
+       {"protocol=tcp\nprotocol=tcp", "protocol=tcp\nprotocol=udp",
+        "protocol=udp\nprotocol=udp",
+        "scheduler=round_robin\nscheduler=round_robin",
+        "scheduler=round_robin\nscheduler=random"})
+    invalid(listen + fields + "\n" + backend, 3, false, "重复新增字段");
+  invalid("protocol=bad\nscheduler=bad\n" + listen + backend, 1, false,
+          "新增首错行");
   for (const std::string newline : {"\n", "\r\n"}) {
     for (bool final_newline : {false, true}) {
       const auto text = " \t# 中文注释" + newline + "\t" + newline +
