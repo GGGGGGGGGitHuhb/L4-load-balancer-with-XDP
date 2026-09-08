@@ -15,10 +15,14 @@ struct Endpoint {
   std::uint16_t port{};
   bool operator==(const Endpoint&) const = default;
 };
+enum class Protocol { kTcp, kUdp };
+enum class SchedulerKind { kRoundRobin };
 /** 仅完整校验成功后返回；后端按输入顺序保存。 */
 struct Config {
   Endpoint listen;
   std::vector<Endpoint> backends;
+  Protocol protocol = Protocol::kTcp;
+  SchedulerKind scheduler = SchedulerKind::kRoundRobin;
 };
 enum class ErrorKind { kFile, kSyntax, kField, kMissing };
 /** 文件错误 line=0；缺失字段 eof=true，其余错误定位实际行。 */

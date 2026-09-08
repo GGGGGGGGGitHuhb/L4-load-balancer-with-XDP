@@ -1,6 +1,6 @@
 # 当前概况
 
-V0.1/S1 工程骨架与配置入口已完成（Completed，2026-09-07），Reviewer 结论 PASS。S2 已完成（2026-09-08，Reviewer002 PASS），S3 已完成（Reviewer001 PASS），V0.1 开发范围完成，S3 尚未提交、合并或发布。
+V0.1/S1 工程骨架与配置入口已完成（Completed，2026-09-07），Reviewer 结论 PASS。S2 已完成（2026-09-08，Reviewer002 PASS），S3 已完成（Reviewer001 PASS），V0.1 开发范围完成，本地 main 已包含 S3 合并提交 544c8d8；远端发布状态本轮未核验。
 
 - 已具备 C++20 工程、CLI、严格静态配置、固定轮询 TCP 双向转发、有界背压与半关闭，以及 Debug/Release 自动化测试。
 - TD-001/TD-002 已关闭；TD-003 XDP 环境按原计划持续跟踪，TD-004 剩余规格随对应阶段产出。
@@ -8,6 +8,12 @@ V0.1/S1 工程骨架与配置入口已完成（Completed，2026-09-07），Revie
 - 无本阶段阻塞或新增技术债；S2-R001 已修复并复审关闭，完成报告为 `docs/leader/reports/V0.1/S2-report-004.md`；S3 已完成且无新增债项，见 `docs/leader/reports/V0.1/S3-report-003.md`。
 
 ## 阶段状态
+
+### V0.2 / S1 调度抽象与配置扩展
+
+状态：Completed（2026-09-08）；V0.2-S1-D1 保持 Approved，Reviewer002 PASS、Leader003 收尾。设计见 `docs/leader/designs/V0.2/S1-design.md`，准备报告 001 保留；批准登记见 `docs/leader/reports/V0.2/S1-report-002.md`。
+
+M1..M4 与 AC-01..07 已完成：独立 Debug/Release 各 7/7，Production 验证通过；F-001 Closed，无未解决事项、新增技术债或 PM 待决策。TD-004 的 scheduler 规格和配置扩展义务已完成，UDP flow 规格留到 S2/S3；TD-003 不阻塞用户态阶段。完成报告见 `docs/leader/reports/V0.2/S1-report-003.md`，S2/S3 未开始。
 
 ### V0.1 / S1 工程骨架与配置入口
 
@@ -49,7 +55,7 @@ V0.1/S1 工程骨架与配置入口已完成（Completed，2026-09-07），Revie
 
 验证：Reviewer 独立 Debug/Release 全套各 6/6，s3 各连续 3 次及双实例并行通过；生产无测试构建通过。三类负向共 6 次退出 1 且清理正常，手动与自动路径实跑通过；精确证据见审查报告。
 
-待处理强制事项：None。新增技术债、返工、阻塞、PM 待决策：None。S3 尚未提交、推送、合并或发布，V0.2 未开始；已有 TD-003/TD-004 后续阶段范围不变。
+待处理强制事项：None。新增技术债、返工、阻塞、PM 待决策：None。本地 main 已包含 S3 合并提交 544c8d8，远端发布状态本轮未核验；V0.2/S1 已完成，S2/S3 未开始；已有 TD-003/TD-004 后续阶段范围不变。
 
 相关文档：
 
@@ -178,7 +184,7 @@ V0.1/S1 工程骨架与配置入口已完成（Completed，2026-09-07），Revie
 
 问题描述：
 
-项目已经明确后续需要网络语义、配置 schema、UDP flow table、XDP map schema、运行手册和性能方法等长期文档，S1 已创建并验证 `docs/specs/config-schema.md`，启动阶段已有 `docs/runbooks/local-dev-env.md`。S2 已补齐并验证 `docs/specs/tcp-forwarding-semantics.md`；S3 已补齐并独立验收 `docs/runbooks/local-tcp-validation.md` 和 `docs/specs/v0.1-acceptance.md`，V0.1 文档义务已完成；UDP、XDP 和 benchmark 文档仍按下列原定阶段推进，不提前写未实现行为。
+项目已经明确后续需要网络语义、配置 schema、UDP flow table、XDP map schema、运行手册和性能方法等长期文档，S1 已创建并验证 `docs/specs/config-schema.md`，启动阶段已有 `docs/runbooks/local-dev-env.md`。S2 已补齐并验证 `docs/specs/tcp-forwarding-semantics.md`；S3 已补齐并独立验收 `docs/runbooks/local-tcp-validation.md` 和 `docs/specs/v0.1-acceptance.md`，V0.1 文档义务已完成；V0.2/S1 已补齐并独立验收 `docs/specs/scheduler.md` 和配置扩展规格；UDP、XDP 和 benchmark 文档仍按下列原定阶段推进，不提前写未实现行为。
 
 风险：
 
@@ -189,7 +195,7 @@ V0.1/S1 工程骨架与配置入口已完成（Completed，2026-09-07），Revie
 按阶段自然生长：
 
 - `V0.1` 创建 `docs/specs/config-schema.md` 和 `docs/specs/tcp-forwarding-semantics.md`。
-- `V0.2` 创建 `docs/specs/udp-flow-table.md` 和 `docs/specs/scheduler.md`。
+- `V0.2/S1` 的 scheduler 规格和配置更新已完成；`V0.2/S2、S3` 继续负责 `docs/specs/udp-flow-table.md`，当前未开始。
 - `V0.3` 创建 `docs/specs/health-check.md` 和 `docs/specs/metrics.md`。
 - `V0.4` 创建 `docs/benchmarks/methodology.md`。
 - `V1.1` 或 `V1.2` 创建 `docs/specs/xdp-map-schema.md` 和 `docs/runbooks/linux-xdp-env.md`。
@@ -269,7 +275,7 @@ V0.1/S1 工程骨架与配置入口已完成（Completed，2026-09-07），Revie
 
 ## 下一阶段检查点
 
-V0.1 已完成，下一版本待用户另行安排，不自动启动。以下 S1 启动检查点已完成并经阶段验收确认，仅保留作为历史记录：
+V0.1 与 V0.2/S1 已完成，V0.2/S2、S3 未开始，不自动启动。以下 S1 启动检查点已完成并经阶段验收确认，仅保留作为历史记录：
 
 - 确认阶段设计不提前实现 TCP 转发细节，除非是 CLI 或配置验证所需的最小占位。
 - 确认 CMake/Ninja/LLVM 命令在当前 WSL2 环境可运行，或明确无法运行的原因。

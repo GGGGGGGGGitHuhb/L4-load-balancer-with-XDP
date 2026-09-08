@@ -4,6 +4,34 @@
 
 ## Unreleased
 
+### 2026-09-08 V0.2/S1 完成收尾
+
+- Reviewer002 PASS、F-001 Closed 后，Leader 核验源码指纹与验收证据，完成阶段、路线图及技术债状态同步；V0.2/S1 Completed，基线 D1 保持 Approved。见 `docs/leader/reports/V0.2/S1-report-003.md`。
+- TD-004 的 scheduler 和配置扩展义务完成，UDP 等后续规格继续按原阶段推进；无新增债项或未解决发现。S2/S3 未开始；本阶段未提交、推送或发布。下方记录保留各次交接当时状态。
+
+### 2026-09-08 V0.2/S1 文档修正与独立复审
+
+- 通用 TCP 运行手册当前全套预期已更新为 7/7，说明新增 v02_scheduler_unit，并保留 V0.1/S3 历史记录；F-001 关闭。
+- Reviewer002 复核源码指纹与七项测试注册一致，复用首轮独立产品证据，结论 PASS，无新增技术债。见 `docs/reviewer/reports/V0.2/S1-report-002.md`；当前 Closing，交 Leader 最终同步。
+
+### 2026-09-08 V0.2/S1 独立首轮审查
+
+- Reviewer 独立 Debug/Release 全套各 7/7（4.83/4.64 秒），Production Release 无测试构建与 25 项 CLI 检查通过；Release 错误 XOR 及健康后端代替失败后端的临时副本均准确退出 1。
+- 首轮结论 FAIL，仅 F-001：通用 TCP 运行手册全套预期仍为 6/6，需 Builder 最小文档修正；产品及测试无需返工。见 `docs/reviewer/reports/V0.2/S1-report-001.md`。当前 Reworking，尚未完成 Leader 收尾。
+
+### 2026-09-08 V0.2/S1 实现与 Builder 自测
+
+- 新增可选 `protocol`/`scheduler` 严格配置及兼容默认值、统一 Scheduler/工厂和独立 round-robin；TCP 已接入，失败仍消耗一次选择且不重试。
+- UDP 可静态校验，运行在任何网络资源创建前明确拒绝；同步配置、调度规格和帮助说明，未实现 UDP 数据面。
+- Builder 独立 Debug/Release 全套各 7/7（最终 4.66/4.49 秒）；Release 无测试构建与完整 CLI 验证通过。实际字节验证默认/显式 A/B/A/B、失败/B/失败/B及占用端口 UDP 拒绝，Release 故意失败检查均退出 1。
+- 当前 Ready for Review，尚待独立 Reviewer 验收与 Leader 收尾；报告 `docs/builder/reports/V0.2/S1-report-001.md`。未提交或发布。
+
+### 2026-09-08 V0.2/S1 准备记录
+
+- 从本地 main 的 S3 合并提交 `544c8d8` 创建并切换到 `v0.2-s1`，形成设计草案、审查计划及准备报告，当前为 Draft，未实现新功能。
+- 新目录 Debug 构建通过，现有 CTest 6/6 通过（4.66 秒）；首次沙箱 socket 权限失败另存证据，可用环境复测通过。
+- 本地提交图已证明 S3 合并；下方 S3 收尾时的未合并说明属于历史状态。远端查询因本机代理不可连接失败，本轮未核验远端发布状态。
+
 ### 2026-09-08 S3 实现与独立审查
 
 - 新增真实产品 TCP 验收入口、动态端口演示后端、独立证据目录和有界清理，覆盖二进制轮询、1 MiB + 17 字节半关闭、后端停机恢复及启动失败；没有改变 S1/S2 产品契约。

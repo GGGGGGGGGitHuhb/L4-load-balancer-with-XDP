@@ -8,7 +8,17 @@
 /** 前台演示 fixture；Ctrl+C 结束，不创建后台子进程。 */
 int main(int argc, char** argv) {
   int port = 0;
-  if (argc != 2) return 2;
+  if (argc != 2 && argc != 3) return 2;
+  // 可选测试标记：对回包逐字节 XOR，以数据证明选中了哪个后端。
+  unsigned mask = 0;
+  if (argc == 3) {
+    std::string_view marker(argv[2]);
+    auto [last, code] =
+        std::from_chars(marker.data(), marker.data() + marker.size(), mask);
+    if (code != std::errc{} || last != marker.data() + marker.size() ||
+        mask > 255)
+      return 2;
+  }
   std::string_view value(argv[1]);
   auto [end, error] =
       std::from_chars(value.data(), value.data() + value.size(), port);
@@ -52,6 +62,7 @@ int main(int argc, char** argv) {
       auto n = recv(client.get(), bytes, sizeof(bytes), 0);
       if (n < 0 && errno == EINTR) continue;
       if (n <= 0) break;
+      for (ssize_t i = 0; i < n; ++i) bytes[i] ^= mask;
       ssize_t sent = 0;
       while (sent < n) {
         auto count = send(client.get(), bytes + sent, n - sent, MSG_NOSIGNAL);

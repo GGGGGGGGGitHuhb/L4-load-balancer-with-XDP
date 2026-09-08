@@ -615,7 +615,15 @@ XDP/eBPF 状态：
 
 - `tests/tcp_product_smoke.cpp` 通过独立进程启动真实产品与 echo fixture，不链接生产 reactor/control 内部；CMake 仅在 BUILD_TESTING 下生成该入口和 fixture，生产依赖不变。
 - fixture 动态端口、原子证据目录、有界 ready/I/O、明确进程回收和端口重绑用于可重复验收；它们不改变正式产品配置或 TCP 参数。
-- V0.1 开发范围已独立验收完成；复现入口见 `docs/runbooks/local-tcp-validation.md`，七条标准见 `docs/specs/v0.1-acceptance.md`。S3 尚未合并或发布，后续架构方向不代表当前已实现。
+- V0.1 开发范围已独立验收完成；复现入口见 `docs/runbooks/local-tcp-validation.md`，七条标准见 `docs/specs/v0.1-acceptance.md`。本地 main 已包含 S3 合并提交 544c8d8；远端发布状态本轮未核验，后续架构方向不代表当前已实现。
+
+## V0.2/S1 当前落地边界
+
+状态：Completed（2026-09-08）；Reviewer002 PASS、Leader003 收尾。以下为已验收实现，V0.2/S2、S3 未开始。
+
+- `config` 新增强类型 Protocol/SchedulerKind 和兼容默认值；`control/service.*` 在网络资源创建前分派协议，当前 UDP 明确拒绝运行。
+- `core/scheduler.*` 提供纯索引策略接口与工厂，RoundRobin 实现它；`control/tcp_service.*` 独占 scheduler 并将选择回调传给 reactor，生命周期覆盖整个 run。reactor 不解析协议或策略。
+- 单 listener、静态有序池、独立 cursor 不变；失败消耗选择、不重试。无 UDP socket/flow table、健康检查或第二策略；规格见 `docs/specs/scheduler.md` 和 `docs/specs/config-schema.md`。
 
 ## 变更记录
 
