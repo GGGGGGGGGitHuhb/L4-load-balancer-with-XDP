@@ -1,6 +1,6 @@
 # 配置规格
 
-适用至 V0.2/S1：静态 TCP/UDP 配置格式。`--check-config` 不创建 socket、不启动监听、不连接后端，也不检查可达性；`--run` 当前只支持 TCP。
+适用至 V0.2/S2：静态 TCP/UDP 配置格式。`--check-config` 不创建 socket、不启动监听、不连接后端，也不检查可达性；`--run` 按配置启动 TCP 或 UDP。
 
 ## 格式与字段
 
@@ -41,19 +41,20 @@ backend=127.0.0.1:9002
 
 ## CLI
 
-- `l4lb --help`：stdout 显示 help/check-config/run 用法和 TCP 固定轮询、UDP 仅配置校验边界，退出 0，不读配置。
+- `l4lb --help`：stdout 显示 help/check-config/run 用法和 TCP 固定轮询、UDP flow 尽力转发边界，退出 0，不读配置。
 - `l4lb --check-config <path>`：成功 stdout 按协议为 `配置有效：TCP，后端数量=N` 或 `配置有效：UDP，后端数量=N`（末尾换行），stderr 为空，退出 0。
 - 参数错误（无参数、未知参数、缺路径、重复选项、额外参数、help 混用）退出 2，stdout 为空，stderr 为用法错误和 help 提示。
 - 文件或配置错误退出 1，stdout 为空，stderr 包含原因。
 
-目前不支持权重、健康检查、UDP 数据面和热加载。
+目前不支持权重、健康检查和热加载。
 
 - V0.1/S2 新增 `l4lb --run <path>`：复用同一只读加载与错误规则，校验成功后启动 TCP 服务；与 check-config/help 互斥。详见 [TCP 转发语义](tcp-forwarding-semantics.md)，配置格式及默认值未变。
 
-## V0.2/S1 兼容性与运行限制
+## V0.2/S2 兼容性与运行限制
 
 - 旧配置和 `configs/example.conf` 不变，等价于显式 `protocol=tcp`、`scheduler=round_robin`，不会迁移或写回文件。
-- 合法 UDP 配置可静态校验，但 `--run` 在创建调度器、socket、绑定端口或连接后端前拒绝：退出 1，stdout 空，stderr 为 `服务错误：当前阶段尚不支持 UDP 转发`（末尾换行）。目标端口被占用时结果相同，无 ready。
+- 合法 UDP 配置现可运行；ready 为 `UDP 服务已启动：<配置地址>:<端口>` 加换行，端口冲突退出 1 且无 ready。静态校验仍不创建 socket。flow 容量、超时与数据报错误语义见 [UDP flow 规格](udp-flow-table.md)，没有新增配置字段。
+- S1 历史版本仅允许 UDP 校验；回退 S1 会恢复 UDP 运行拒绝，不涉及配置写回或迁移。
 - TCP 运行仍沿用已有日志、退出和关闭行为；控制层 TCP 直调入口也拒绝非 TCP 协议。
 - 新键不保证能被 V0.1 读取。回退需移除新增键；不能将 UDP 配置当 TCP 降级使用。
 - [调度规格](scheduler.md) 定义失败选择推进、实例隔离与静态池边界。

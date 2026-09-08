@@ -9,8 +9,8 @@
 int main(int argc, char* argv[]) {
   if (argc == 2 && std::string_view(argv[1]) == "--help") {
     std::cout << "用法：l4lb --help | --check-config <path> | --run <path>\n"
-                 "TCP 代理：固定轮询，无失败重试。TCP 可运行，UDP "
-                 "仅配置校验。路径相对于当前工作目录。\n";
+                 "TCP 代理：固定轮询，无失败重试。UDP 按 flow 固定后端，尽力转发。"
+                 "TCP/UDP 均可运行。路径相对于当前工作目录。\n";
     return 0;
   }
   if (argc != 3 ||

@@ -8,8 +8,8 @@
 
 ## 当前状态
 
-- 当前版本：未发布
-- 状态：V0.1/S1 已完成；S2 TCP 转发已完成（Completed，独立复审 PASS）；S3 已完成（Completed，独立审查 PASS），V0.1 开发范围完成；本地 main 已包含 S3 合并提交 544c8d8，远端发布状态本轮未核验
+- 当前阶段标签：`v0.2-s1`（注释标签与远端 main 均指向已合并 S1 的 `53236b1`；不代表 GitHub Release）
+- 状态：V0.1/S1 已完成；S2 TCP 转发已完成（Completed，独立复审 PASS）；S3 已完成（Completed，独立审查 PASS），V0.1 开发范围完成；V0.2/S1 也已完成并合并，注释标签 v0.2-s1 已核验。当前在 `codex/v0.2-s2` 完成 S2 实现、独立审查（PASS）和 Leader 收尾（Completed），S3 未开始
 - 主要能力：
   - 明确项目方向：C++ 用户态 L4 负载均衡器 + XDP/eBPF fast path
   - 明确基础技术栈：LLVM、CMake、Ninja、C++20、Linux socket、epoll
@@ -19,7 +19,7 @@
 
 当前提供离线 C++20 构建、静态 TCP/UDP 配置检查、固定轮询 TCP 双向转发、有界背压及半关闭。
 
-UDP 数据面、健康检查、指标和 XDP/eBPF 由后续阶段引入，范围见 `ROADMAP.md`。
+当前增加 UDP 按 flow 双向数据报转发；健康检查、指标和 XDP/eBPF 由后续阶段引入，范围见 `ROADMAP.md`。
 
 ## 环境要求
 
@@ -108,7 +108,8 @@ ctest --test-dir build-release --output-on-failure
 使用限定的 `key=value` 行格式：必填一个 `listen` 和 1 至 256 个有序 `backend`，均为数字 IPv4:端口，没有默认端点。
 
 - [示例配置](configs/example.conf)。
-- 可选 `protocol=tcp|udp`（默认 `tcp`）、`scheduler=round_robin`（默认同值），每项至多一次，键值区分大小写；UDP 仅允许 `--check-config`，`--run` 在创建网络资源前退出 1。
+- 可选 `protocol=tcp|udp`（默认 `tcp`）、`scheduler=round_robin`（默认同值），每项至多一次，键值区分大小写；UDP 支持 `--check-config` 和 `--run`，按 flow 固定后端、空闲 60 秒、容量 1024、尽力丢弃且不重试。
+- [UDP flow 规格](docs/specs/udp-flow-table.md)：地址关联、报文边界、过期/容量、错误和限制。
 - [调度规格](docs/specs/scheduler.md)：独立轮询状态、失败仍推进一次且不重试。
 - [配置规格](docs/specs/config-schema.md)：严格数字、空白、注释、大小限制与错误规则。
 - 配置路径相对当前工作目录，空格路径需要 shell 引号；不搜索默认配置。
@@ -182,6 +183,17 @@ ctest --test-dir build -L s2 --output-on-failure
 
 ## 当前阶段入口
 
+V0.2/S2 已批准，分支 `codex/v0.2-s2`，V0.2-S2-D1 Approved，当前 Completed，独立 Reviewer001 PASS、Leader003 收尾。S2 已完成 UDP flow 绑定与回复及必要验收；S3 完整产品矩阵尚未开始。
+
+- [S2 已批准设计](docs/leader/designs/V0.2/S2-design.md)
+- [S2 审查计划](docs/reviewer/reviews/V0.2/S2-review.md)
+- [S2 准备决策报告](docs/leader/reports/V0.2/S2-report-001.md)
+- [S2 批准登记](docs/leader/reports/V0.2/S2-report-002.md)
+- [S2 独立审查](docs/reviewer/reports/V0.2/S2-report-001.md)：PASS，独立两模式 9/9 与实际产品负向验证。
+- [S2 完成报告](docs/leader/reports/V0.2/S2-report-003.md)：Completed，S3 未开始。
+
+### 已完成的 V0.2/S1
+
 V0.2/S1 已批准（分支 `v0.2-s1`，V0.2-S1-D1 Approved），当前 Completed，独立 Reviewer002 复审 PASS（Debug/Release 各 7/7），F-001 已关闭，Leader 已完成最终状态同步。S1 聚焦调度抽象和配置扩展，UDP 转发留在 S2。
 
 - [V0.2/S1 已批准设计](docs/leader/designs/V0.2/S1-design.md)
@@ -190,7 +202,7 @@ V0.2/S1 已批准（分支 `v0.2-s1`，V0.2-S1-D1 Approved），当前 Completed
 - [V0.2/S1 批准登记](docs/leader/reports/V0.2/S1-report-002.md)
 - [V0.2/S1 首轮审查](docs/reviewer/reports/V0.2/S1-report-001.md)：保留首轮 FAIL，F-001 已关闭。
 - [V0.2/S1 复审报告](docs/reviewer/reports/V0.2/S1-report-002.md)：PASS，F-001 Closed。
-- [V0.2/S1 完成报告](docs/leader/reports/V0.2/S1-report-003.md)：Completed；S2/S3 未开始。
+- [V0.2/S1 完成报告](docs/leader/reports/V0.2/S1-report-003.md)：Completed；保留 S1 收尾时的历史状态。
 
 以下保留 V0.1 阶段交付入口。
 
@@ -238,8 +250,8 @@ S1/S2 已完成；S2-D1 保持 Approved，Reviewer002 复审 PASS，S2-R001 已�
 ## 已知限制
 
 - TCP 代理采用单线程与固定资源上限，停止时不等待在途字节排空。
-- 仅支持静态数字 IPv4 TCP 端点，不支持 DNS、IPv6 或热加载。
-- 当前只提供 TCP 静态轮询转发，不提供 UDP、健康检查、失败切换或性能承诺。
+- 仅支持静态数字 IPv4 TCP/UDP 端点，不支持 DNS、IPv6 或热加载。
+- TCP 按连接、UDP 按 flow 静态轮询，无健康检查、失败切换、UDP 可靠交付或性能承诺。UDP 仅用于受控实验网络，不提供源地址反欺骗或公网开放 relay 防护。
 - WSL2 不适合作为 XDP/eBPF native mode 的最终性能验证环境。
 - XDP/eBPF 阶段计划使用云服务器进行功能验证和收尾；性能结论必须标注云环境限制。
 - 本项目主线聚焦 L4 负载均衡与 XDP/eBPF，不包含 DPDK 实现。

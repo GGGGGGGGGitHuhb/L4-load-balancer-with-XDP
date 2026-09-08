@@ -119,7 +119,7 @@ XDP/eBPF 数据面层是后续用于包级 fast path 的可选数据路径。它
 
 ## 模块职责
 
-当前 S1/S2 已实现 CLI、配置、固定轮询 core、control 服务组装和 net 单线程 TCP reactor，并通过独立验收。配置检查调用链仍为 argv → CLI 参数验证 → 有界只读配置加载 → 纯解析与完整校验 → 摘要或错误；--run 在校验后进入 control → net 完成监听、后端连接与双向转发。后续健康检查、UDP、指标和 XDP 仍为长期架构，职责边界保持稳定。
+当前 S1/S2 已实现 CLI、配置、固定轮询 core、control 服务组装和 net 单线程 TCP reactor，并通过独立验收。配置检查调用链仍为 argv → CLI 参数验证 → 有界只读配置加载 → 纯解析与完整校验 → 摘要或错误；--run 在校验后进入 control → net 完成监听、后端连接与双向转发。当前 UDP 实现边界见末尾 V0.2/S2；后续健康检查、指标和 XDP 仍为长期架构，职责边界保持稳定。
 
 ### `src/cli/`
 
@@ -605,25 +605,32 @@ XDP/eBPF 状态：
 - 如果变更带来暂时无法解决的问题，应同步记录到 `TECH-DEBT-TRACKER.md`。
 - 如果变更影响用户可见行为或命令，应同步更新 `README.md` 和 `CHANGELOG.md`。
 
-## S2 当前落地边界
+## V0.1/S2 历史落地边界
 
 - `core/round_robin.h` 是固定顺序纯索引逻辑；`control/tcp_service.*` 组装选择回调与结构化会话日志；`net/reactor.*` 独占 LT epoll、会话与信号/截止，产品保持单线程。
 - `net/fd.h`、`net/state.h` 承担 fd owner、有界缓冲、截止与 endpoint token。网络层复用已校验 Endpoint 类型，不读取配置或自行选后端。
 - 本阶段只实现 TCP 静态轮询；上文健康检查、指标、UDP/XDP 为长期架构，不表示当前已实现。用户语义以 `docs/specs/tcp-forwarding-semantics.md` 为准。
 
-## S3 当前验证边界
+## V0.1/S3 历史验证边界
 
 - `tests/tcp_product_smoke.cpp` 通过独立进程启动真实产品与 echo fixture，不链接生产 reactor/control 内部；CMake 仅在 BUILD_TESTING 下生成该入口和 fixture，生产依赖不变。
 - fixture 动态端口、原子证据目录、有界 ready/I/O、明确进程回收和端口重绑用于可重复验收；它们不改变正式产品配置或 TCP 参数。
 - V0.1 开发范围已独立验收完成；复现入口见 `docs/runbooks/local-tcp-validation.md`，七条标准见 `docs/specs/v0.1-acceptance.md`。本地 main 已包含 S3 合并提交 544c8d8；远端发布状态本轮未核验，后续架构方向不代表当前已实现。
 
-## V0.2/S1 当前落地边界
+## V0.2/S1 历史落地边界
 
-状态：Completed（2026-09-08）；Reviewer002 PASS、Leader003 收尾。以下为已验收实现，V0.2/S2、S3 未开始。
+状态：Completed（2026-09-08）；Reviewer002 PASS、Leader003 收尾。以下为 S1 验收时的实现事实，后续变化见 V0.2/S2。
 
 - `config` 新增强类型 Protocol/SchedulerKind 和兼容默认值；`control/service.*` 在网络资源创建前分派协议，当前 UDP 明确拒绝运行。
 - `core/scheduler.*` 提供纯索引策略接口与工厂，RoundRobin 实现它；`control/tcp_service.*` 独占 scheduler 并将选择回调传给 reactor，生命周期覆盖整个 run。reactor 不解析协议或策略。
 - 单 listener、静态有序池、独立 cursor 不变；失败消耗选择、不重试。无 UDP socket/flow table、健康检查或第二策略；规格见 `docs/specs/scheduler.md` 和 `docs/specs/config-schema.md`。
+
+## V0.2/S2 当前落地边界
+
+- `core/udp_flow.h` 定义纯 FlowKey/空闲时限；`net/udp_reactor.*` 持有每 flow 后端 socket、双索引、单调 token 和共享接收 scratch，独立于 TCP reactor。
+- `control/udp_service.*` 独占 Scheduler、记录生命周期并接入统一协议分派；UDP 在完整数据报/元数据通过且容量允许时为新 flow 选择一次，回复使用 listener IP_PKTINFO 固定实际目的 IP 为源。
+- 1024 flow、60 秒空闲、64 次每 fd 接收尝试、100ms 清扫，立即发送/整包丢弃，无用户态队列；真实数据包和局部注入证据分别由 UDP 状态测试、独立产品测试承载。具体错误、wildcard、零长/截断、迟到包和安全限制见 `docs/specs/udp-flow-table.md`。
+- 当前 S2 Completed（2026-09-08），Reviewer001 独立 PASS、Leader003 收尾；S3 完整产品矩阵尚未开始，无 UDP 可靠性、性能或公网防护承诺。
 
 ## 变更记录
 
