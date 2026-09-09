@@ -16,17 +16,21 @@ struct Endpoint {
   bool operator==(const Endpoint&) const = default;
 };
 enum class Protocol { kTcp, kUdp };
+enum class MetricsKind { kOff, kStderr };
 enum class HealthCheck { kOff, kTcpConnect };
 enum class SchedulerKind { kRoundRobin };
+
 /** 仅完整校验成功后返回；后端按输入顺序保存。 */
 struct Config {
   Endpoint listen;
   std::vector<Endpoint> backends;
   Protocol protocol = Protocol::kTcp;
+  MetricsKind metrics = MetricsKind::kOff;
   HealthCheck health_check = HealthCheck::kOff;
   SchedulerKind scheduler = SchedulerKind::kRoundRobin;
 };
 enum class ErrorKind { kFile, kSyntax, kField, kMissing };
+
 /** 文件错误 line=0；缺失字段 eof=true，其余错误定位实际行。 */
 struct ConfigError {
   ErrorKind kind;
@@ -34,6 +38,7 @@ struct ConfigError {
   bool eof;
   std::string message;
 };
+
 using ConfigResult = std::variant<Config, ConfigError>;
 inline constexpr std::size_t kMaxConfigBytes = 65536;
 /** 纯解析，无打印或 I/O；失败不返回部分配置。 */

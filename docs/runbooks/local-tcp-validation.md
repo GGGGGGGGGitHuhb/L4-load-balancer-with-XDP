@@ -80,3 +80,7 @@ cmake --build build-production
 测试不证明公网可达性、跨主机性能或吞吐指标。上述历史记录针对 V0.1/S3 TCP 路径；当前 V0.2/S2 另提供 UDP flow 转发，见 [UDP flow 规格](../specs/udp-flow-table.md)。V0.3/S1 可选 TCP 握手健康检查见 [健康规格](../specs/health-check.md)；XDP 属后续版本。语义以 [TCP 规范](../specs/tcp-forwarding-semantics.md)为准。
 
 V0.3/S1 测试构建需 Python3 标准库（健康产品 fixture），无第三方包；`BUILD_TESTING=OFF` 生产构建和运行不需要 Python。新增4项健康测试可用 `ctest --test-dir build -R v03_health`，采用固定默认时序；启用探活时 ready 不代表 Healthy。
+
+## V0.3/S2 指标验证
+
+原场景默认metrics=off保持；新增5项指标测试，当前20项，Debug快速19/Release完整20。`ctest --test-dir build -R v03_metrics` 同时覆盖模型/实际计数落点/真实产品活跃快照。手动在配置增加metrics=stderr并把stderr重定向普通本地文件，按 [metrics规格](../specs/metrics.md) 解析前缀；同步慢sink和SIGPIPE可能影响服务，不将普通文件条件下停止界推广到堵塞管道。

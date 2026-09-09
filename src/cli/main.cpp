@@ -8,11 +8,16 @@
 /** CLI 仅解释选项和展示配置模块结果。 */
 int main(int argc, char* argv[]) {
   if (argc == 2 && std::string_view(argv[1]) == "--help") {
-    std::cout << "用法：l4lb --help | --check-config <path> | --run <path>\n"
-                 "TCP 代理：固定轮询，无失败重试。UDP 按 flow 固定后端，尽力转发。"
-                 "TCP/UDP 均可运行。路径相对于当前工作目录。\n"
-                 "health_check 默认 off；tcp_connect 仅检查 TCP 握手。Unknown 预热期拒绝新会话/flow。\n"
-                 "UDP 启用需在相同 IP/端口提供代表 UDP 服务的 TCP 健康端点；既有 flow 不迁移。\n";
+    std::cout
+        << "用法：l4lb --help | --check-config <path> | --run <path>\n"
+           "TCP 代理：固定轮询，无失败重试。UDP 按 flow 固定后端，尽力转发。"
+           "TCP/UDP 均可运行。路径相对于当前工作目录。\n"
+           "health_check 默认 off；tcp_connect 仅检查 TCP 握手。Unknown "
+           "预热期拒绝新会话/flow。\n"
+           "metrics 默认 off，可选 stderr（单行 metrics JSON，独立于 "
+           "health_check）；同步 stderr 可能阻塞业务。\n"
+           "UDP 启用需在相同 IP/端口提供代表 UDP 服务的 TCP 健康端点；既有 "
+           "flow 不迁移。\n";
     return 0;
   }
   if (argc != 3 ||

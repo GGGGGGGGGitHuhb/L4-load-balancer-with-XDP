@@ -136,6 +136,10 @@ class UdpReactor {
   }
 
  private:
+  void statistic(StatKind kind, std::uint64_t amount = 1) {
+    if (cb_.statistics) cb_.statistics({kind, amount});
+  }
+
   UClock::time_point now() const {
     return opt_.now ? opt_.now() : UClock::now();
   }
@@ -177,6 +181,7 @@ class UdpReactor {
     if (it == flows_.end()) return;
     auto flow = std::move(it->second);
     keys_.erase(flow->key);
+    statistic(StatKind::Closed);
     flows_.erase(it);  // 身份先失效，然后 DEL/close；旧批次永远查不到新 owner。
     epoll_ctl(epoll_.get(), EPOLL_CTL_DEL, flow->fd.get(), nullptr);
     int fd = flow->fd.get();
@@ -191,7 +196,10 @@ class UdpReactor {
       auto token = it->first;
       bool due = it->second->deadline.expired(time, opt_.idle_timeout);
       ++it;
-      if (due) erase(token, "idle-timeout");
+      if (due) {
+        statistic(StatKind::Timeout);
+        erase(token, "idle-timeout");
+      }
     }
   }
 
@@ -202,17 +210,22 @@ class UdpReactor {
   std::uint64_t create(const FlowKey& key) {
     expire();
     if (flows_.size() >= opt_.max_flows) {
+      statistic(StatKind::Rejected);
       diagnostic("capacity-drop");
       return 0;
     }
     auto selected = cb_.select_backend();  // 真正异常仍传播。
-    if (!selected) return 0;
+    if (!selected) {
+      statistic(StatKind::Rejected);
+      return 0;
+    }
     Endpoint backend = *selected;
     int error = setup_error("socket", -1);
     Fd fd(error
               ? -1
               : socket(AF_INET, SOCK_DGRAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0));
     if (fd.get() < 0) {
+      statistic(StatKind::Error);
       diagnostic("setup-drop", error ? error : errno);
       return 0;
     }
@@ -220,6 +233,7 @@ class UdpReactor {
     error = setup_error("bind", fd.get());
     if (error ||
         bind(fd.get(), reinterpret_cast<sockaddr*>(&a), sizeof(a)) < 0) {
+      statistic(StatKind::Error);
       diagnostic("setup-drop", error ? error : errno);
       return 0;
     }
@@ -227,6 +241,7 @@ class UdpReactor {
     error = setup_error("connect", fd.get());
     if (error ||
         connect(fd.get(), reinterpret_cast<sockaddr*>(&a), sizeof(a)) < 0) {
+      statistic(StatKind::Error);
       diagnostic("setup-drop", error ? error : errno);
       return 0;
     }
@@ -238,11 +253,13 @@ class UdpReactor {
       flow = std::make_unique<UdpFlow>(
           UdpFlow{key, backend, std::move(fd), token, {now()}});
     } catch (const std::bad_alloc&) {
+      statistic(StatKind::Error);
       diagnostic("setup-drop", ENOMEM);
       return 0;
     }
     error = setup_error("epoll", flow->fd.get());
     if (error) {
+      statistic(StatKind::Error);
       diagnostic("setup-drop", error);
       return 0;
     }
@@ -256,15 +273,18 @@ class UdpReactor {
     } catch (const std::bad_alloc&) {
       if (indexed) keys_.erase(key);
       flows_.erase(token);
+      statistic(StatKind::Error);
       diagnostic("setup-drop", ENOMEM);
       return 0;
     } catch (const std::system_error& e) {
       if (indexed) keys_.erase(key);
       flows_.erase(token);
       if (e.code().value() == EBADF || e.code().value() == EINVAL) throw;
+      statistic(StatKind::Error);
       diagnostic("setup-drop", e.code().value());
       return 0;
     }
+    statistic(StatKind::Created);
     observe("created", token, flows_.at(token)->fd.get());
     if (cb_.flow) cb_.flow({token, backend, "created"});
     return token;
@@ -307,13 +327,19 @@ class UdpReactor {
       udp_fail(kind, code);
     if (listener) {
       if (!shared_error(code)) udp_fail(kind, code);
+      if (code != EAGAIN && code != EWOULDBLOCK && code != EINTR)
+        statistic(StatKind::Error);
       diagnostic(kind, code);
       return true;
     }
     if (pressure(code)) {
+      if (code != EAGAIN && code != EWOULDBLOCK && code != EINTR)
+        statistic(StatKind::Error);
       diagnostic(kind, code);
       return true;
     }
+    if (code != EAGAIN && code != EWOULDBLOCK && code != EINTR)
+      statistic(StatKind::Error);
     erase(token, kind, code);
     return false;
   }
@@ -348,17 +374,24 @@ class UdpReactor {
                             : send(fd, scratch_.data(), size, MSG_NOSIGNAL));
       if (n >= 0) {
         if (static_cast<std::size_t>(n) == size) {
+          statistic(reply ? StatKind::BytesB2c : StatKind::BytesC2b, size);
+          statistic(reply ? StatKind::DatagramB2c : StatKind::DatagramC2b);
           flow.deadline.submitted(now());
           observe(reply ? "sent-reply" : "sent-request", flow.token, fd);
-        } else
+        } else {
+          statistic(StatKind::Error);
+          statistic(StatKind::Dropped);
           diagnostic("short-send-drop");
+        }
         return;
       }
       if (errno == EINTR) continue;
+      statistic(StatKind::Dropped);
       error(errno, reply, flow.token,
             reply ? "listener-send-drop" : "backend-send-error");
       return;
     }
+    statistic(StatKind::Dropped);
     diagnostic("send-budget-drop");
   }
 
@@ -384,11 +417,13 @@ class UdpReactor {
       }
       if ((msg.msg_flags & MSG_TRUNC) ||
           n > static_cast<ssize_t>(kUdpPayloadLimit)) {
+        statistic(StatKind::Dropped);
         diagnostic("listener-truncated");
         continue;
       }
       FlowKey key{};
       if (!metadata(msg, from, key)) {
+        statistic(StatKind::Dropped);
         diagnostic("metadata-drop");
         continue;
       }
@@ -396,12 +431,23 @@ class UdpReactor {
       std::uint64_t token = it == keys_.end() ? 0 : it->second;
       if (token &&
           flows_.at(token)->deadline.expired(now(), opt_.idle_timeout)) {
+        statistic(StatKind::Timeout);
         erase(token, "idle-timeout");
         token = 0;
       }
-      if (!token) token = create(key);
+      if (!token) {
+        try {
+          token = create(key);
+        } catch (...) {
+          // 已取得有效数据报但尚未提交；Error由control统一计，不能在这里重复。
+          statistic(StatKind::Dropped);
+          throw;
+        }
+      }
       if (token)
         send_packet(*flows_.at(token), static_cast<std::size_t>(n), false);
+      else
+        statistic(StatKind::Dropped);
     }
     observe("listener-budget");
   }
@@ -412,6 +458,7 @@ class UdpReactor {
       if (it == flows_.end()) return;
       auto& flow = *it->second;
       if (flow.deadline.expired(now(), opt_.idle_timeout)) {
+        statistic(StatKind::Timeout);
         erase(token, "idle-timeout");
         return;
       }
@@ -428,6 +475,7 @@ class UdpReactor {
       }
       if ((msg.msg_flags & MSG_TRUNC) ||
           n > static_cast<ssize_t>(kUdpPayloadLimit)) {
+        statistic(StatKind::Dropped);
         diagnostic("backend-truncated");
         continue;
       }
@@ -445,6 +493,7 @@ class UdpReactor {
       return;
     }
     if (!listener && it->second->deadline.expired(now(), opt_.idle_timeout)) {
+      statistic(StatKind::Timeout);
       erase(token, "idle-timeout");
       return;
     }
@@ -458,6 +507,8 @@ class UdpReactor {
       if (rc < 0) {
         if (listener) udp_fail("listener SO_ERROR");
         if (errno == EBADF || errno == ENOTSOCK) udp_fail("backend SO_ERROR");
+        if (errno != EAGAIN && errno != EWOULDBLOCK && errno != EINTR)
+          statistic(StatKind::Error);
         erase(token, "socket-error-read", errno);
         return;
       }
@@ -469,6 +520,7 @@ class UdpReactor {
     }
     if (events & EPOLLHUP) {
       if (listener) udp_fail("UDP listener HUP", EIO);
+      statistic(StatKind::Error);
       erase(token, "backend-hup");
       return;
     }

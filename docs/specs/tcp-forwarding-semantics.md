@@ -47,3 +47,7 @@
 ## V0.3/S1 可选健康资格
 
 `health_check` 默认 off，原行为保持。显式 tcp_connect 只检查相同后端端口 TCP 握手，初始 Unknown 不可选，连续2成功开放、3失败摘除，固定1s间隔/1s超时。ready 不等待 Healthy。新 client 无可选后端立即关闭（EOF/reset），不建 backend socket/会话，不 fallback；全不可选限频输出 no_healthy_backend，服务保留等待恢复。既有 TCP 会话不受健康状态主动中断，仍按原网络错误/空闲时限退出。探测本机资源不足可能保守摘除，详见 [健康规格](health-check.md)。
+
+## V0.3/S2 可选指标
+
+metrics默认off；stderr模式将真实创建/关闭、成功send提交量、拒绝/drop/error/timeout累计为固定schema快照。TCP计入connecting会话，send每次正返回即时计字节，不等关闭；UDP完整成功一包计一次，零长包计包不计字节，recv失败无虚构drop。旧健康不eligible的flow仍可贡献提交量。错误在日志限频前计，关闭不重复计原错误；成功提交不保证对端收到。同步stderr风险、尾快照和全部字段见 [metrics规格](metrics.md)。

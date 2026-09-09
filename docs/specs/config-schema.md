@@ -1,6 +1,6 @@
 # 配置规格
 
-适用至 V0.3/S1：静态 TCP/UDP 配置格式。`--check-config` 不创建 socket、不启动监听、不连接后端，也不检查可达性；`--run` 按配置启动 TCP 或 UDP。
+适用至 V0.3/S2：静态 TCP/UDP 配置格式。`--check-config` 不创建 socket、不启动监听、不连接后端，也不检查可达性；`--run` 按配置启动 TCP 或 UDP。
 
 ## 格式与字段
 
@@ -11,6 +11,7 @@
 protocol=tcp
 scheduler=round_robin
 health_check=off
+metrics=off
 # TCP 端点
 listen=0.0.0.0:8080
 backend=127.0.0.1:9001
@@ -18,7 +19,7 @@ backend=127.0.0.1:9002
 ```
 
 - `listen` 必须恰好一项；`backend` 必须为 1 至 256 项，保留文件顺序；没有默认端点。listen 可出现在 backend 之后。
-- 键和值区分大小写，只接受 `listen`、`backend`、`protocol`、`scheduler` 和 `health_check`。重复 listen、重复 backend 端点、未知键、空键/值、缺少或多个等号失败。
+- 键和值区分大小写，只接受 `listen`、`backend`、`protocol`、`scheduler` 、`health_check` 和 `metrics`。重复 listen、重复 backend 端点、未知键、空键/值、缺少或多个等号失败。
 - `protocol` 可选，缺省 `tcp`，仅接受 `tcp`/`udp`；`scheduler` 可选，缺省 `round_robin`，仅接受 `round_robin`。两个字段独立可省略，任意顺序，每个至多一次，即使重复同值也失败。未知值、大小写变体、空值均失败，首个错误行优先。
 - 键和值外侧以及行首尾只去除 ASCII 空格和制表符；值内部禁止空白。
 - 忽略空行和去除外侧空白后以 `#` 开头的整行注释；注释可含 UTF-8。不支持行尾注释、引号、转义、变量替换、include、节名。
@@ -59,3 +60,7 @@ backend=127.0.0.1:9002
 - TCP 运行仍沿用已有日志、退出和关闭行为；控制层 TCP 直调入口也拒绝非 TCP 协议。
 - 新键不保证能被 V0.1 读取。回退需移除新增键；不能将 UDP 配置当 TCP 降级使用。
 - [调度规格](scheduler.md) 定义失败选择推进、实例隔离与静态池边界。
+
+## V0.3/S2 指标开关
+
+`metrics=off|stderr` 独立于health_check，默认off；任意顺序、大小写敏感、空/未知/重复同值均首错拒绝。off没有产品collector/统计回调/指标周期。check-config不输出指标或创建socket/collector，成功文本不变。stderr模式增加 `metrics ` 前缀JSON行，原stderr仍混有业务日志；同步慢sink可拖慢业务/停止，关闭管道可SIGPIPE终止，建议本地文件并外部管理日志。指标计成功提交非送达；完整口径与失败后禁用见 [metrics规格](metrics.md)。回退旧二进制需移除metrics键。

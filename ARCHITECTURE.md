@@ -119,7 +119,7 @@ XDP/eBPF 数据面层是后续用于包级 fast path 的可选数据路径。它
 
 ## 模块职责
 
-当前 S1/S2 已实现 CLI、配置、固定轮询 core、control 服务组装和 net 单线程 TCP reactor，并通过独立验收。配置检查调用链仍为 argv → CLI 参数验证 → 有界只读配置加载 → 纯解析与完整校验 → 摘要或错误；--run 在校验后进入 control → net 完成监听、后端连接与双向转发。当前 UDP 实现边界见末尾 V0.2/S2；健康检查当前边界见末尾 V0.3/S1；指标和 XDP 仍为长期架构，职责边界保持稳定。
+当前 S1/S2 已实现 CLI、配置、固定轮询 core、control 服务组装和 net 单线程 TCP reactor，并通过独立验收。配置检查调用链仍为 argv → CLI 参数验证 → 有界只读配置加载 → 纯解析与完整校验 → 摘要或错误；--run 在校验后进入 control → net 完成监听、后端连接与双向转发。当前 UDP 实现边界见末尾 V0.2/S2；健康检查当前边界见末尾 V0.3/S1；指标边界见末尾V0.3/S2；XDP仍为长期架构，职责边界保持稳定。
 
 ### `src/cli/`
 
@@ -647,10 +647,17 @@ XDP/eBPF 状态：
 - 手动工具 `tests/udp_manual.py` 仅用Python3标准库，客户端持续持有同一socket；`tests/udp_manual_demo.sh`提供可复制完整流程和自有子进程/端口清理。Python不成为生产运行或CTest依赖。
 - 容量1024静态确认，内部capacity2动态继承；无1024满载/性能结论。当前11项注册、Debug快速10项、Release11项含长项一次；完整边界见UDP运行手册和V0.2完成矩阵。
 
-## V0.3/S1 当前落地边界
+## V0.3/S1 历史落地边界
 
 - `health/state.h` 纯状态机，`health/checker.*` 单线程非阻塞 probe，独占 epoll/fd/token/steady deadlines，最多256后端。每次完成后1s、超时1s，旧token先撤销再close，截止优先；checker故障清理后传播为服务错误。无线程、sleep 或应用payload。
 - `control/health_selection.*` 持有原 Scheduler 和可选 checker、汇总转换日志，先检查集合再有界跳过，不让 health 依赖 control 或直接断业务。off 无 checker/fd/maintenance。
 - TCP/UDP `select_backend` 返回 optional Endpoint，maintenance 每轮唤醒后、停止判断后、分派前调用；长批次新选择前再次tick。net 不读取 health_check，不解释健康状态。无可选时分别关闭新client/丢弃新key，旧会话/flow 原绑定保持。
 - UDP 的 TCP 探活是操作员提供的代理信号，不是 UDP 协议健康；Unknown 预热拒绝新业务，ready 不代表 Healthy，资源失败标明 local_error。完整语义见 `docs/specs/health-check.md`。
 - CTest 新增4项至15项，Python3标准库仅用于真实产品 fixture（测试构建需 Python3，Production不需）。V0.2注册保留，Debug14快速、Release15含60s expiry；独立验收状态由角色报告记录。无 S2 指标快照/S3完整故障矩阵。
+
+## V0.3/S2 当前指标边界
+
+- `net/statistics.h` 为可选强类型事实回调，不接入测试Observation或限频日志。两reactor在真实事务提交/关闭/send/错误分支发事件，net不理解metrics开关或JSON。
+- `metrics/metrics.h/.cpp` 固定Collector/Snapshot、纯schema=1格式化与Output；control的MetricsService独占它们，健康采集为HealthSelection只读复制，不tick或移动cursor。各模块继续.h/.cpp同目录。
+- off无collector/output/回调/周期；stderr模式ready后1s维护，健康先行，reactor释放后单final/error。最多256backend与32768字节完整行，单线程同步stderr、不建异步队列。慢sink、SIGPIPE、半行与失败禁用边界见metrics规格，不承诺非阻塞日志。
+- 新增5项正式模型/两reactor落点/两协议产品指标测试，保留原15项；当前20注册，Debug快速19、Release完整20。未提前实现S3完整故障矩阵/Prometheus/XDP。
