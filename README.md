@@ -8,8 +8,8 @@
 
 ## 当前状态
 
-- 当前阶段标签：`v0.2-s1`（注释标签与远端 main 均指向已合并 S1 的 `53236b1`；不代表 GitHub Release）
-- 状态：V0.1/S1 已完成；S2 TCP 转发已完成（Completed，独立复审 PASS）；S3 已完成（Completed，独立审查 PASS），V0.1 开发范围完成；V0.2/S1 也已完成并合并，注释标签 v0.2-s1 已核验。当前在 `codex/v0.2-s2` 完成 S2 实现、独立审查（PASS）和 Leader 收尾（Completed），S3 未开始
+- 当前阶段标签：`v0.2-s2`（与远端 main 同指 S2 合并提交 `c6927c0`；不据此声称创建 GitHub Release）
+- 状态：V0.1/S1 已完成；S2 TCP 转发已完成（Completed，独立复审 PASS）；S3 已完成（Completed，独立审查 PASS），V0.1 开发范围完成；V0.2/S1 也已完成并合并，注释标签 v0.2-s1 已核验。S2 已实现并独立验收（PASS）及 Leader 收尾（Completed）；当前在 `codex/v0.2-s3` 完成 S3 独立审查（Reviewer001 PASS）和 Leader003 收尾；S3及V0.2开发范围Completed，尚未提交发布S3
 - 主要能力：
   - 明确项目方向：C++ 用户态 L4 负载均衡器 + XDP/eBPF fast path
   - 明确基础技术栈：LLVM、CMake、Ninja、C++20、Linux socket、epoll
@@ -109,6 +109,8 @@ ctest --test-dir build-release --output-on-failure
 
 - [示例配置](configs/example.conf)。
 - 可选 `protocol=tcp|udp`（默认 `tcp`）、`scheduler=round_robin`（默认同值），每项至多一次，键值区分大小写；UDP 支持 `--check-config` 和 `--run`，按 flow 固定后端、空闲 60 秒、容量 1024、尽力丢弃且不重试。
+- [完整UDP验证手册](docs/runbooks/local-udp-validation.md)：普通clone手动工具、wildcard/后端恢复、固定生产60秒长项与证据边界。
+- [V0.2完成矩阵](docs/specs/v0.2-acceptance.md)：六条标准、继承/新增和未验证范围。
 - [UDP flow 规格](docs/specs/udp-flow-table.md)：地址关联、报文边界、过期/容量、错误和限制。
 - [调度规格](docs/specs/scheduler.md)：独立轮询状态、失败仍推进一次且不重试。
 - [配置规格](docs/specs/config-schema.md)：严格数字、空白、注释、大小限制与错误规则。
@@ -158,6 +160,8 @@ ctest --test-dir build-release --output-on-failure
 
 ## 测试与验证
 
+当前注册11项；Debug快速执行 `ctest --test-dir build -LE udp_long`（10项），Release完整11项含一次约61秒原生产过期测试。`udp_fast`两项可重复/并行，`udp_long`不加入快速组；容量1024只作静态默认值确认，未做1024满载产品验收。
+
 CTest 包含配置单元测试和 CLI 进程集成测试，覆盖合法输入、拒绝规则、端点顺序、64 KiB 边界、精确退出码与输出、FIFO 超时、普通文件符号链接及配置内容不变。
 
 普通用户还验证不可读文件；root 环境会明确输出该权限用例未验证。Debug/Release 使用显式检查，不依赖 `assert`。S2 增加真实 TCP 进程集成与定向状态测试，覆盖双向二进制、ABCABC/并发、半关闭/RST、超时、慢读背压、容量、fd/token 回收及 HUP 退避。性能验证属于后续阶段。
@@ -183,14 +187,25 @@ ctest --test-dir build -L s2 --output-on-failure
 
 ## 当前阶段入口
 
-V0.2/S2 已批准，分支 `codex/v0.2-s2`，V0.2-S2-D1 Approved，当前 Completed，独立 Reviewer001 PASS、Leader003 收尾。S2 已完成 UDP flow 绑定与回复及必要验收；S3 完整产品矩阵尚未开始。
+V0.2/S3 已批准，分支 `codex/v0.2-s3`，基线 V0.2-S3-D1 Approved，独立Reviewer001结论PASS，Leader003收尾，S3及V0.2开发范围Completed。已核验 S2 合并提交与远端 main、v0.2-s2 标签均为 c6927c0。
+
+- [S3 已批准设计](docs/leader/designs/V0.2/S3-design.md)
+- [S3 审查计划](docs/reviewer/reviews/V0.2/S3-review.md)
+- [S3 准备决策](docs/leader/reports/V0.2/S3-report-001.md)
+- [S3 批准登记](docs/leader/reports/V0.2/S3-report-002.md)
+- [S3 独立审查](docs/reviewer/reports/V0.2/S3-report-001.md)：PASS，Debug快速10/10、Release全11/11及原生产60秒验证。
+- [S3与V0.2完成报告](docs/leader/reports/V0.2/S3-report-003.md)：Completed，未发布。
+
+### 已完成的 V0.2/S2
+
+V0.2/S2 已批准，分支 `codex/v0.2-s2`，V0.2-S2-D1 Approved，当前 Completed，独立 Reviewer001 PASS、Leader003 收尾。S2 已完成 UDP flow 绑定与回复及必要验收；这是S2历史结果，当前S3进度见上节。
 
 - [S2 已批准设计](docs/leader/designs/V0.2/S2-design.md)
 - [S2 审查计划](docs/reviewer/reviews/V0.2/S2-review.md)
 - [S2 准备决策报告](docs/leader/reports/V0.2/S2-report-001.md)
 - [S2 批准登记](docs/leader/reports/V0.2/S2-report-002.md)
 - [S2 独立审查](docs/reviewer/reports/V0.2/S2-report-001.md)：PASS，独立两模式 9/9 与实际产品负向验证。
-- [S2 完成报告](docs/leader/reports/V0.2/S2-report-003.md)：Completed，S3 未开始。
+- [S2 完成报告](docs/leader/reports/V0.2/S2-report-003.md)：Completed，保留当时S3未开始的历史状态。
 
 ### 已完成的 V0.2/S1
 

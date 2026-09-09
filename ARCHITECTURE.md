@@ -630,9 +630,19 @@ XDP/eBPF 状态：
 - `core/udp_flow.h` 定义纯 FlowKey/空闲时限；`net/udp_reactor.*` 持有每 flow 后端 socket、双索引、单调 token 和共享接收 scratch，独立于 TCP reactor。
 - `control/udp_service.*` 独占 Scheduler、记录生命周期并接入统一协议分派；UDP 在完整数据报/元数据通过且容量允许时为新 flow 选择一次，回复使用 listener IP_PKTINFO 固定实际目的 IP 为源。
 - 1024 flow、60 秒空闲、64 次每 fd 接收尝试、100ms 清扫，立即发送/整包丢弃，无用户态队列；真实数据包和局部注入证据分别由 UDP 状态测试、独立产品测试承载。具体错误、wildcard、零长/截断、迟到包和安全限制见 `docs/specs/udp-flow-table.md`。
-- 当前 S2 Completed（2026-09-08），Reviewer001 独立 PASS、Leader003 收尾；S3 完整产品矩阵尚未开始，无 UDP 可靠性、性能或公网防护承诺。
+- S2验收时为 Completed（2026-09-08），Reviewer001 独立 PASS、Leader003 收尾；当时S3尚未开始，当前S3测试边界见下节，无 UDP 可靠性、性能或公网防护承诺。
 
 ## 变更记录
 
 - `2026-05-21`：补充项目环境路线，明确 WSL2 用于用户态开发，云服务器用于 XDP/eBPF 功能验证与阶段收尾。
 - `2026-05-19`：创建初版架构文档，明确 C++ 用户态 L4 负载均衡器、控制面、用户态数据面和 XDP/eBPF 数据面的长期职责边界。
+
+
+## V0.2/S3 当前测试边界
+
+状态：Completed（2026-09-09），Reviewer001独立PASS、Leader003收尾；V0.2开发范围完成，生产数据面未改，未发布S3。
+
+- 生产src/与原TCP示例保持S2合并版本。扩展 `tests/udp_product_test.cpp` 的system/expiry模式，复用独立argv、原子证据目录与有界进程管理，新增CTest两项，不链接生产control/net或注入Options。
+- P1/P2验证原产品wildcard/实际源地址/流隔离/伪造过滤和后端停机后显式新flow恢复；P3用同一socket真实静默≥60.5秒验证原60秒默认值，不调整产品常量或时钟。
+- 手动工具 `tests/udp_manual.py` 仅用Python3标准库，客户端持续持有同一socket；`tests/udp_manual_demo.sh`提供可复制完整流程和自有子进程/端口清理。Python不成为生产运行或CTest依赖。
+- 容量1024静态确认，内部capacity2动态继承；无1024满载/性能结论。当前11项注册、Debug快速10项、Release11项含长项一次；完整边界见UDP运行手册和V0.2完成矩阵。
