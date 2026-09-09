@@ -665,3 +665,7 @@ XDP/eBPF 状态：
 ## V0.3/S3 测试边界
 
 新增Python标准库双backend fixture、三项真实产品CTest及独立工具负向。fixture区分健康空连接与业务nonce，以backend观测建立期望账本，再比较产品指标；测试线程/PID/socket由单run拥有。原metrics产品模块仅加main入口保护供schema解析复用，默认执行和既有断言保持。生产src、配置和模块边界不变，当前23项注册；执行见 `docs/runbooks/local-v0.3-validation.md`。
+
+## V0.4/S1 Benchmark 工具边界
+
+`tests/benchmark_runner.py`负责有界生命周期、ready/配置和独立run证据；`benchmark_fixture.py`为独立echo进程；`benchmark_traffic.py`负责TCP闭环partial I/O与UDP总pps节拍/有界pending；`benchmark_stats.py`提供纯统计；`benchmark_environment.py`负责环境白名单和每PID测量窗口资源采样。工具只使用Python3标准库，不进入生产依赖、不改变src/配置/调度/健康/metrics。`benchmark_tool_test.py`注册3项短CTest（原23项保留），`benchmark_acceptance.py`提供显式长矩阵、失败和隔离验证。公开口径与schema见 `docs/benchmarks/methodology.md`；不提前实现生产优化或XDP。

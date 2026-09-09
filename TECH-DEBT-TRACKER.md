@@ -4,10 +4,14 @@ V0.1/S1 工程骨架与配置入口已完成（Completed，2026-09-07），Revie
 
 - 已具备 C++20 工程、CLI、严格静态配置、固定轮询 TCP 双向转发、有界背压与半关闭，以及 Debug/Release 自动化测试。
 - TD-001/TD-002 已关闭；TD-003 XDP 环境按原计划持续跟踪，TD-004 剩余规格随对应阶段产出。
-- `docs/specs/config-schema.md`、`docs/specs/tcp-forwarding-semantics.md` 与 `docs/runbooks/local-dev-env.md` 已存在；benchmark 文档仍属后续阶段。
+- `docs/specs/config-schema.md`、`docs/specs/tcp-forwarding-semantics.md` 与 `docs/runbooks/local-dev-env.md` 已存在；benchmark方法、模板与工具验证样本已于V0.4/S1交付，正式性能报告留S3。
 - 无本阶段阻塞或新增技术债；S2-R001 已修复并复审关闭，完成报告为 `docs/leader/reports/V0.1/S2-report-004.md`；S3 已完成且无新增债项，见 `docs/leader/reports/V0.1/S3-report-003.md`。
 
 ## 阶段状态
+
+### V0.4 / S1 Benchmark 方法与工具
+
+Completed（2026-09-09），V0.4-S1-D1保持Approved，批准见Leader002；Builder002、Reviewer002独立PASS、Leader003收尾齐备。六条AC满足；首轮F-001（P2）已在D1范围内修复并复审Closed，历史FAIL保留，无带债验收。独立Debug25/25、Release26/26、Production及首轮未变路径证据与复审UDP八run/正式负向/短组重复/隔离共同构成验收；复审19run独立重算无不一致、30个owned PID回收。TD-004 benchmark方法与报告格式义务已交付并验收，正式性能报告留S3，XDP义务保持；无新增技术债、阻塞或PM决策。完成报告 `docs/leader/reports/V0.4/S1-report-003.md`；当前仅授权父本地提交，尚未合并或发布。
 
 ### V0.3 / S3 故障场景验证
 
@@ -206,7 +210,7 @@ M1..M4 与 AC-01..07 已完成：独立 Debug/Release 各 7/7，Production 验�
 
 问题描述：
 
-项目已经明确后续需要网络语义、配置 schema、UDP flow table、XDP map schema、运行手册和性能方法等长期文档，S1 已创建并验证 `docs/specs/config-schema.md`，启动阶段已有 `docs/runbooks/local-dev-env.md`。S2 已补齐并验证 `docs/specs/tcp-forwarding-semantics.md`；S3 已补齐并独立验收 `docs/runbooks/local-tcp-validation.md` 和 `docs/specs/v0.1-acceptance.md`，V0.1 文档义务已完成；V0.2/S1 已补齐并独立验收 `docs/specs/scheduler.md` 和配置扩展规格；V0.2/S2 已补齐并独立验收最小 `docs/specs/udp-flow-table.md`；V0.2/S3完整UDP语义、运行手册与系统/版本矩阵已独立验收，V0.2配置与scheduler/UDP文档义务完成；V0.3/S1健康检查规格已交付并独立验收；V0.3/S2指标规格也已交付并独立验收；V0.3/S3公共故障运行手册与六条验收矩阵已交付并独立验收，V0.3文档义务完成；后续XDP/benchmark文档仍按原定阶段推进，不提前写未实现行为。
+项目已经明确后续需要网络语义、配置 schema、UDP flow table、XDP map schema、运行手册和性能方法等长期文档，S1 已创建并验证 `docs/specs/config-schema.md`，启动阶段已有 `docs/runbooks/local-dev-env.md`。S2 已补齐并验证 `docs/specs/tcp-forwarding-semantics.md`；S3 已补齐并独立验收 `docs/runbooks/local-tcp-validation.md` 和 `docs/specs/v0.1-acceptance.md`，V0.1 文档义务已完成；V0.2/S1 已补齐并独立验收 `docs/specs/scheduler.md` 和配置扩展规格；V0.2/S2 已补齐并独立验收最小 `docs/specs/udp-flow-table.md`；V0.2/S3完整UDP语义、运行手册与系统/版本矩阵已独立验收，V0.2配置与scheduler/UDP文档义务完成；V0.3/S1健康检查规格已交付并独立验收；V0.3/S2指标规格也已交付并独立验收；V0.3/S3公共故障运行手册与六条验收矩阵已交付并独立验收，V0.3文档义务完成；V0.4/S1的benchmark方法、报告模板与工具验证样本已交付并通过Reviewer002独立验收；S3正式性能报告及后续XDP文档仍按原定阶段推进，不提前写未实现行为。
 
 风险：
 
@@ -219,7 +223,7 @@ M1..M4 与 AC-01..07 已完成：独立 Debug/Release 各 7/7，Production 验�
 - `V0.1` 创建 `docs/specs/config-schema.md` 和 `docs/specs/tcp-forwarding-semantics.md`。
 - `V0.2/S1` 的 scheduler 规格和配置更新已完成；`V0.2/S2` 的最小 `docs/specs/udp-flow-table.md` 已完成，`V0.2/S3`完整语义、运行手册和系统/版本矩阵已完成。
 - `V0.3/S1` 已完成并独立验收 `docs/specs/health-check.md`；`V0.3/S2` 的 `docs/specs/metrics.md` 已交付并经Reviewer002独立验收；S3的 `docs/runbooks/local-v0.3-validation.md` 与 `docs/specs/v0.3-acceptance.md` 已交付并独立验收、Leader收尾。
-- `V0.4` 创建 `docs/benchmarks/methodology.md`。
+- `V0.4/S1` 已完成并独立验收 `docs/benchmarks/methodology.md`、`report-template.md`及工具验证样本；S3正式性能报告义务保留。
 - `V1.1` 或 `V1.2` 创建 `docs/specs/xdp-map-schema.md` 和 `docs/runbooks/linux-xdp-env.md`。
 
 当前决定：
@@ -271,11 +275,11 @@ M1..M4 与 AC-01..07 已完成：独立 Debug/Release 各 7/7，Production 验�
 
 观察到什么：
 
-项目面向高性能网络方向，但当前尚未有 benchmark 方法、工具或结果。
+项目面向高性能网络方向。V0.4/S1已交付benchmark方法、工具及可复现的TCP/UDP工具验证样本；正式优化前后性能报告仍留V0.4/S3，不将WSL样本解释为优化或硬件上限。
 
 目前为什么还不算技术债：
 
-性能验证在 `V0.4` 才进入路线图，不要求初始化阶段完成。
+方法与工具已按V0.4/S1路线交付并独立验收；正式性能报告尚未到S3交付点，继续跟踪。
 
 什么时候需要升级为技术债：
 

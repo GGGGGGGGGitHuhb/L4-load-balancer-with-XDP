@@ -1,5 +1,45 @@
 # Changelog
 
+### 2026-09-09 V0.4/S1完成
+
+- Leader003核对D1批准、Builder002与Reviewer002 PASS并完成收尾，S1标记Completed，D1保持Approved；F-001已修复关闭，首轮FAIL及原始证据保留。
+- 交付TCP/UDP直连与代理benchmark工具、测量方法、报告模板和分代工具验证样本。独立Debug25/25、Release26/26、Production及修复后UDP八run、正式负向、短组两次、隔离通过；复审19run独立重算无不一致、30个owned PID回收。未受影响路径保留首轮验证，未冒称复审重跑全套。
+- 同步README、ROADMAP、阶段权威及TD-004已完成的方法/格式义务；S2生产优化、S3正式性能报告和XDP均未完成，不宣称V0.4整体完成或性能提升。父将按授权本地提交，尚无本阶段合并或发布。
+
+### 2026-09-09 V0.4/S1独立复审通过
+
+- Reviewer002：PASS，F-001（P2）Closed；保留Reviewer001首轮FAIL及原复现。原三层独立跨client试验均确认正确拒绝，pending/duplicate/late三态在统计或状态变化前核对原始client归属。
+- 独立UDP默认/clients16八run、UDP损坏/跨client负向、合法乱序迟到、短组连续两次及隔离通过；新19run（16有效、3预期无效）独立重算一致，30个owned PID回收、fd相等。首轮未受影响生产构建/回归证据明确复用。
+- 公开样本历史TCP八run与修复UDP八run分组/参数/指纹一致，未伪称旧样本重跑；当前Closing，待Leader同步后才能标Completed。
+
+### 2026-09-09 V0.4/S1 F-001修复自测完成
+
+- UDP每seq保留有界原client归属，在pending/duplicate/late分类与过期变化前拒绝跨client错误回显；新增三态单测和真实proxy改写/投递负向，准确返回非0/valid=false且PID/fd回收。
+- 修复后UDP默认/clients16共8run有效，短组连续2次、UDP专项及隔离通过；新18run/28PID原始统计资源/清理与60文件指纹核对一致。公开样本明确历史TCP与修复后UDP代次，首轮FAIL及旧证据保留。
+- Builder002 Ready for Review，待Reviewer复审；生产/CMake/旧回归未改，按Reviewer001复用历史三构建和无关路径，不提前关闭F-001或宣称阶段完成。
+
+### 2026-09-09 V0.4/S1首轮独立审查需返工
+
+- Reviewer001：FAIL / Reworking。独立Debug25/25、Release26/26、Production16run、短组重复/既有故障/隔离/普通uid权限通过，36run原始数据与59个owned PID回收核对无不一致。
+- 额外完整runner与真实产品试验发现F-001（P2）：UDP跨client篡改回显仍被记成功并返回valid=true，违反完整身份校验和损坏非0要求；必须在D1范围内返工并独立复审，尚未Completed。保留本轮失败证据，不以既有测试通过替代最终验收。
+
+### 2026-09-09 V0.4/S1工具实现与自测完成
+
+- 新增Python3标准库TCP/UDP paired benchmark、独立echo/资源账本、有限参数与UDP节拍、sampled RTT/schema证据、失败回收和公开方法/模板/样本；生产src/配置/C++零改动。
+- 原23项CTest保留，追加3项短工具测试：Debug25/25、Release26/26（含原expiry一次）、Production两协议默认/clients16最终16run有效；短组重复2次、并行/空格路径及正式故障/普通uid权限通过。
+- 最终36正负run符合预期，59个owned PID回收、fixture fd相等、原始统计与资源独立重算及60文件指纹核对。Builder001 Ready for Review，尚待Reviewer独立验收与Leader Closing；不声称S2优化、S3正式性能报告或V0.4完成。
+
+### 2026-09-09 V0.4/S1批准登记
+
+- PM批准V0.4-S1-D1决策包，设计与审查方案同步为Approved / Ready for Builder，新增Leader002批准登记。
+- 授权S1工具/文档实现、独立验收与收尾，完成后本地提交；范围和验收要求不变，未提前宣告实现或验收完成。
+
+### 2026-09-09 V0.3/S3合并核验与V0.4/S1准备
+
+- 远端main及v0.3-s3注释tag peeled核验281db01，包含S3实现5221421；v0.1/S1至v0.3/S3共9个tag本地/远端对象一致且均可从main到达。
+- 本地main快进，从其创建codex/v0.4-s1；按用户要求安全删除四个已合并旧开发分支，本地仅保留main和新分支，远端分支/tag不删除。
+- 形成V0.4-S1-D1 Draft、审查方案及准备报告，定义TCP/UDP benchmark方法、工具边界与验证要求；同步当前状态入口。仅准备，未实现、未运行性能测试或批准后续开发；下方历史交接保留原时间事实。
+
 本文件记录项目已经完成、发布或合并的重要变化。未来计划写入 `ROADMAP.md`，架构说明写入 `ARCHITECTURE.md`，实现细节写入 Builder 报告，审查结果写入 Reviewer 报告，技术债写入 `TECH-DEBT-TRACKER.md`。
 
 ## Unreleased

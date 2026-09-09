@@ -1,0 +1,1817 @@
+{
+  "purpose": "S1 tool verification only; historical TCP and repaired UDP explicitly separated",
+  "evidence_groups": {
+    "historical_tcp_builder001": {
+      "note": "Before F-001 repair; unaffected TCP reused, not rerun for these samples.",
+      "identity": {
+        "git_commit": {
+          "value": "281db01ea382044a6ec6b46c96dcca57677c5595",
+          "reason": null
+        },
+        "git_status": {
+          "value": "M ARCHITECTURE.md\n M CHANGELOG.md\n M CMakeLists.txt\n M README.md\n M ROADMAP.md\n M TECH-DEBT-TRACKER.md\n?? .cache/\n?? .vscode/\n?? docs/benchmarks/\n?? tests/benchmark_acceptance.py\n?? tests/benchmark_environment.py\n?? tests/benchmark_fixture.py\n?? tests/benchmark_runner.py\n?? tests/benchmark_stats.py\n?? tests/benchmark_tool_test.py\n?? tests/benchmark_traffic.py",
+          "reason": null
+        },
+        "binary_sha256": {
+          "value": "acecac75404857f484ace2170adfa6d04c451fa92b71165e3265c78eb7c33c7c",
+          "reason": null
+        },
+        "tool_sha256": {
+          "benchmark_acceptance.py": "92c8d2bf7e6e5937e73788c9b91f8587e8cc967ca9291039d98bea0b102000f1",
+          "benchmark_environment.py": "d3b52ed8c096b00d3bd65c156d87582d2f3978649945627d944a6dc4067fd79a",
+          "benchmark_fixture.py": "b43e41c20e20eb4e5e5db57eda01e94d5300a92ca60ebef89a755da3a7e8dbe6",
+          "benchmark_runner.py": "4c44c1e88ebfe03108cb0f176531d7c8a605ead813ffaf4333091cb6becc13d6",
+          "benchmark_stats.py": "de29d3591b7f8e65a448c05f56ca67cbaa892f0eb45185b75276a198b272cd2a",
+          "benchmark_tool_test.py": "ce44f0869d752ca7a0beceabe51448e621ea3c8e28dce875680bc888d5d76ff8",
+          "benchmark_traffic.py": "655257fd280d4f86eb4ec7fd9d364910d05363ba69c2e522c120b0446505e202"
+        },
+        "kernel": "6.6.87.2-microsoft-standard-WSL2",
+        "wsl": true,
+        "cpu_model": {
+          "value": "13th Gen Intel(R) Core(TM) i5-13500HX",
+          "reason": null
+        },
+        "logical_cpus": 20,
+        "affinity": {
+          "value": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19
+          ],
+          "reason": null
+        },
+        "build": {
+          "CMAKE_BUILD_TYPE": "Release",
+          "CMAKE_CXX_COMPILER": "/usr/bin/clang++",
+          "CMAKE_GENERATOR": "Ninja"
+        },
+        "compiler": {
+          "value": "Ubuntu clang version 18.1.3 (1ubuntu1)\nTarget: x86_64-pc-linux-gnu\nThread model: posix\nInstalledDir: /usr/bin",
+          "reason": null
+        },
+        "cmake": {
+          "value": "cmake version 3.28.3\n\nCMake suite maintained and supported by Kitware (kitware.com/cmake).",
+          "reason": null
+        },
+        "cgroup_limits": {
+          "cpu.max": {
+            "value": null,
+            "reason": "[Errno 2] No such file or directory: '/sys/fs/cgroup/cpu.max'"
+          },
+          "memory.max": {
+            "value": null,
+            "reason": "[Errno 2] No such file or directory: '/sys/fs/cgroup/memory.max'"
+          },
+          "pids.max": {
+            "value": null,
+            "reason": "[Errno 2] No such file or directory: '/sys/fs/cgroup/pids.max'"
+          }
+        }
+      }
+    },
+    "repaired_udp_builder002": {
+      "note": "After F-001 client-ownership repair; all 8 UDP samples regenerated.",
+      "identity": {
+        "git_commit": {
+          "value": "281db01ea382044a6ec6b46c96dcca57677c5595",
+          "reason": null
+        },
+        "git_status": {
+          "value": "M ARCHITECTURE.md\n M CHANGELOG.md\n M CMakeLists.txt\n M README.md\n M ROADMAP.md\n M TECH-DEBT-TRACKER.md\n?? .cache/\n?? .vscode/\n?? docs/benchmarks/\n?? tests/benchmark_acceptance.py\n?? tests/benchmark_environment.py\n?? tests/benchmark_fixture.py\n?? tests/benchmark_runner.py\n?? tests/benchmark_stats.py\n?? tests/benchmark_tool_test.py\n?? tests/benchmark_traffic.py",
+          "reason": null
+        },
+        "binary_sha256": {
+          "value": "acecac75404857f484ace2170adfa6d04c451fa92b71165e3265c78eb7c33c7c",
+          "reason": null
+        },
+        "tool_sha256": {
+          "benchmark_acceptance.py": "7a66f800d6ab4392ffbeb3272249a499115e76e75471c22e35fc60e243add49f",
+          "benchmark_environment.py": "d3b52ed8c096b00d3bd65c156d87582d2f3978649945627d944a6dc4067fd79a",
+          "benchmark_fixture.py": "1a55928280e6ce3b6e09a446910c1a86e887af2b632847c212629596c7e34f54",
+          "benchmark_runner.py": "7d3b9a6a6a7be6c8427689b72dd9ac1cb10fa8203b94753610dbbd67f11f6f04",
+          "benchmark_stats.py": "de29d3591b7f8e65a448c05f56ca67cbaa892f0eb45185b75276a198b272cd2a",
+          "benchmark_tool_test.py": "6772f89f8e33b62cb96c1b1e597a7b88db4c7479b5cf8c0f4091d22e102a7920",
+          "benchmark_traffic.py": "72f51800624cdc28e271179da523800a994908a9567024cc1009d6b6465ed16e"
+        },
+        "kernel": "6.6.87.2-microsoft-standard-WSL2",
+        "wsl": true,
+        "cpu_model": {
+          "value": "13th Gen Intel(R) Core(TM) i5-13500HX",
+          "reason": null
+        },
+        "logical_cpus": 20,
+        "affinity": {
+          "value": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19
+          ],
+          "reason": null
+        },
+        "build": {
+          "CMAKE_BUILD_TYPE": "Release",
+          "CMAKE_CXX_COMPILER": "/usr/bin/clang++",
+          "CMAKE_GENERATOR": "Ninja"
+        },
+        "compiler": {
+          "value": "Ubuntu clang version 18.1.3 (1ubuntu1)\nTarget: x86_64-pc-linux-gnu\nThread model: posix\nInstalledDir: /usr/bin",
+          "reason": null
+        },
+        "cmake": {
+          "value": "cmake version 3.28.3\n\nCMake suite maintained and supported by Kitware (kitware.com/cmake).",
+          "reason": null
+        },
+        "cgroup_limits": {
+          "cpu.max": {
+            "value": null,
+            "reason": "[Errno 2] No such file or directory: '/sys/fs/cgroup/cpu.max'"
+          },
+          "memory.max": {
+            "value": null,
+            "reason": "[Errno 2] No such file or directory: '/sys/fs/cgroup/memory.max'"
+          },
+          "pids.max": {
+            "value": null,
+            "reason": "[Errno 2] No such file or directory: '/sys/fs/cgroup/pids.max'"
+          }
+        }
+      }
+    }
+  },
+  "runs": [
+    {
+      "path": ".stage-tmp/v0.4-s1/builder/matrix-final/tcp-clients16/00-direct",
+      "parameters": {
+        "program": "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v0.4-s1/builder/Production/bin/l4lb",
+        "protocol": "tcp",
+        "mode": "paired",
+        "output": "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v0.4-s1/builder/matrix-final/tcp-clients16",
+        "clients": 16,
+        "payload": 256,
+        "warmup": 1,
+        "duration": 5,
+        "rate": 1000,
+        "timeout": 1,
+        "repeats": 1,
+        "fault": "none"
+      },
+      "run_id": "c9631605-b669-45d4-a214-507ad775e0ba",
+      "utc_start": "2026-09-09T13:00:04.455309+00:00",
+      "utc_end": "2026-09-09T13:00:10.605281+00:00",
+      "protocol": "tcp",
+      "mode": "direct",
+      "repeat": 0,
+      "pair_order": [
+        "direct",
+        "proxy"
+      ],
+      "valid": true,
+      "counts": {
+        "attempted": 21956,
+        "sent": 21956,
+        "received": 21956,
+        "timeout": 0,
+        "duplicate": 0,
+        "late": 0,
+        "foreign_corrupt": 0,
+        "send_errors": 0,
+        "missed_slots": 0,
+        "warmup_excluded": 0,
+        "pending_peak": 0
+      },
+      "rates": {
+        "sent_per_second": 4391.2,
+        "unique_echoes_per_second": 4389.344617884938,
+        "goodput_bytes_per_second": 1123672.2221785442,
+        "goodput_bits_per_second": 8989377.777428353,
+        "delivery_ratio": 1.0,
+        "unconfirmed": 0,
+        "loss_ratio": 0.0
+      },
+      "timing": {
+        "t0_ns": 40883401335195,
+        "t1_ns": 40888401335195,
+        "drain_end_ns": 40888403448702,
+        "send_window_seconds": 5.0,
+        "goodput_elapsed_seconds": 5.002113507
+      },
+      "sampled_rtt": {
+        "count": 224,
+        "p50_ns": 3281119,
+        "p95_ns": 6246460,
+        "p99_ns": 9037912,
+        "max_ns": 9852859,
+        "stride": 100,
+        "coverage": 0.010202222627072327,
+        "p99_insufficient_samples": false
+      },
+      "resources": {
+        "product": {
+          "value": null,
+          "reason": "not applicable: direct mode"
+        },
+        "generator": {
+          "pid": 25832,
+          "start_ns": 40883397984286,
+          "end_ns": 40888405009427,
+          "wall_seconds": 5.007025141,
+          "cpu_seconds": 8.33,
+          "cpu_percent_one_core": 166.36625072620143,
+          "sampled_peak_rss_bytes": 21135360,
+          "sampled_peak_fd": 22,
+          "sampling_period_seconds": 0.05,
+          "sample_count": 56
+        },
+        "backend": {
+          "pid": 25842,
+          "start_ns": 40883398055495,
+          "end_ns": 40888405106708,
+          "wall_seconds": 5.007051213,
+          "cpu_seconds": 1.19,
+          "cpu_percent_one_core": 23.766483492526643,
+          "sampled_peak_rss_bytes": 14090240,
+          "sampled_peak_fd": 21,
+          "sampling_period_seconds": 0.05,
+          "sample_count": 56
+        }
+      },
+      "evidence_generation": "historical_tcp_builder001"
+    },
+    {
+      "path": ".stage-tmp/v0.4-s1/builder/matrix-final/tcp-clients16/00-proxy",
+      "parameters": {
+        "program": "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v0.4-s1/builder/Production/bin/l4lb",
+        "protocol": "tcp",
+        "mode": "paired",
+        "output": "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v0.4-s1/builder/matrix-final/tcp-clients16",
+        "clients": 16,
+        "payload": 256,
+        "warmup": 1,
+        "duration": 5,
+        "rate": 1000,
+        "timeout": 1,
+        "repeats": 1,
+        "fault": "none"
+      },
+      "run_id": "2619d0eb-a18e-4675-858a-5600b6d9404b",
+      "utc_start": "2026-09-09T13:00:10.605848+00:00",
+      "utc_end": "2026-09-09T13:00:16.747793+00:00",
+      "protocol": "tcp",
+      "mode": "proxy",
+      "repeat": 0,
+      "pair_order": [
+        "direct",
+        "proxy"
+      ],
+      "valid": true,
+      "counts": {
+        "attempted": 20534,
+        "sent": 20534,
+        "received": 20534,
+        "timeout": 0,
+        "duplicate": 0,
+        "late": 0,
+        "foreign_corrupt": 0,
+        "send_errors": 0,
+        "missed_slots": 0,
+        "warmup_excluded": 0,
+        "pending_peak": 0
+      },
+      "rates": {
+        "sent_per_second": 4106.8,
+        "unique_echoes_per_second": 4103.406367218251,
+        "goodput_bytes_per_second": 1050472.0300078723,
+        "goodput_bits_per_second": 8403776.240062978,
+        "delivery_ratio": 1.0,
+        "unconfirmed": 0,
+        "loss_ratio": 0.0
+      },
+      "timing": {
+        "t0_ns": 40889528975330,
+        "t1_ns": 40894528975330,
+        "drain_end_ns": 40894533110471,
+        "send_window_seconds": 5.0,
+        "goodput_elapsed_seconds": 5.004135141
+      },
+      "sampled_rtt": {
+        "count": 210,
+        "p50_ns": 3210204,
+        "p95_ns": 7003544,
+        "p99_ns": 8513926,
+        "max_ns": 9828698,
+        "stride": 100,
+        "coverage": 0.010226940683744034,
+        "p99_insufficient_samples": false
+      },
+      "resources": {
+        "product": {
+          "pid": 26017,
+          "start_ns": 40889525915003,
+          "end_ns": 40894536152604,
+          "wall_seconds": 5.010237601,
+          "cpu_seconds": 1.33,
+          "cpu_percent_one_core": 26.54564725103144,
+          "sampled_peak_rss_bytes": 5570560,
+          "sampled_peak_fd": 38,
+          "sampling_period_seconds": 0.05,
+          "sample_count": 42
+        },
+        "generator": {
+          "pid": 25832,
+          "start_ns": 40889525760821,
+          "end_ns": 40894535939402,
+          "wall_seconds": 5.010178581,
+          "cpu_seconds": 8.3,
+          "cpu_percent_one_core": 165.66275764053452,
+          "sampled_peak_rss_bytes": 21299200,
+          "sampled_peak_fd": 24,
+          "sampling_period_seconds": 0.05,
+          "sample_count": 42
+        },
+        "backend": {
+          "pid": 26016,
+          "start_ns": 40889525865000,
+          "end_ns": 40894536083668,
+          "wall_seconds": 5.010218668,
+          "cpu_seconds": 1.3499999999999999,
+          "cpu_percent_one_core": 26.94493173765804,
+          "sampled_peak_rss_bytes": 14090240,
+          "sampled_peak_fd": 21,
+          "sampling_period_seconds": 0.05,
+          "sample_count": 42
+        }
+      },
+      "evidence_generation": "historical_tcp_builder001"
+    },
+    {
+      "path": ".stage-tmp/v0.4-s1/builder/matrix-final/tcp-default/00-direct",
+      "parameters": {
+        "program": "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v0.4-s1/builder/Production/bin/l4lb",
+        "protocol": "tcp",
+        "mode": "paired",
+        "output": "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v0.4-s1/builder/matrix-final/tcp-default",
+        "clients": 1,
+        "payload": 256,
+        "warmup": 1,
+        "duration": 5,
+        "rate": 1000,
+        "timeout": 1,
+        "repeats": 3,
+        "fault": "none"
+      },
+      "run_id": "fd85a999-81ec-4984-8e7e-7fb5085668fb",
+      "utc_start": "2026-09-09T12:59:27.540213+00:00",
+      "utc_end": "2026-09-09T12:59:33.720628+00:00",
+      "protocol": "tcp",
+      "mode": "direct",
+      "repeat": 0,
+      "pair_order": [
+        "direct",
+        "proxy"
+      ],
+      "valid": true,
+      "counts": {
+        "attempted": 60507,
+        "sent": 60507,
+        "received": 60507,
+        "timeout": 0,
+        "duplicate": 0,
+        "late": 0,
+        "foreign_corrupt": 0,
+        "send_errors": 0,
+        "missed_slots": 0,
+        "warmup_excluded": 0,
+        "pending_peak": 0
+      },
+      "rates": {
+        "sent_per_second": 12101.4,
+        "unique_echoes_per_second": 12100.815278925069,
+        "goodput_bytes_per_second": 3097808.7114048176,
+        "goodput_bits_per_second": 24782469.69123854,
+        "delivery_ratio": 1.0,
+        "unconfirmed": 0,
+        "loss_ratio": 0.0
+      },
+      "timing": {
+        "t0_ns": 40846518294831,
+        "t1_ns": 40851518294831,
+        "drain_end_ns": 40851518536435,
+        "send_window_seconds": 5.0,
+        "goodput_elapsed_seconds": 5.000241604
+      },
+      "sampled_rtt": {
+        "count": 606,
+        "p50_ns": 61133,
+        "p95_ns": 167845,
+        "p99_ns": 252727,
+        "max_ns": 439172,
+        "stride": 100,
+        "coverage": 0.010015370122465169,
+        "p99_insufficient_samples": false
+      },
+      "resources": {
+        "product": {
+          "value": null,
+          "reason": "not applicable: direct mode"
+        },
+        "generator": {
+          "pid": 24668,
+          "start_ns": 40846517820184,
+          "end_ns": 40851518918244,
+          "wall_seconds": 5.00109806,
+          "cpu_seconds": 2.4299999999999997,
+          "cpu_percent_one_core": 48.58932920023567,
+          "sampled_peak_rss_bytes": 21135360,
+          "sampled_peak_fd": 7,
+          "sampling_period_seconds": 0.05,
+          "sample_count": 100
+        },
+        "backend": {
+          "pid": 24675,
+          "start_ns": 40846517892404,
+          "end_ns": 40851518985410,
+          "wall_seconds": 5.001093006,
+          "cpu_seconds": 2.72,
+          "cpu_percent_one_core": 54.38811069373662,
+          "sampled_peak_rss_bytes": 14090240,
+          "sampled_peak_fd": 6,
+          "sampling_period_seconds": 0.05,
+          "sample_count": 100
+        }
+      },
+      "evidence_generation": "historical_tcp_builder001"
+    },
+    {
+      "path": ".stage-tmp/v0.4-s1/builder/matrix-final/tcp-default/00-proxy",
+      "parameters": {
+        "program": "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v0.4-s1/builder/Production/bin/l4lb",
+        "protocol": "tcp",
+        "mode": "paired",
+        "output": "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v0.4-s1/builder/matrix-final/tcp-default",
+        "clients": 1,
+        "payload": 256,
+        "warmup": 1,
+        "duration": 5,
+        "rate": 1000,
+        "timeout": 1,
+        "repeats": 3,
+        "fault": "none"
+      },
+      "run_id": "9fa8ed24-7113-48c4-8726-90963cad821e",
+      "utc_start": "2026-09-09T12:59:33.721273+00:00",
+      "utc_end": "2026-09-09T12:59:39.849118+00:00",
+      "protocol": "tcp",
+      "mode": "proxy",
+      "repeat": 0,
+      "pair_order": [
+        "direct",
+        "proxy"
+      ],
+      "valid": true,
+      "counts": {
+        "attempted": 30202,
+        "sent": 30202,
+        "received": 30202,
+        "timeout": 0,
+        "duplicate": 0,
+        "late": 0,
+        "foreign_corrupt": 0,
+        "send_errors": 0,
+        "missed_slots": 0,
+        "warmup_excluded": 0,
+        "pending_peak": 0
+      },
+      "rates": {
+        "sent_per_second": 6040.4,
+        "unique_echoes_per_second": 6040.208911950862,
+        "goodput_bytes_per_second": 1546293.4814594206,
+        "goodput_bits_per_second": 12370347.851675365,
+        "delivery_ratio": 1.0,
+        "unconfirmed": 0,
+        "loss_ratio": 0.0
+      },
+      "timing": {
+        "t0_ns": 40852637902354,
+        "t1_ns": 40857637902354,
+        "drain_end_ns": 40857638060534,
+        "send_window_seconds": 5.0,
+        "goodput_elapsed_seconds": 5.00015818
+      },
+      "sampled_rtt": {
+        "count": 303,
+        "p50_ns": 125201,
+        "p95_ns": 344933,
+        "p99_ns": 532148,
+        "max_ns": 753576,
+        "stride": 100,
+        "coverage": 0.010032448182239587,
+        "p99_insufficient_samples": false
+      },
+      "resources": {
+        "product": {
+          "pid": 24937,
+          "start_ns": 40852637228126,
+          "end_ns": 40857638505886,
+          "wall_seconds": 5.00127776,
+          "cpu_seconds": 1.85,
+          "cpu_percent_one_core": 36.99054699173517,
+          "sampled_peak_rss_bytes": 3604480,
+          "sampled_peak_fd": 8,
+          "sampling_period_seconds": 0.05,
+          "sample_count": 100
+        },
+        "generator": {
+          "pid": 24668,
+          "start_ns": 40852636832767,
+          "end_ns": 40857638422588,
+          "wall_seconds": 5.001589821,
+          "cpu_seconds": 1.4700000000000006,
+          "cpu_percent_one_core": 29.39065482395144,
+          "sampled_peak_rss_bytes": 21463040,
+          "sampled_peak_fd": 9,
+          "sampling_period_seconds": 0.05,
+          "sample_count": 100
+        },
+        "backend": {
+          "pid": 24936,
+          "start_ns": 40852637180760,
+          "end_ns": 40857638475382,
+          "wall_seconds": 5.001294622,
+          "cpu_seconds": 1.5899999999999999,
+          "cpu_percent_one_core": 31.791768335458805,
+          "sampled_peak_rss_bytes": 14254080,
+          "sampled_peak_fd": 6,
+          "sampling_period_seconds": 0.05,
+          "sample_count": 100
+        }
+      },
+      "evidence_generation": "historical_tcp_builder001"
+    },
+    {
+      "path": ".stage-tmp/v0.4-s1/builder/matrix-final/tcp-default/01-proxy",
+      "parameters": {
+        "program": "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v0.4-s1/builder/Production/bin/l4lb",
+        "protocol": "tcp",
+        "mode": "paired",
+        "output": "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v0.4-s1/builder/matrix-final/tcp-default",
+        "clients": 1,
+        "payload": 256,
+        "warmup": 1,
+        "duration": 5,
+        "rate": 1000,
+        "timeout": 1,
+        "repeats": 3,
+        "fault": "none"
+      },
+      "run_id": "16fd39f1-b90c-4d0b-bf87-c619f37b69d4",
+      "utc_start": "2026-09-09T12:59:39.850039+00:00",
+      "utc_end": "2026-09-09T12:59:46.014620+00:00",
+      "protocol": "tcp",
+      "mode": "proxy",
+      "repeat": 1,
+      "pair_order": [
+        "proxy",
+        "direct"
+      ],
+      "valid": true,
+      "counts": {
+        "attempted": 33019,
+        "sent": 33019,
+        "received": 33019,
+        "timeout": 0,
+        "duplicate": 0,
+        "late": 0,
+        "foreign_corrupt": 0,
+        "send_errors": 0,
+        "missed_slots": 0,
+        "warmup_excluded": 0,
+        "pending_peak": 0
+      },
+      "rates": {
+        "sent_per_second": 6603.8,
+        "unique_echoes_per_second": 6603.590336006832,
+        "goodput_bytes_per_second": 1690519.126017749,
+        "goodput_bits_per_second": 13524153.008141993,
+        "delivery_ratio": 1.0,
+        "unconfirmed": 0,
+        "loss_ratio": 0.0
+      },
+      "timing": {
+        "t0_ns": 40858803214366,
+        "t1_ns": 40863803214366,
+        "drain_end_ns": 40863803373116,
+        "send_window_seconds": 5.0,
+        "goodput_elapsed_seconds": 5.00015875
+      },
+      "sampled_rtt": {
+        "count": 331,
+        "p50_ns": 127993,
+        "p95_ns": 307471,
+        "p99_ns": 357396,
+        "max_ns": 591982,
+        "stride": 100,
+        "coverage": 0.010024531330446106,
+        "p99_insufficient_samples": false
+      },
+      "resources": {
+        "product": {
+          "pid": 25299,
+          "start_ns": 40858802796425,
+          "end_ns": 40863803785111,
+          "wall_seconds": 5.000988686,
+          "cpu_seconds": 1.7699999999999998,
+          "cpu_percent_one_core": 35.39300148698636,
+          "sampled_peak_rss_bytes": 3604480,
+          "sampled_peak_fd": 8,
+          "sampling_period_seconds": 0.05,
+          "sample_count": 100
+        },
+        "generator": {
+          "pid": 24668,
+          "start_ns": 40858802716118,
+          "end_ns": 40863803692205,
+          "wall_seconds": 5.000976087,
+          "cpu_seconds": 1.4699999999999998,
+          "cpu_percent_one_core": 29.39426172865041,
+          "sampled_peak_rss_bytes": 21626880,
+          "sampled_peak_fd": 9,
+          "sampling_period_seconds": 0.05,
+          "sample_count": 100
+        },
+        "backend": {
+          "pid": 25298,
+          "start_ns": 40858802767805,
+          "end_ns": 40863803751758,
+          "wall_seconds": 5.000983953,
+          "cpu_seconds": 1.7000000000000002,
+          "cpu_percent_one_core": 33.99331043604331,
+          "sampled_peak_rss_bytes": 14417920,
+          "sampled_peak_fd": 6,
+          "sampling_period_seconds": 0.05,
+          "sample_count": 100
+        }
+      },
+      "evidence_generation": "historical_tcp_builder001"
+    },
+    {
+      "path": ".stage-tmp/v0.4-s1/builder/matrix-final/tcp-default/01-direct",
+      "parameters": {
+        "program": "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v0.4-s1/builder/Production/bin/l4lb",
+        "protocol": "tcp",
+        "mode": "paired",
+        "output": "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v0.4-s1/builder/matrix-final/tcp-default",
+        "clients": 1,
+        "payload": 256,
+        "warmup": 1,
+        "duration": 5,
+        "rate": 1000,
+        "timeout": 1,
+        "repeats": 3,
+        "fault": "none"
+      },
+      "run_id": "ba6b3a46-e7ea-4a77-bb7c-cca6546d50a8",
+      "utc_start": "2026-09-09T12:59:46.015218+00:00",
+      "utc_end": "2026-09-09T12:59:52.128533+00:00",
+      "protocol": "tcp",
+      "mode": "direct",
+      "repeat": 1,
+      "pair_order": [
+        "proxy",
+        "direct"
+      ],
+      "valid": true,
+      "counts": {
+        "attempted": 59866,
+        "sent": 59866,
+        "received": 59866,
+        "timeout": 0,
+        "duplicate": 0,
+        "late": 0,
+        "foreign_corrupt": 0,
+        "send_errors": 0,
+        "missed_slots": 0,
+        "warmup_excluded": 0,
+        "pending_peak": 0
+      },
+      "rates": {
+        "sent_per_second": 11973.2,
+        "unique_echoes_per_second": 11972.847263157642,
+        "goodput_bytes_per_second": 3065048.8993683564,
+        "goodput_bits_per_second": 24520391.19494685,
+        "delivery_ratio": 1.0,
+        "unconfirmed": 0,
+        "loss_ratio": 0.0
+      },
+      "timing": {
+        "t0_ns": 40864926927021,
+        "t1_ns": 40869926927021,
+        "drain_end_ns": 40869927074328,
+        "send_window_seconds": 5.0,
+        "goodput_elapsed_seconds": 5.000147307
+      },
+      "sampled_rtt": {
+        "count": 599,
+        "p50_ns": 62587,
+        "p95_ns": 169543,
+        "p99_ns": 247051,
+        "max_ns": 313618,
+        "stride": 100,
+        "coverage": 0.01000567935054956,
+        "p99_insufficient_samples": false
+      },
+      "resources": {
+        "product": {
+          "value": null,
+          "reason": "not applicable: direct mode"
+        },
+        "generator": {
+          "pid": 24668,
+          "start_ns": 40864926466892,
+          "end_ns": 40869927410198,
+          "wall_seconds": 5.000943306,
+          "cpu_seconds": 2.3900000000000006,
+          "cpu_percent_one_core": 47.79098369566681,
+          "sampled_peak_rss_bytes": 21790720,
+          "sampled_peak_fd": 7,
+          "sampling_period_seconds": 0.05,
+          "sample_count": 100
+        },
+        "backend": {
+          "pid": 25470,
+          "start_ns": 40864926521462,
+          "end_ns": 40869927458837,
+          "wall_seconds": 5.000937375,
+          "cpu_seconds": 2.8,
+          "cpu_percent_one_core": 55.98950336785611,
+          "sampled_peak_rss_bytes": 14417920,
+          "sampled_peak_fd": 6,
+          "sampling_period_seconds": 0.05,
+          "sample_count": 100
+        }
+      },
+      "evidence_generation": "historical_tcp_builder001"
+    },
+    {
+      "path": ".stage-tmp/v0.4-s1/builder/matrix-final/tcp-default/02-direct",
+      "parameters": {
+        "program": "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v0.4-s1/builder/Production/bin/l4lb",
+        "protocol": "tcp",
+        "mode": "paired",
+        "output": "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v0.4-s1/builder/matrix-final/tcp-default",
+        "clients": 1,
+        "payload": 256,
+        "warmup": 1,
+        "duration": 5,
+        "rate": 1000,
+        "timeout": 1,
+        "repeats": 3,
+        "fault": "none"
+      },
+      "run_id": "3fdc2f72-71d7-4692-b11e-1aa80730f77f",
+      "utc_start": "2026-09-09T12:59:52.129213+00:00",
+      "utc_end": "2026-09-09T12:59:58.233815+00:00",
+      "protocol": "tcp",
+      "mode": "direct",
+      "repeat": 2,
+      "pair_order": [
+        "direct",
+        "proxy"
+      ],
+      "valid": true,
+      "counts": {
+        "attempted": 60570,
+        "sent": 60570,
+        "received": 60570,
+        "timeout": 0,
+        "duplicate": 0,
+        "late": 0,
+        "foreign_corrupt": 0,
+        "send_errors": 0,
+        "missed_slots": 0,
+        "warmup_excluded": 0,
+        "pending_peak": 0
+      },
+      "rates": {
+        "sent_per_second": 12114.0,
+        "unique_echoes_per_second": 12113.642196927702,
+        "goodput_bytes_per_second": 3101092.4024134916,
+        "goodput_bits_per_second": 24808739.219307933,
+        "delivery_ratio": 1.0,
+        "unconfirmed": 0,
+        "loss_ratio": 0.0
+      },
+      "timing": {
+        "t0_ns": 40871031395147,
+        "t1_ns": 40876031395147,
+        "drain_end_ns": 40876031542833,
+        "send_window_seconds": 5.0,
+        "goodput_elapsed_seconds": 5.000147686
+      },
+      "sampled_rtt": {
+        "count": 606,
+        "p50_ns": 62805,
+        "p95_ns": 142166,
+        "p99_ns": 227024,
+        "max_ns": 356291,
+        "stride": 100,
+        "coverage": 0.010004952947003466,
+        "p99_insufficient_samples": false
+      },
+      "resources": {
+        "product": {
+          "value": null,
+          "reason": "not applicable: direct mode"
+        },
+        "generator": {
+          "pid": 24668,
+          "start_ns": 40871030861557,
+          "end_ns": 40876031960510,
+          "wall_seconds": 5.001098953,
+          "cpu_seconds": 2.459999999999999,
+          "cpu_percent_one_core": 49.18918867870678,
+          "sampled_peak_rss_bytes": 21790720,
+          "sampled_peak_fd": 7,
+          "sampling_period_seconds": 0.05,
+          "sample_count": 100
+        },
+        "backend": {
+          "pid": 25672,
+          "start_ns": 40871030912413,
+          "end_ns": 40876032042609,
+          "wall_seconds": 5.001130196,
+          "cpu_seconds": 2.78,
+          "cpu_percent_one_core": 55.587435060648836,
+          "sampled_peak_rss_bytes": 14417920,
+          "sampled_peak_fd": 6,
+          "sampling_period_seconds": 0.05,
+          "sample_count": 100
+        }
+      },
+      "evidence_generation": "historical_tcp_builder001"
+    },
+    {
+      "path": ".stage-tmp/v0.4-s1/builder/matrix-final/tcp-default/02-proxy",
+      "parameters": {
+        "program": "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v0.4-s1/builder/Production/bin/l4lb",
+        "protocol": "tcp",
+        "mode": "paired",
+        "output": "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v0.4-s1/builder/matrix-final/tcp-default",
+        "clients": 1,
+        "payload": 256,
+        "warmup": 1,
+        "duration": 5,
+        "rate": 1000,
+        "timeout": 1,
+        "repeats": 3,
+        "fault": "none"
+      },
+      "run_id": "5dabb669-ffff-49d7-8a0f-6da5ee51bb3c",
+      "utc_start": "2026-09-09T12:59:58.234524+00:00",
+      "utc_end": "2026-09-09T13:00:04.386694+00:00",
+      "protocol": "tcp",
+      "mode": "proxy",
+      "repeat": 2,
+      "pair_order": [
+        "direct",
+        "proxy"
+      ],
+      "valid": true,
+      "counts": {
+        "attempted": 29916,
+        "sent": 29916,
+        "received": 29916,
+        "timeout": 0,
+        "duplicate": 0,
+        "late": 0,
+        "foreign_corrupt": 0,
+        "send_errors": 0,
+        "missed_slots": 0,
+        "warmup_excluded": 0,
+        "pending_peak": 0
+      },
+      "rates": {
+        "sent_per_second": 5983.2,
+        "unique_echoes_per_second": 5982.905776249479,
+        "goodput_bytes_per_second": 1531623.8787198665,
+        "goodput_bits_per_second": 12252991.029758932,
+        "delivery_ratio": 1.0,
+        "unconfirmed": 0,
+        "loss_ratio": 0.0
+      },
+      "timing": {
+        "t0_ns": 40877175101616,
+        "t1_ns": 40882175101616,
+        "drain_end_ns": 40882175347503,
+        "send_window_seconds": 5.0,
+        "goodput_elapsed_seconds": 5.000245887
+      },
+      "sampled_rtt": {
+        "count": 300,
+        "p50_ns": 139585,
+        "p95_ns": 321222,
+        "p99_ns": 391247,
+        "max_ns": 769700,
+        "stride": 100,
+        "coverage": 0.010028078620136383,
+        "p99_insufficient_samples": false
+      },
+      "resources": {
+        "product": {
+          "pid": 25736,
+          "start_ns": 40877174405588,
+          "end_ns": 40882175868702,
+          "wall_seconds": 5.001463114,
+          "cpu_seconds": 1.75,
+          "cpu_percent_one_core": 34.989761198106876,
+          "sampled_peak_rss_bytes": 3604480,
+          "sampled_peak_fd": 8,
+          "sampling_period_seconds": 0.05,
+          "sample_count": 100
+        },
+        "generator": {
+          "pid": 24668,
+          "start_ns": 40877174311669,
+          "end_ns": 40882175777093,
+          "wall_seconds": 5.001465424,
+          "cpu_seconds": 1.5399999999999991,
+          "cpu_percent_one_core": 30.79097563306476,
+          "sampled_peak_rss_bytes": 21954560,
+          "sampled_peak_fd": 9,
+          "sampling_period_seconds": 0.05,
+          "sample_count": 100
+        },
+        "backend": {
+          "pid": 25735,
+          "start_ns": 40877174366553,
+          "end_ns": 40882175836251,
+          "wall_seconds": 5.001469698,
+          "cpu_seconds": 1.6699999999999997,
+          "cpu_percent_one_core": 33.390185302288316,
+          "sampled_peak_rss_bytes": 14417920,
+          "sampled_peak_fd": 6,
+          "sampling_period_seconds": 0.05,
+          "sample_count": 100
+        }
+      },
+      "evidence_generation": "historical_tcp_builder001"
+    },
+    {
+      "evidence_generation": "repaired_udp_builder002",
+      "path": ".stage-tmp/v0.4-s1/builder/rework/udp-default/00-direct",
+      "parameters": {
+        "program": "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v0.4-s1/builder/Production/bin/l4lb",
+        "protocol": "udp",
+        "mode": "paired",
+        "output": "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v0.4-s1/builder/rework/udp-default",
+        "clients": 1,
+        "payload": 256,
+        "warmup": 1,
+        "duration": 5,
+        "rate": 1000,
+        "timeout": 1,
+        "repeats": 3,
+        "fault": "none"
+      },
+      "run_id": "34c4b46e-59a8-4a6e-89c8-22d0856b402a",
+      "utc_start": "2026-09-09T13:24:51.409062+00:00",
+      "utc_end": "2026-09-09T13:24:57.493289+00:00",
+      "protocol": "udp",
+      "mode": "direct",
+      "repeat": 0,
+      "pair_order": [
+        "direct",
+        "proxy"
+      ],
+      "valid": true,
+      "counts": {
+        "attempted": 4999,
+        "sent": 4999,
+        "received": 4999,
+        "timeout": 0,
+        "duplicate": 0,
+        "late": 0,
+        "foreign_corrupt": 0,
+        "send_errors": 0,
+        "missed_slots": 1,
+        "warmup_excluded": 0,
+        "pending_peak": 2,
+        "target": 5000
+      },
+      "rates": {
+        "sent_per_second": 999.8,
+        "unique_echoes_per_second": 999.7856750708477,
+        "goodput_bytes_per_second": 255945.132818137,
+        "goodput_bits_per_second": 2047561.062545096,
+        "delivery_ratio": 1.0,
+        "unconfirmed": 0,
+        "loss_ratio": 0.0
+      },
+      "timing": {
+        "t0_ns": 42370283105888,
+        "t1_ns": 42375283105888,
+        "drain_end_ns": 42375283177528,
+        "send_window_seconds": 5.0,
+        "goodput_elapsed_seconds": 5.00007164
+      },
+      "sampled_rtt": {
+        "count": 50,
+        "p50_ns": 185861,
+        "p95_ns": 368638,
+        "p99_ns": 386732,
+        "max_ns": 386732,
+        "stride": 100,
+        "coverage": 0.010002000400080016,
+        "p99_insufficient_samples": true
+      },
+      "resources": {
+        "product": {
+          "value": null,
+          "reason": "not applicable: direct mode"
+        },
+        "generator": {
+          "pid": 31995,
+          "start_ns": 42370282500162,
+          "end_ns": 42375283528656,
+          "wall_seconds": 5.001028494,
+          "cpu_seconds": 0.8700000000000001,
+          "cpu_percent_one_core": 17.39642157695733,
+          "sampled_peak_rss_bytes": 20971520,
+          "sampled_peak_fd": 7,
+          "sampling_period_seconds": 0.05,
+          "sample_count": 100
+        },
+        "backend": {
+          "pid": 32002,
+          "start_ns": 42370282643550,
+          "end_ns": 42375283631476,
+          "wall_seconds": 5.000987926,
+          "cpu_seconds": 0.4,
+          "cpu_percent_one_core": 7.998419630657593,
+          "sampled_peak_rss_bytes": 13926400,
+          "sampled_peak_fd": 5,
+          "sampling_period_seconds": 0.05,
+          "sample_count": 100
+        }
+      }
+    },
+    {
+      "evidence_generation": "repaired_udp_builder002",
+      "path": ".stage-tmp/v0.4-s1/builder/rework/udp-default/00-proxy",
+      "parameters": {
+        "program": "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v0.4-s1/builder/Production/bin/l4lb",
+        "protocol": "udp",
+        "mode": "paired",
+        "output": "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v0.4-s1/builder/rework/udp-default",
+        "clients": 1,
+        "payload": 256,
+        "warmup": 1,
+        "duration": 5,
+        "rate": 1000,
+        "timeout": 1,
+        "repeats": 3,
+        "fault": "none"
+      },
+      "run_id": "58fa23c9-e4fb-499c-8cd3-780f2ebb6e3c",
+      "utc_start": "2026-09-09T13:24:57.493856+00:00",
+      "utc_end": "2026-09-09T13:25:03.680743+00:00",
+      "protocol": "udp",
+      "mode": "proxy",
+      "repeat": 0,
+      "pair_order": [
+        "direct",
+        "proxy"
+      ],
+      "valid": true,
+      "counts": {
+        "attempted": 4997,
+        "sent": 4997,
+        "received": 4997,
+        "timeout": 0,
+        "duplicate": 0,
+        "late": 0,
+        "foreign_corrupt": 0,
+        "send_errors": 0,
+        "missed_slots": 3,
+        "warmup_excluded": 0,
+        "pending_peak": 2,
+        "target": 5000
+      },
+      "rates": {
+        "sent_per_second": 999.4,
+        "unique_echoes_per_second": 999.3853362188387,
+        "goodput_bytes_per_second": 255842.6460720227,
+        "goodput_bits_per_second": 2046741.1685761816,
+        "delivery_ratio": 1.0,
+        "unconfirmed": 0,
+        "loss_ratio": 0.0
+      },
+      "timing": {
+        "t0_ns": 42376450831303,
+        "t1_ns": 42381450831303,
+        "drain_end_ns": 42381450904667,
+        "send_window_seconds": 5.0,
+        "goodput_elapsed_seconds": 5.000073364
+      },
+      "sampled_rtt": {
+        "count": 50,
+        "p50_ns": 254807,
+        "p95_ns": 453240,
+        "p99_ns": 680435,
+        "max_ns": 680435,
+        "stride": 100,
+        "coverage": 0.010006003602161296,
+        "p99_insufficient_samples": true
+      },
+      "resources": {
+        "product": {
+          "pid": 32096,
+          "start_ns": 42376450630916,
+          "end_ns": 42381451205797,
+          "wall_seconds": 5.000574881,
+          "cpu_seconds": 0.5,
+          "cpu_percent_one_core": 9.998850370180067,
+          "sampled_peak_rss_bytes": 3440640,
+          "sampled_peak_fd": 7,
+          "sampling_period_seconds": 0.05,
+          "sample_count": 100
+        },
+        "generator": {
+          "pid": 31995,
+          "start_ns": 42376450540012,
+          "end_ns": 42381451133451,
+          "wall_seconds": 5.000593439,
+          "cpu_seconds": 0.9200000000000002,
+          "cpu_percent_one_core": 18.39781640364625,
+          "sampled_peak_rss_bytes": 21135360,
+          "sampled_peak_fd": 9,
+          "sampling_period_seconds": 0.05,
+          "sample_count": 100
+        },
+        "backend": {
+          "pid": 32095,
+          "start_ns": 42376450594888,
+          "end_ns": 42381451176974,
+          "wall_seconds": 5.000582086,
+          "cpu_seconds": 0.4,
+          "cpu_percent_one_core": 7.999068770811095,
+          "sampled_peak_rss_bytes": 14254080,
+          "sampled_peak_fd": 5,
+          "sampling_period_seconds": 0.05,
+          "sample_count": 100
+        }
+      }
+    },
+    {
+      "evidence_generation": "repaired_udp_builder002",
+      "path": ".stage-tmp/v0.4-s1/builder/rework/udp-default/01-proxy",
+      "parameters": {
+        "program": "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v0.4-s1/builder/Production/bin/l4lb",
+        "protocol": "udp",
+        "mode": "paired",
+        "output": "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v0.4-s1/builder/rework/udp-default",
+        "clients": 1,
+        "payload": 256,
+        "warmup": 1,
+        "duration": 5,
+        "rate": 1000,
+        "timeout": 1,
+        "repeats": 3,
+        "fault": "none"
+      },
+      "run_id": "01f23010-e41e-4def-b323-373022cdeee9",
+      "utc_start": "2026-09-09T13:25:03.681967+00:00",
+      "utc_end": "2026-09-09T13:25:09.850865+00:00",
+      "protocol": "udp",
+      "mode": "proxy",
+      "repeat": 1,
+      "pair_order": [
+        "proxy",
+        "direct"
+      ],
+      "valid": true,
+      "counts": {
+        "attempted": 5000,
+        "sent": 5000,
+        "received": 5000,
+        "timeout": 0,
+        "duplicate": 0,
+        "late": 0,
+        "foreign_corrupt": 0,
+        "send_errors": 0,
+        "missed_slots": 0,
+        "warmup_excluded": 0,
+        "pending_peak": 2,
+        "target": 5000
+      },
+      "rates": {
+        "sent_per_second": 1000.0,
+        "unique_echoes_per_second": 999.9751982151439,
+        "goodput_bytes_per_second": 255993.65074307684,
+        "goodput_bits_per_second": 2047949.2059446147,
+        "delivery_ratio": 1.0,
+        "unconfirmed": 0,
+        "loss_ratio": 0.0
+      },
+      "timing": {
+        "t0_ns": 42382640604063,
+        "t1_ns": 42387640604063,
+        "drain_end_ns": 42387640728075,
+        "send_window_seconds": 5.0,
+        "goodput_elapsed_seconds": 5.000124012
+      },
+      "sampled_rtt": {
+        "count": 50,
+        "p50_ns": 260771,
+        "p95_ns": 528451,
+        "p99_ns": 577363,
+        "max_ns": 577363,
+        "stride": 100,
+        "coverage": 0.01,
+        "p99_insufficient_samples": true
+      },
+      "resources": {
+        "product": {
+          "pid": 32158,
+          "start_ns": 42382640186452,
+          "end_ns": 42387641140884,
+          "wall_seconds": 5.000954432,
+          "cpu_seconds": 0.52,
+          "cpu_percent_one_core": 10.3980151603189,
+          "sampled_peak_rss_bytes": 3440640,
+          "sampled_peak_fd": 7,
+          "sampling_period_seconds": 0.05,
+          "sample_count": 100
+        },
+        "generator": {
+          "pid": 31995,
+          "start_ns": 42382639888703,
+          "end_ns": 42387641058628,
+          "wall_seconds": 5.001169925,
+          "cpu_seconds": 0.8899999999999997,
+          "cpu_percent_one_core": 17.79583604130387,
+          "sampled_peak_rss_bytes": 21299200,
+          "sampled_peak_fd": 9,
+          "sampling_period_seconds": 0.05,
+          "sample_count": 100
+        },
+        "backend": {
+          "pid": 32157,
+          "start_ns": 42382640083338,
+          "end_ns": 42387641109958,
+          "wall_seconds": 5.00102662,
+          "cpu_seconds": 0.42000000000000004,
+          "cpu_percent_one_core": 8.398275632454043,
+          "sampled_peak_rss_bytes": 14090240,
+          "sampled_peak_fd": 5,
+          "sampling_period_seconds": 0.05,
+          "sample_count": 100
+        }
+      }
+    },
+    {
+      "evidence_generation": "repaired_udp_builder002",
+      "path": ".stage-tmp/v0.4-s1/builder/rework/udp-default/01-direct",
+      "parameters": {
+        "program": "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v0.4-s1/builder/Production/bin/l4lb",
+        "protocol": "udp",
+        "mode": "paired",
+        "output": "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v0.4-s1/builder/rework/udp-default",
+        "clients": 1,
+        "payload": 256,
+        "warmup": 1,
+        "duration": 5,
+        "rate": 1000,
+        "timeout": 1,
+        "repeats": 3,
+        "fault": "none"
+      },
+      "run_id": "e008275d-4ee6-4602-b32f-d005fb4312d9",
+      "utc_start": "2026-09-09T13:25:09.851385+00:00",
+      "utc_end": "2026-09-09T13:25:15.961153+00:00",
+      "protocol": "udp",
+      "mode": "direct",
+      "repeat": 1,
+      "pair_order": [
+        "proxy",
+        "direct"
+      ],
+      "valid": true,
+      "counts": {
+        "attempted": 4998,
+        "sent": 4998,
+        "received": 4998,
+        "timeout": 0,
+        "duplicate": 0,
+        "late": 0,
+        "foreign_corrupt": 0,
+        "send_errors": 0,
+        "missed_slots": 2,
+        "warmup_excluded": 0,
+        "pending_peak": 2,
+        "target": 5000
+      },
+      "rates": {
+        "sent_per_second": 999.6,
+        "unique_echoes_per_second": 999.5748259079245,
+        "goodput_bytes_per_second": 255891.15543242867,
+        "goodput_bits_per_second": 2047129.2434594294,
+        "delivery_ratio": 1.0,
+        "unconfirmed": 0,
+        "loss_ratio": 0.0
+      },
+      "timing": {
+        "t0_ns": 42388751148285,
+        "t1_ns": 42393751148285,
+        "drain_end_ns": 42393751274209,
+        "send_window_seconds": 5.0,
+        "goodput_elapsed_seconds": 5.000125924
+      },
+      "sampled_rtt": {
+        "count": 50,
+        "p50_ns": 155786,
+        "p95_ns": 440563,
+        "p99_ns": 627762,
+        "max_ns": 627762,
+        "stride": 100,
+        "coverage": 0.010004001600640256,
+        "p99_insufficient_samples": true
+      },
+      "resources": {
+        "product": {
+          "value": null,
+          "reason": "not applicable: direct mode"
+        },
+        "generator": {
+          "pid": 31995,
+          "start_ns": 42388750593309,
+          "end_ns": 42393751768241,
+          "wall_seconds": 5.001174932,
+          "cpu_seconds": 0.8100000000000005,
+          "cpu_percent_one_core": 16.19619411465131,
+          "sampled_peak_rss_bytes": 21299200,
+          "sampled_peak_fd": 7,
+          "sampling_period_seconds": 0.05,
+          "sample_count": 100
+        },
+        "backend": {
+          "pid": 32252,
+          "start_ns": 42388750724747,
+          "end_ns": 42393751817115,
+          "wall_seconds": 5.001092368,
+          "cpu_seconds": 0.39,
+          "cpu_percent_one_core": 7.798296278138248,
+          "sampled_peak_rss_bytes": 14254080,
+          "sampled_peak_fd": 5,
+          "sampling_period_seconds": 0.05,
+          "sample_count": 100
+        }
+      }
+    },
+    {
+      "evidence_generation": "repaired_udp_builder002",
+      "path": ".stage-tmp/v0.4-s1/builder/rework/udp-default/02-direct",
+      "parameters": {
+        "program": "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v0.4-s1/builder/Production/bin/l4lb",
+        "protocol": "udp",
+        "mode": "paired",
+        "output": "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v0.4-s1/builder/rework/udp-default",
+        "clients": 1,
+        "payload": 256,
+        "warmup": 1,
+        "duration": 5,
+        "rate": 1000,
+        "timeout": 1,
+        "repeats": 3,
+        "fault": "none"
+      },
+      "run_id": "ad12f3b3-6e6c-4b24-b123-fe0524d47bff",
+      "utc_start": "2026-09-09T13:25:15.961852+00:00",
+      "utc_end": "2026-09-09T13:25:22.060775+00:00",
+      "protocol": "udp",
+      "mode": "direct",
+      "repeat": 2,
+      "pair_order": [
+        "direct",
+        "proxy"
+      ],
+      "valid": true,
+      "counts": {
+        "attempted": 5000,
+        "sent": 5000,
+        "received": 5000,
+        "timeout": 0,
+        "duplicate": 0,
+        "late": 0,
+        "foreign_corrupt": 0,
+        "send_errors": 0,
+        "missed_slots": 0,
+        "warmup_excluded": 0,
+        "pending_peak": 1,
+        "target": 5000
+      },
+      "rates": {
+        "sent_per_second": 1000.0,
+        "unique_echoes_per_second": 999.9828104954842,
+        "goodput_bytes_per_second": 255995.59948684394,
+        "goodput_bits_per_second": 2047964.7958947516,
+        "delivery_ratio": 1.0,
+        "unconfirmed": 0,
+        "loss_ratio": 0.0
+      },
+      "timing": {
+        "t0_ns": 42394852793407,
+        "t1_ns": 42399852793407,
+        "drain_end_ns": 42399852879356,
+        "send_window_seconds": 5.0,
+        "goodput_elapsed_seconds": 5.000085949
+      },
+      "sampled_rtt": {
+        "count": 50,
+        "p50_ns": 157616,
+        "p95_ns": 314566,
+        "p99_ns": 401944,
+        "max_ns": 401944,
+        "stride": 100,
+        "coverage": 0.01,
+        "p99_insufficient_samples": true
+      },
+      "resources": {
+        "product": {
+          "value": null,
+          "reason": "not applicable: direct mode"
+        },
+        "generator": {
+          "pid": 31995,
+          "start_ns": 42394852525461,
+          "end_ns": 42399853117872,
+          "wall_seconds": 5.000592411,
+          "cpu_seconds": 0.8600000000000003,
+          "cpu_percent_one_core": 17.197962347585545,
+          "sampled_peak_rss_bytes": 21299200,
+          "sampled_peak_fd": 7,
+          "sampling_period_seconds": 0.05,
+          "sample_count": 100
+        },
+        "backend": {
+          "pid": 32335,
+          "start_ns": 42394852575162,
+          "end_ns": 42399853164529,
+          "wall_seconds": 5.000589367,
+          "cpu_seconds": 0.39,
+          "cpu_percent_one_core": 7.799080695841507,
+          "sampled_peak_rss_bytes": 14254080,
+          "sampled_peak_fd": 5,
+          "sampling_period_seconds": 0.05,
+          "sample_count": 100
+        }
+      }
+    },
+    {
+      "evidence_generation": "repaired_udp_builder002",
+      "path": ".stage-tmp/v0.4-s1/builder/rework/udp-default/02-proxy",
+      "parameters": {
+        "program": "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v0.4-s1/builder/Production/bin/l4lb",
+        "protocol": "udp",
+        "mode": "paired",
+        "output": "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v0.4-s1/builder/rework/udp-default",
+        "clients": 1,
+        "payload": 256,
+        "warmup": 1,
+        "duration": 5,
+        "rate": 1000,
+        "timeout": 1,
+        "repeats": 3,
+        "fault": "none"
+      },
+      "run_id": "c8e8ab02-5ba9-4ded-b0d1-4227e9846f6a",
+      "utc_start": "2026-09-09T13:25:22.061174+00:00",
+      "utc_end": "2026-09-09T13:25:28.178196+00:00",
+      "protocol": "udp",
+      "mode": "proxy",
+      "repeat": 2,
+      "pair_order": [
+        "direct",
+        "proxy"
+      ],
+      "valid": true,
+      "counts": {
+        "attempted": 5000,
+        "sent": 5000,
+        "received": 5000,
+        "timeout": 0,
+        "duplicate": 0,
+        "late": 0,
+        "foreign_corrupt": 0,
+        "send_errors": 0,
+        "missed_slots": 0,
+        "warmup_excluded": 0,
+        "pending_peak": 2,
+        "target": 5000
+      },
+      "rates": {
+        "sent_per_second": 1000.0,
+        "unique_echoes_per_second": 999.9626013987076,
+        "goodput_bytes_per_second": 255990.42595806916,
+        "goodput_bits_per_second": 2047923.4076645533,
+        "delivery_ratio": 1.0,
+        "unconfirmed": 0,
+        "loss_ratio": 0.0
+      },
+      "timing": {
+        "t0_ns": 42400964322237,
+        "t1_ns": 42405964322237,
+        "drain_end_ns": 42405964509237,
+        "send_window_seconds": 5.0,
+        "goodput_elapsed_seconds": 5.000187
+      },
+      "sampled_rtt": {
+        "count": 50,
+        "p50_ns": 173575,
+        "p95_ns": 407162,
+        "p99_ns": 539386,
+        "max_ns": 539386,
+        "stride": 100,
+        "coverage": 0.01,
+        "p99_insufficient_samples": true
+      },
+      "resources": {
+        "product": {
+          "pid": 32394,
+          "start_ns": 42400964061947,
+          "end_ns": 42405965254950,
+          "wall_seconds": 5.001193003,
+          "cpu_seconds": 0.39,
+          "cpu_percent_one_core": 7.798139359269994,
+          "sampled_peak_rss_bytes": 3440640,
+          "sampled_peak_fd": 7,
+          "sampling_period_seconds": 0.05,
+          "sample_count": 100
+        },
+        "generator": {
+          "pid": 31995,
+          "start_ns": 42400963972015,
+          "end_ns": 42405965046493,
+          "wall_seconds": 5.001074478,
+          "cpu_seconds": 0.6699999999999999,
+          "cpu_percent_one_core": 13.397121017640643,
+          "sampled_peak_rss_bytes": 21463040,
+          "sampled_peak_fd": 9,
+          "sampling_period_seconds": 0.05,
+          "sample_count": 100
+        },
+        "backend": {
+          "pid": 32393,
+          "start_ns": 42400964032141,
+          "end_ns": 42405965180006,
+          "wall_seconds": 5.001147865,
+          "cpu_seconds": 0.31000000000000005,
+          "cpu_percent_one_core": 6.198576974088329,
+          "sampled_peak_rss_bytes": 14254080,
+          "sampled_peak_fd": 5,
+          "sampling_period_seconds": 0.05,
+          "sample_count": 100
+        }
+      }
+    },
+    {
+      "evidence_generation": "repaired_udp_builder002",
+      "path": ".stage-tmp/v0.4-s1/builder/rework/udp-clients16/00-direct",
+      "parameters": {
+        "program": "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v0.4-s1/builder/Production/bin/l4lb",
+        "protocol": "udp",
+        "mode": "paired",
+        "output": "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v0.4-s1/builder/rework/udp-clients16",
+        "clients": 16,
+        "payload": 256,
+        "warmup": 1,
+        "duration": 5,
+        "rate": 1000,
+        "timeout": 1,
+        "repeats": 1,
+        "fault": "none"
+      },
+      "run_id": "c7a8db63-0dfd-4ded-ad40-367e3f77b0ad",
+      "utc_start": "2026-09-09T13:25:28.229844+00:00",
+      "utc_end": "2026-09-09T13:25:34.384503+00:00",
+      "protocol": "udp",
+      "mode": "direct",
+      "repeat": 0,
+      "pair_order": [
+        "direct",
+        "proxy"
+      ],
+      "valid": true,
+      "counts": {
+        "attempted": 5000,
+        "sent": 5000,
+        "received": 5000,
+        "timeout": 0,
+        "duplicate": 0,
+        "late": 0,
+        "foreign_corrupt": 0,
+        "send_errors": 0,
+        "missed_slots": 0,
+        "warmup_excluded": 0,
+        "pending_peak": 1,
+        "target": 5000
+      },
+      "rates": {
+        "sent_per_second": 1000.0,
+        "unique_echoes_per_second": 999.9829030923094,
+        "goodput_bytes_per_second": 255995.6231916312,
+        "goodput_bits_per_second": 2047964.9855330496,
+        "delivery_ratio": 1.0,
+        "unconfirmed": 0,
+        "loss_ratio": 0.0
+      },
+      "timing": {
+        "t0_ns": 42407175374395,
+        "t1_ns": 42412175374395,
+        "drain_end_ns": 42412175459881,
+        "send_window_seconds": 5.0,
+        "goodput_elapsed_seconds": 5.000085486
+      },
+      "sampled_rtt": {
+        "count": 50,
+        "p50_ns": 177720,
+        "p95_ns": 324508,
+        "p99_ns": 395410,
+        "max_ns": 395410,
+        "stride": 100,
+        "coverage": 0.01,
+        "p99_insufficient_samples": true
+      },
+      "resources": {
+        "product": {
+          "value": null,
+          "reason": "not applicable: direct mode"
+        },
+        "generator": {
+          "pid": 32544,
+          "start_ns": 42407175069841,
+          "end_ns": 42412175790544,
+          "wall_seconds": 5.000720703,
+          "cpu_seconds": 0.94,
+          "cpu_percent_one_core": 18.797290547262143,
+          "sampled_peak_rss_bytes": 20971520,
+          "sampled_peak_fd": 22,
+          "sampling_period_seconds": 0.05,
+          "sample_count": 100
+        },
+        "backend": {
+          "pid": 32551,
+          "start_ns": 42407175128498,
+          "end_ns": 42412175870745,
+          "wall_seconds": 5.000742247,
+          "cpu_seconds": 0.38,
+          "cpu_percent_one_core": 7.5988719520180465,
+          "sampled_peak_rss_bytes": 14254080,
+          "sampled_peak_fd": 5,
+          "sampling_period_seconds": 0.05,
+          "sample_count": 100
+        }
+      }
+    },
+    {
+      "evidence_generation": "repaired_udp_builder002",
+      "path": ".stage-tmp/v0.4-s1/builder/rework/udp-clients16/00-proxy",
+      "parameters": {
+        "program": "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v0.4-s1/builder/Production/bin/l4lb",
+        "protocol": "udp",
+        "mode": "paired",
+        "output": "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v0.4-s1/builder/rework/udp-clients16",
+        "clients": 16,
+        "payload": 256,
+        "warmup": 1,
+        "duration": 5,
+        "rate": 1000,
+        "timeout": 1,
+        "repeats": 1,
+        "fault": "none"
+      },
+      "run_id": "d3e4b592-dfff-4c8f-a2c8-295605b92e05",
+      "utc_start": "2026-09-09T13:25:34.385124+00:00",
+      "utc_end": "2026-09-09T13:25:40.553149+00:00",
+      "protocol": "udp",
+      "mode": "proxy",
+      "repeat": 0,
+      "pair_order": [
+        "direct",
+        "proxy"
+      ],
+      "valid": true,
+      "counts": {
+        "attempted": 4991,
+        "sent": 4991,
+        "received": 4991,
+        "timeout": 0,
+        "duplicate": 0,
+        "late": 0,
+        "foreign_corrupt": 0,
+        "send_errors": 0,
+        "missed_slots": 9,
+        "warmup_excluded": 0,
+        "pending_peak": 2,
+        "target": 5000
+      },
+      "rates": {
+        "sent_per_second": 998.2,
+        "unique_echoes_per_second": 998.1310241555757,
+        "goodput_bytes_per_second": 255521.54218382738,
+        "goodput_bits_per_second": 2044172.337470619,
+        "delivery_ratio": 1.0,
+        "unconfirmed": 0,
+        "loss_ratio": 0.0
+      },
+      "timing": {
+        "t0_ns": 42413342348902,
+        "t1_ns": 42418342348902,
+        "drain_end_ns": 42418342694427,
+        "send_window_seconds": 5.0,
+        "goodput_elapsed_seconds": 5.000345525
+      },
+      "sampled_rtt": {
+        "count": 50,
+        "p50_ns": 268628,
+        "p95_ns": 480412,
+        "p99_ns": 615641,
+        "max_ns": 615641,
+        "stride": 100,
+        "coverage": 0.010018032458425166,
+        "p99_insufficient_samples": true
+      },
+      "resources": {
+        "product": {
+          "pid": 32634,
+          "start_ns": 42413342080204,
+          "end_ns": 42418342991938,
+          "wall_seconds": 5.000911734,
+          "cpu_seconds": 0.53,
+          "cpu_percent_one_core": 10.598067476309511,
+          "sampled_peak_rss_bytes": 3440640,
+          "sampled_peak_fd": 22,
+          "sampling_period_seconds": 0.05,
+          "sample_count": 100
+        },
+        "generator": {
+          "pid": 32544,
+          "start_ns": 42413341985041,
+          "end_ns": 42418342926970,
+          "wall_seconds": 5.000941929,
+          "cpu_seconds": 0.8400000000000001,
+          "cpu_percent_one_core": 16.79683571466643,
+          "sampled_peak_rss_bytes": 21135360,
+          "sampled_peak_fd": 24,
+          "sampling_period_seconds": 0.05,
+          "sample_count": 100
+        },
+        "backend": {
+          "pid": 32631,
+          "start_ns": 42413342048861,
+          "end_ns": 42418342969499,
+          "wall_seconds": 5.000920638,
+          "cpu_seconds": 0.38,
+          "cpu_percent_one_core": 7.598600887855161,
+          "sampled_peak_rss_bytes": 14254080,
+          "sampled_peak_fd": 5,
+          "sampling_period_seconds": 0.05,
+          "sample_count": 100
+        }
+      }
+    }
+  ]
+}

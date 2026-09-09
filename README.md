@@ -8,8 +8,10 @@
 
 ## 当前状态
 
-- 最近已核验阶段标签：`v0.3-s2`（S2合并提交 `2f5c26d`；当前S3开发完成，尚未创建S3标签或发布）
-- 状态：V0.1/S1 已完成；S2 TCP 转发已完成（Completed，独立复审 PASS）；S3 已完成（Completed，独立审查 PASS），V0.1 开发范围完成；V0.2/S1 也已完成并合并，注释标签 v0.2-s1 已核验。S2 已实现并独立验收（PASS）及 Leader 收尾（Completed）；S3独立审查（Reviewer001 PASS）和Leader003收尾完成，V0.2开发范围Completed；S3已合并且远端v0.2-s3标签核验为7821b25。V0.3/S1 Completed，已合并并标记v0.3-s1（9971818b）；V0.3/S2 Completed，已合并并标记v0.3-s2（2f5c26d）；当前分支 `codex/v0.3-s3`，S3 Completed，V0.3-S3-D1保持Approved，Builder001、Reviewer001 PASS、Leader003齐备；V0.3开发范围Completed。
+- 最近已核验阶段标签：`v0.3-s3`，合并提交 `281db01`（2026-09-09 本地/远端注释对象及 peeled commit 核验一致）；v0.1/S1 至 v0.3/S3 共9个阶段标签齐全。
+- V0.1、V0.2、V0.3 开发范围均 Completed；V0.3/S3 Builder001、Reviewer001 PASS、Leader003 齐备且已合并并标记。
+- 当前分支 `codex/v0.4-s1`，基于最新 main；V0.4/S1 Benchmark 方法与工具已批准（V0.4-S1-D1 Approved），Reviewer002独立复审PASS，F-001（P2）已关闭，当前S1 Completed，Leader003收尾完成；保留[首轮FAIL](docs/reviewer/reports/V0.4/S1-report-001.md)，最新结论见[Reviewer002](docs/reviewer/reports/V0.4/S1-report-002.md)。
+- 准备文档：[阶段设计](docs/leader/designs/V0.4/S1-design.md)、[审查方案](docs/reviewer/reviews/V0.4/S1-review.md)、[Leader准备报告](docs/leader/reports/V0.4/S1-report-001.md)、[批准登记](docs/leader/reports/V0.4/S1-report-002.md)、[完成报告](docs/leader/reports/V0.4/S1-report-003.md)。
 - 主要能力：
   - 明确项目方向：C++ 用户态 L4 负载均衡器 + XDP/eBPF fast path
   - 明确基础技术栈：LLVM、CMake、Ninja、C++20、Linux socket、epoll
@@ -160,7 +162,7 @@ ctest --test-dir build-release --output-on-failure
 
 ## 测试与验证
 
-当前注册23项；Debug快速执行 `ctest --test-dir build -LE udp_long`（22项），Release完整23项含一次约61秒原生产过期测试。`udp_fast`两项可重复/并行，`udp_long`不加入快速组；容量1024只作静态默认值确认，未做1024满载产品验收。
+当前注册26项；Debug快速执行 `ctest --test-dir build -LE udp_long`（25项），Release完整26项含一次约61秒原生产过期测试。原23项保留，新增统计及TCP/UDP短benchmark工具smoke共3项（`v04_bench_smoke`）；长性能矩阵不加入CTest。`udp_fast`两项可重复/并行，`udp_long`不加入快速组；容量1024只作静态默认值确认，未做1024满载产品验收。
 
 CTest 包含配置单元测试和 CLI 进程集成测试，覆盖合法输入、拒绝规则、端点顺序、64 KiB 边界、精确退出码与输出、FIFO 超时、普通文件符号链接及配置内容不变。
 
@@ -323,4 +325,20 @@ Reviewer独立验收 PASS：Debug快速14/14、Release完整15/15，Production�
 
 ## V0.3/S3 故障场景验证
 
-新增双backend TCP/UDP部分摘除、全不可选、分步恢复和真实TCP连接拒绝场景，以独立nonce和指标账本验证旧绑定、轮询及最终清理。使用 `bash tests/v03_validate.sh build-release/bin/l4lb validation-v03`；网络隔离、构建、工具负向及证据说明见 [公开运行手册](docs/runbooks/local-v0.3-validation.md)，逐条版本标准见 [验收矩阵](docs/specs/v0.3-acceptance.md)。Builder与 [Reviewer001 PASS](docs/reviewer/reports/V0.3/S3-report-001.md) 齐备：独立Debug22/22、Release23/23及公开重复/并行/工具负向通过。Leader003最终同步完成，S3及V0.3开发范围Completed；父按授权处理本地提交，尚未合并或发布S3。
+新增双backend TCP/UDP部分摘除、全不可选、分步恢复和真实TCP连接拒绝场景，以独立nonce和指标账本验证旧绑定、轮询及最终清理。使用 `bash tests/v03_validate.sh build-release/bin/l4lb validation-v03`；网络隔离、构建、工具负向及证据说明见 [公开运行手册](docs/runbooks/local-v0.3-validation.md)，逐条版本标准见 [验收矩阵](docs/specs/v0.3-acceptance.md)。Builder与 [Reviewer001 PASS](docs/reviewer/reports/V0.3/S3-report-001.md) 齐备：独立Debug22/22、Release23/23及公开重复/并行/工具负向通过。Leader003最终同步完成，S3及V0.3开发范围Completed；现已合并并标记v0.3-s3（281db01），当前V0.4/S1 Completed，Reviewer002复审PASS，F-001 Closed，Leader003收尾完成；V0.4/S2、S3仍未实现。
+
+## V0.4/S1 Benchmark 工具
+
+公开[测量方法](docs/benchmarks/methodology.md)、[报告模板](docs/benchmarks/report-template.md)与[工具验证样本](docs/benchmarks/tool-validation-sample.md)独立于角色私有文档。使用 Python3 标准库；产品 Release/Production 显式二进制路径均可运行，健康检查与 metrics 关闭，一个 echo backend。示例从仓库根目录执行，输出目录须为新目录：
+
+```bash
+B="$PWD/.stage-tmp/benchmark-example"
+mkdir -p "$B/tmp" "$B/cache" "$B/pycache"
+export TMPDIR="$B/tmp" TMP="$B/tmp" TEMP="$B/tmp" XDG_CACHE_HOME="$B/cache" PYTHONPYCACHEPREFIX="$B/pycache"
+cmake -S . -B "$B/Production" -G Ninja -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF
+cmake --build "$B/Production" -j4
+python3 tests/benchmark_runner.py --program "$B/Production/bin/l4lb" --protocol tcp --mode paired --output "$B/tcp-default"
+python3 tests/benchmark_runner.py --program "$B/Production/bin/l4lb" --protocol udp --mode paired --output "$B/udp-default"
+```
+
+默认256-byte payload、1 client、预热1秒/测量5秒/timeout1秒、UDP总目标1000pps、3次重复，direct/proxy顺序交替。每run保存身份、环境、配置、原始sampled RTT、独立进程资源、计数、valid与清理证据；goodput只计成功回显payload一次并包含有界drain。低RTT须并列丢失率，valid不表示速度达标。WSL/loopback共享CPU和Python工具限制使这些数据不能当作硬件极限、S2优化成果或S3正式性能报告。
