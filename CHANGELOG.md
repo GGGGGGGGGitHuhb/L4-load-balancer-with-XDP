@@ -4,6 +4,29 @@
 
 ## Unreleased
 
+### 2026-09-09 V0.2/S3与V0.2完成收尾
+
+- Reviewer001 PASS后，Leader003核对S3七条AC与V0.2六条标准、33文件指纹及独立验证证据，S3和V0.2开发范围Completed。
+- TD-004本版本配置/scheduler/完整UDP语义及系统矩阵义务完成，后续版本文档继续跟踪；无新债或未解决发现。生产src与原示例零改动，未提交/推送/合并/发布S3，不启动V0.3。下方记录保留各次交接的历史状态。
+
+### 2026-09-09 V0.2/S3 独立审查
+
+- Reviewer 独立 Debug 快速10/10（16.67秒）、Release完整11/11（76.88秒）；唯一P3静默60500ms、同一源端点与目标A→B，生产源码/参数未改。Production快速组及24项普通用户CLI通过。
+- 两模式快速各3次、Release双组并行与空格路径、四类工具负向及三类旧负向均符合预期；公开手册完整流程退出0、六端口重绑，117条产品子PID及7个手动PID全部回收。1024仅静态默认值和内部缩容动态语义，未测真实满载。
+- 独立结论PASS，无新增阻塞或技术债；见 `docs/reviewer/reports/V0.2/S3-report-001.md`。当前Closing，交Leader最终同步S3/V0.2；未提交或发布。
+
+### 2026-09-09 V0.2/S3 实现与 Builder 自测
+
+- 在原 UDP 产品测试上新增 wildcard/流隔离/伪造控制、停止A后的新flow恢复和原生产60秒过期模式；生产src及原示例零改动。
+- 新增公开Python标准库UDP工具、完整单shell手动流程、运行手册和V0.2六条完成矩阵；容量1024明确为静态默认值确认而非满载实测。
+- 当前注册11项；Builder Debug快速10/10、Release全套11/11（含一次P3实测静默60500ms）通过，Production快速组/CLI、两模式快速各3次、Release并行两组和空格路径通过；四类新增及三类继承负向均准确失败并清理。完整手动步骤含六端口重绑通过。
+- 当前 Ready for Review，独立Reviewer与Leader收尾待进行，未提交或发布。报告 `docs/builder/reports/V0.2/S3-report-001.md`；完整UDP语义未改变。
+
+### 2026-09-09 V0.2/S3 准备
+
+- 已核验 S2 合并提交 c6927c0 与远端 main、v0.2-s2 标签 peeled commit 一致，包含 S2 实现03094cc；下方未提交/发布说明保留当时事实。
+- 切换 codex/v0.2-s3 并形成 V0.2-S3-D1 Draft 设计、审查计划、准备报告；Awaiting PM Decision，未编码。31个S2源码/测试指纹一致，未重复已验收全套测试。
+
 ### 2026-09-08 V0.2/S2 完成收尾
 
 - Reviewer001 PASS 后，Leader 核验 D1 批准、31 文件指纹、独立 9/9 及清理证据，完成阶段/路线图/债项同步；S2 Completed，D1 保持 Approved。见 `docs/leader/reports/V0.2/S2-report-003.md`。

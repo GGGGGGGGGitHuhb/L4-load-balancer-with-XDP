@@ -10,11 +10,13 @@
 #include <fstream>
 #include <iostream>
 #include <memory>
+#include <set>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 #include <system_error>
 #include <thread>
+#include <utility>
 #include <vector>
 
 namespace {
@@ -36,7 +38,10 @@ void write(const std::string& path, const std::string& value) {
 struct Fd {
   int value;
   explicit Fd(int fd) : value(fd) { require(fd >= 0, "socket/open"); }
-  ~Fd() { close(value); }
+  ~Fd() { reset(); }
+  void reset() {
+    if (value >= 0) close(std::exchange(value, -1));
+  }
   Fd(const Fd&) = delete;
   Fd& operator=(const Fd&) = delete;
 };
@@ -170,15 +175,18 @@ struct ProductRun {
   std::vector<std::unique_ptr<Child>> children;
   std::ostringstream summary;
   int serial = 0;
-  Child& start(std::vector<std::string> args) {
+  std::set<int> owned_ports;
+  Clock::time_point total_deadline = Clock::now() + 75s;
+  Child& start(std::vector<std::string> args, bool product = true) {
     auto path = dir + "/child-" + std::to_string(serial++);
-    children.push_back(std::make_unique<Child>(args, path, true));
+    children.push_back(std::make_unique<Child>(args, path, product));
     summary << "child pid=" << children.back()->pid << " path=" << path << '\n';
     return *children.back();
   }
-  std::string config(int port, int a, int b) {
+  std::string config(int port, int a, int b,
+                     const std::string& host = "127.0.0.1") {
     auto file = dir + "/config-" + std::to_string(serial++) + ".conf";
-    write(file, "protocol=udp\nscheduler=round_robin\nlisten=127.0.0.1:" +
+    write(file, "protocol=udp\nscheduler=round_robin\nlisten=" + host + ":" +
                     std::to_string(port) +
                     "\nbackend=127.0.0.1:" + std::to_string(a) +
                     "\nbackend=127.0.0.1:" + std::to_string(b) + "\n");
@@ -196,7 +204,204 @@ struct ProductRun {
         summary << "reaped pid=" << child->pid << " code=" << child->code()
                 << '\n';
     }
+    for (int port : owned_ports) {
+      try {
+        Fd probe(socket(AF_INET, SOCK_DGRAM | SOCK_CLOEXEC, 0));
+        bind_port(probe.value, port);
+        summary << "rebind port=" << port << " PASS\n";
+      } catch (const std::exception& e) {
+        errors += e.what();
+      }
+    }
     require(errors.empty(), "cleanup " + errors);
+  }
+  int bind_owned(int fd, int port = 0) {
+    int value = bind_port(fd, port);
+    owned_ports.insert(value);
+    return value;
+  }
+  void quiet(int fd, const std::string& reason, int ms = 30) {
+    pollfd p{fd, POLLIN, 0};
+    int n = poll(&p, 1, ms);
+    require(n == 0, reason);
+  }
+  sockaddr_in target(int port, const char* ip = "127.0.0.1") {
+    auto result = address(port);
+    require(inet_pton(AF_INET, ip, &result.sin_addr) == 1, "target IP");
+    return result;
+  }
+  void exact_client(int fd, const std::string& value,
+                    const sockaddr_in& source) {
+    auto packet = receive_packet(fd);
+    require(packet.bytes == value, "P1 client ownership/payload");
+    require(packet.from.sin_addr.s_addr == source.sin_addr.s_addr &&
+                packet.from.sin_port == source.sin_port,
+            "P1 reply source");
+    quiet(fd, "P1 extra client packet");
+  }
+  Packet system_request(int client, int backend, const sockaddr_in& dest,
+                        const std::string& value) {
+    send_packet(client, dest, value);
+    auto packet = receive_packet(backend);
+    require(packet.bytes == value, "system request nonce/payload");
+    quiet(backend, "extra backend request");
+    return packet;
+  }
+  void system_exchange(int client, int backend, const sockaddr_in& dest,
+                       const std::string& value) {
+    auto packet = system_request(client, backend, dest, value);
+    send_packet(backend, packet.from, value);
+    exact_client(client, value, dest);
+  }
+  std::pair<Child*, int> system_proxy(int ap, int bp,
+                                      const std::string& host = "127.0.0.1") {
+    for (int attempt = 0; attempt < 5; ++attempt) {
+      int port = reserve_port();
+      auto conf = config(port, ap, bp, host);
+      auto& child = start({program, "--run", conf});
+      try {
+        require(child.ready("UDP 服务已启动：" + host + ":") ==
+                    std::to_string(port),
+                "system ready exact");
+      } catch (...) {
+        if (!child.alive() && child.code() == 1 &&
+            read(child.base + ".err")
+                    .find("UDP bind: " + std::generic_category().message(
+                                             EADDRINUSE)) != std::string::npos)
+          continue;
+        throw;
+      }
+      owned_ports.insert(port);
+      summary << "listener pid=" << child.pid << " port=" << port
+              << " host=" << host << '\n';
+      return {&child, port};
+    }
+    throw std::runtime_error("system bind conflicts exhausted");
+  }
+  void wildcard_system() {
+    summary << "reached P1 wildcard\n";
+    Fd a(socket(AF_INET, SOCK_DGRAM | SOCK_CLOEXEC, 0)),
+        b(socket(AF_INET, SOCK_DGRAM | SOCK_CLOEXEC, 0));
+    int ap = bind_owned(a.value), bp = bind_owned(b.value);
+    auto [proxy, port] = system_proxy(ap, bp, "0.0.0.0");
+    Fd one(socket(AF_INET, SOCK_DGRAM | SOCK_CLOEXEC, 0)),
+        two(socket(AF_INET, SOCK_DGRAM | SOCK_CLOEXEC, 0)),
+        outsider(socket(AF_INET, SOCK_DGRAM | SOCK_CLOEXEC, 0));
+    int cp = bind_owned(one.value), dp = bind_owned(two.value);
+    bind_owned(outsider.value);
+    auto local1 = target(port), local2 = target(port, "127.0.0.2");
+    system_exchange(one.value, a.value, local1, std::string("P1-A\0one", 8));
+    system_exchange(one.value, b.value, local2, std::string("P1-B\0two", 8));
+    system_exchange(one.value, a.value, local1, "P1-stable-A");
+    auto first = system_request(one.value, a.value, local1,
+                                std::string("first\0nonce", 11));
+    auto second = system_request(two.value, a.value, local1,
+                                 std::string("second\0nonce", 12));
+    require(first.from.sin_port != second.from.sin_port,
+            "P1 independent backend source port");
+    send_packet(outsider.value, first.from, "forged-P1");
+    quiet(one.value, "P1 forged packet leaked", 80);
+    quiet(two.value, "P1 forged ownership leaked");
+    send_packet(a.value, second.from, second.bytes);
+    exact_client(two.value, second.bytes, local1);
+    send_packet(a.value, first.from, first.bytes);
+    exact_client(one.value, first.bytes, local1);
+    summary << "P1 PASS client ports=" << cp << "," << dp
+            << " same client two destinations A/B/A; source IP+port+bytes; "
+               "reverse same-backend replies; forged drop+legitimate control\n";
+    proxy->stop();
+  }
+  void recovery_system() {
+    summary << "reached P2 recovery\n";
+    Fd a(socket(AF_INET, SOCK_DGRAM | SOCK_CLOEXEC, 0)),
+        b(socket(AF_INET, SOCK_DGRAM | SOCK_CLOEXEC, 0));
+    int ap = bind_owned(a.value), bp = bind_owned(b.value);
+    auto [proxy, port] = system_proxy(ap, bp);
+    Fd one(socket(AF_INET, SOCK_DGRAM | SOCK_CLOEXEC, 0)),
+        two(socket(AF_INET, SOCK_DGRAM | SOCK_CLOEXEC, 0));
+    int cp = bind_owned(one.value);
+    bind_owned(two.value);
+    auto dest = target(port);
+    system_exchange(one.value, a.value, dest, "P2-original-A");
+    auto log = read(proxy->base + ".err");
+    auto pos = log.find("flow=");
+    require(pos != std::string::npos, "P2 initial flow id");
+    auto end = log.find(' ', pos);
+    auto id = log.substr(pos, end - pos);
+    a.reset();
+    require(a.value == -1, "P2 A owner closed");
+    send_packet(one.value, dest, "P2-failed-old-nonce");
+    auto deadline = Clock::now() + 3s;
+    bool closed = false;
+    while (Clock::now() < deadline) {
+      require(proxy->alive(), "P2 product died");
+      std::istringstream lines(read(proxy->base + ".err"));
+      std::string line;
+      while (std::getline(lines, line)) {
+        if (line.starts_with(id + " ") &&
+            line.find("backend=127.0.0.1:" + std::to_string(ap) + " ") !=
+                std::string::npos &&
+            line.find("errno=" + std::to_string(ECONNREFUSED)) !=
+                std::string::npos) {
+          closed = true;
+          summary << "P2 real close barrier: " << line << '\n';
+        }
+      }
+      if (closed) break;
+      std::this_thread::sleep_for(5ms);
+    }
+    require(closed, "P2 real ICMP flow-close deadline");
+    quiet(one.value, "P2 failed old packet got response", 50);
+    quiet(b.value, "P2 old packet retried to B", 50);
+    system_exchange(one.value, b.value, dest, "P2-new-same-key-B");
+    Fd restored(socket(AF_INET, SOCK_DGRAM | SOCK_CLOEXEC, 0));
+    bind_owned(restored.value, ap);
+    system_exchange(two.value, restored.value, dest, "P2-new-key-restored-A");
+    system_exchange(one.value, b.value, dest, "P2-existing-B-stays");
+    quiet(restored.value, "P2 existing B moved to A");
+    summary << "P2 PASS A closed; ICMP consumed old flow; no retry; fixed "
+               "client port="
+            << cp << " new nonce B; original A port=" << ap
+            << " restored new key A; B stable\n";
+    proxy->stop();
+  }
+  void expiry_system() {
+    summary << "reached P3 default 60000ms timeout\n";
+    Fd a(socket(AF_INET, SOCK_DGRAM | SOCK_CLOEXEC, 0)),
+        b(socket(AF_INET, SOCK_DGRAM | SOCK_CLOEXEC, 0));
+    int ap = bind_owned(a.value), bp = bind_owned(b.value);
+    auto [proxy, port] = system_proxy(ap, bp);
+    Fd one(socket(AF_INET, SOCK_DGRAM | SOCK_CLOEXEC, 0));
+    int cp = bind_owned(one.value);
+    auto dest = target(port);
+    system_exchange(one.value, a.value, dest, "P3-before-A");
+    auto confirmed = Clock::now();
+    auto end = confirmed + 60500ms;
+    while (Clock::now() < end) {
+      require(Clock::now() < total_deadline, "P3 internal total deadline75s");
+      require(proxy->alive(), "P3 product exited during silence");
+      std::this_thread::sleep_until(std::min(end, Clock::now() + 100ms));
+    }
+    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+                       Clock::now() - confirmed)
+                       .count();
+    require(elapsed >= 60500 && Clock::now() < total_deadline,
+            "P3 real silent interval");
+    quiet(a.value, "P3 unsolicited A traffic");
+    quiet(b.value, "P3 unsolicited B traffic");
+    system_exchange(one.value, b.value, dest, "P3-after-B");
+    quiet(a.value, "P3 old A got new nonce");
+    sockaddr_in actual{};
+    socklen_t len = sizeof(actual);
+    require(getsockname(one.value, reinterpret_cast<sockaddr*>(&actual),
+                        &len) == 0 &&
+                ntohs(actual.sin_port) == cp,
+            "P3 fixed client source key");
+    summary << "P3 PASS silent_elapsed_ms=" << elapsed
+            << " client=127.0.0.1:" << cp << " target=127.0.0.1:" << port
+            << " original production A->B without probes/options\n";
+    proxy->stop();
+    require(Clock::now() < total_deadline, "P3 total75s");
   }
   void scenarios() {
     Fd a(socket(AF_INET, SOCK_DGRAM | SOCK_CLOEXEC, 0)),
@@ -290,7 +495,13 @@ int main(int argc, char** argv) {
     run.dir = path;
     std::string failure;
     try {
-      run.scenarios();
+      if (run.mutation == "system") {
+        run.wildcard_system();
+        run.recovery_system();
+      } else if (run.mutation == "expiry")
+        run.expiry_system();
+      else
+        run.scenarios();
     } catch (const std::exception& e) {
       failure = e.what();
     }
