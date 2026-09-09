@@ -16,6 +16,7 @@ std::string_view trim(std::string_view value) {
   if (first == std::string_view::npos) return {};
   return value.substr(first, value.find_last_not_of(" \t") - first + 1);
 }
+
 std::optional<unsigned> number(std::string_view value, unsigned maximum) {
   if (value.empty() || (value.size() > 1 && value.front() == '0')) return {};
   unsigned result = 0;
@@ -28,6 +29,7 @@ std::optional<unsigned> number(std::string_view value, unsigned maximum) {
   if (result > maximum) return {};
   return result;
 }
+
 std::optional<Endpoint> endpoint(std::string_view value, bool backend) {
   const auto colon = value.find(':');
   if (colon == std::string_view::npos) return {};
@@ -51,15 +53,19 @@ std::optional<Endpoint> endpoint(std::string_view value, bool backend) {
     return {};
   return result;
 }
+
 /** 描述符单一所有者；即使字符串分配抛异常也会关闭。 */
 class File {
  public:
   explicit File(int fd) : fd_(fd) {}
+
   ~File() {
     if (fd_ >= 0) close(fd_);
   }
+
   File(const File&) = delete;
   File& operator=(const File&) = delete;
+
   int get() const { return fd_; }
 
  private:
@@ -74,6 +80,7 @@ ConfigResult parse_config(std::string_view text) {
   bool has_listen = false;
   bool has_protocol = false;
   bool has_scheduler = false;
+  bool has_health = false;
   std::size_t line_number = 0;
   while (!text.empty()) {
     ++line_number;
@@ -112,6 +119,17 @@ ConfigResult parse_config(std::string_view text) {
       else
         return fail(ErrorKind::kField, "protocol 仅支持 tcp/udp");
       has_protocol = true;
+      continue;
+    }
+    if (key == "health_check") {
+      if (has_health) return fail(ErrorKind::kField, "health_check 不能重复");
+      if (value == "off")
+        config.health_check = HealthCheck::kOff;
+      else if (value == "tcp_connect")
+        config.health_check = HealthCheck::kTcpConnect;
+      else
+        return fail(ErrorKind::kField, "health_check 仅支持 off/tcp_connect");
+      has_health = true;
       continue;
     }
     if (key == "scheduler") {
@@ -154,7 +172,9 @@ ConfigResult load_config(const std::string& path) {
   // 非阻塞打开可使 FIFO 在无写端时立即返回，之后按已打开对象检查类型。
   File file(open(path.c_str(), O_RDONLY | O_NONBLOCK | O_CLOEXEC));
   if (file.get() < 0) return fail(std::strerror(errno));
+
   struct stat info {};
+
   if (fstat(file.get(), &info) != 0) return fail(std::strerror(errno));
   if (!S_ISREG(info.st_mode)) return fail("必须为普通文件");
   std::string contents;

@@ -11,9 +11,11 @@
 #include "net/state.h"
 using namespace l4lb;
 using namespace l4lb::net;
+
 void check(bool value, const char* message) {
   if (!value) throw std::runtime_error(message);
 }
+
 int main() {
   try {
     bool rejected = false;

@@ -4,8 +4,9 @@
 #include <stdexcept>
 #include <system_error>
 
-#include "core/scheduler.h"
+#include "control/health_selection.h"
 #include "net/reactor.h"
+
 namespace l4lb {
 namespace {
 std::string endpoint_text(const Endpoint& e) {
@@ -14,12 +15,14 @@ std::string endpoint_text(const Endpoint& e) {
          std::to_string(e.address[3]) + ":" + std::to_string(e.port);
 }
 }  // namespace
+
 int run_tcp_service(const Config& config) {
   if (config.protocol != Protocol::kTcp)
     throw std::invalid_argument("TCP 入口仅支持 TCP 协议");
-  auto scheduler = make_scheduler(config.scheduler, config.backends.size());
+  HealthSelection selection(config);
   net::Callbacks callbacks;
-  callbacks.select_backend = [&] { return config.backends[scheduler->next()]; };
+  callbacks.select_backend = [&] { return selection.next(); };
+  if (selection.enabled()) callbacks.maintenance = [&] { selection.tick(); };
   callbacks.ready = [&] {
     std::cout << "TCP 服务已启动：" << endpoint_text(config.listen)
               << std::endl;

@@ -1,6 +1,6 @@
 # 配置规格
 
-适用至 V0.2/S2：静态 TCP/UDP 配置格式。`--check-config` 不创建 socket、不启动监听、不连接后端，也不检查可达性；`--run` 按配置启动 TCP 或 UDP。
+适用至 V0.3/S1：静态 TCP/UDP 配置格式。`--check-config` 不创建 socket、不启动监听、不连接后端，也不检查可达性；`--run` 按配置启动 TCP 或 UDP。
 
 ## 格式与字段
 
@@ -10,6 +10,7 @@
 # 可选字段；省略时为以下默认值
 protocol=tcp
 scheduler=round_robin
+health_check=off
 # TCP 端点
 listen=0.0.0.0:8080
 backend=127.0.0.1:9001
@@ -17,7 +18,7 @@ backend=127.0.0.1:9002
 ```
 
 - `listen` 必须恰好一项；`backend` 必须为 1 至 256 项，保留文件顺序；没有默认端点。listen 可出现在 backend 之后。
-- 键和值区分大小写，只接受 `listen`、`backend`、`protocol` 和 `scheduler`。重复 listen、重复 backend 端点、未知键、空键/值、缺少或多个等号失败。
+- 键和值区分大小写，只接受 `listen`、`backend`、`protocol`、`scheduler` 和 `health_check`。重复 listen、重复 backend 端点、未知键、空键/值、缺少或多个等号失败。
 - `protocol` 可选，缺省 `tcp`，仅接受 `tcp`/`udp`；`scheduler` 可选，缺省 `round_robin`，仅接受 `round_robin`。两个字段独立可省略，任意顺序，每个至多一次，即使重复同值也失败。未知值、大小写变体、空值均失败，首个错误行优先。
 - 键和值外侧以及行首尾只去除 ASCII 空格和制表符；值内部禁止空白。
 - 忽略空行和去除外侧空白后以 `#` 开头的整行注释；注释可含 UTF-8。不支持行尾注释、引号、转义、变量替换、include、节名。
@@ -46,7 +47,7 @@ backend=127.0.0.1:9002
 - 参数错误（无参数、未知参数、缺路径、重复选项、额外参数、help 混用）退出 2，stdout 为空，stderr 为用法错误和 help 提示。
 - 文件或配置错误退出 1，stdout 为空，stderr 包含原因。
 
-目前不支持权重、健康检查和热加载。
+`health_check` 可选，缺省 `off`，仅接受 `off`/`tcp_connect`；任意顺序、至多一次，同值重复也报后出现行，大小写变体/空/未知值失败。启用后初始 Unknown 拒绝新会话/flow，连续2成功开放、3失败摘除，固定完成后1s/超时1s。UDP 必须提供相同 IP/端口且有代表性的 TCP 健康端点；TCP 握手不是 UDP 协议健康证明。详见 [健康规格](health-check.md)。目前不支持权重和热加载。
 
 - V0.1/S2 新增 `l4lb --run <path>`：复用同一只读加载与错误规则，校验成功后启动 TCP 服务；与 check-config/help 互斥。详见 [TCP 转发语义](tcp-forwarding-semantics.md)，配置格式及默认值未变。
 

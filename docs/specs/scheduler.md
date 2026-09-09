@@ -1,10 +1,10 @@
 # 调度策略规格
 
-适用至 V0.2/S2，策略唯一值 `round_robin`，缺省行为与 V0.1 固定轮询一致。当前 TCP 按连接、UDP 按 flow 选择。
+适用至 V0.3/S1，策略唯一值 `round_robin`，缺省行为与 V0.1 固定轮询一致。当前 TCP 按连接、UDP 按 flow 选择。
 
 ## 模型与接口
 
-- 单 listener 对应一个按配置顺序排列的静态 backend pool，以及一个独立 scheduler。无命名池、多 listener、权重、健康状态或全局 cursor。
+- 单 listener 对应一个按配置顺序排列的静态 backend pool，以及一个独立 scheduler。策略本身无命名池、多 listener、权重、健康状态或全局 cursor。健康资格由 control 独立过滤。
 - `core/scheduler.h` 定义带虚析构的 `Scheduler` 与 `next()`；`make_scheduler(SchedulerKind, pool_size)` 返回独占实例。`RoundRobin` 实现接口。
 - 空 pool 抛 `std::invalid_argument`；未知策略枚举防御性抛同类异常，不静默回退。配置层限制 1..256 个后端，策略可处理正的 `size_t` 池大小。
 - 初始索引为 0，依次到 N−1 后返回 0；N=1 恒为 0。比较池尾再递增，避免累计次数溢出。结果始终小于固定池大小。
@@ -21,7 +21,7 @@
 
 - 只有通过完整数据报/元数据校验、未命中活跃 flow 且容量允许时才调用选择一次；既有 flow/容量拒绝/截断/坏元数据不推进。
 - 建立资源失败仍消耗此次选择，不回滚、不重试原包、不自动改选；新数据报可重新建立。到期/致命错误删除映射后，下次同键重新选择。
-- 控制层独占同一个 Scheduler 到同步 UDP reactor 退出，flow 回复不调用策略，后端健康不影响顺序。详见 [UDP flow 规格](udp-flow-table.md)。
+- 控制层独占同一个 Scheduler 到同步 UDP reactor 退出，flow 回复不调用策略，默认 off 时全部后端参与顺序。详见 [UDP flow 规格](udp-flow-table.md)。
 
 ## 验证边界
 
@@ -29,3 +29,9 @@
 - `config_unit` 和 `cli_integration` 验证省略、乱序、严格错误、默认兼容与 UDP 输出。
 - `s3_product_smoke` 同时运行旧配置和显式配置：测试后端以不同 XOR 标记回包，逐字节比较 A/B/A/B；失败/B/失败/B 检查失败无数据和随后精确 B 字节。后端标记仅为测试 fixture，生产转发不修改字节。
 - `v02_udp_state` 验证 flow key、容量/超时/建立失败与调度推进，`v02_udp_product` 验证实际 UDP 按 flow A/B/A 和错误端口/信号清理。S1 UDP 运行拒绝的临时断言已替换；现有 TCP 半关闭、背压和资源回收测试保留。
+
+## V0.3/S1 健康资格
+
+- control 的 `eligible_next` 先判断存在 Healthy；全不可选返回 nullopt 不推进，有可选时最多调用原 next N 次跳过 Unknown/Unhealthy。恢复按当前 cursor 参与，不重置。此层为 O(N) 有界扫描，不改变 Scheduler 的 O(1) next 契约。
+- `health_check=off` 不构造 checker；启用时每次新选择先非阻塞维护。返回空选择时 TCP 关闭新 client，UDP 丢弃新 key，不创建后端 socket、不 fallback。
+- 已有会话/flow 不因资格变化迁移或断开；业务失败仍消耗已选位置，不被动修改健康状态。详见 [健康规格](health-check.md)。

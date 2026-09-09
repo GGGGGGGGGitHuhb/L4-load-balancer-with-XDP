@@ -16,12 +16,14 @@ struct Endpoint {
   bool operator==(const Endpoint&) const = default;
 };
 enum class Protocol { kTcp, kUdp };
+enum class HealthCheck { kOff, kTcpConnect };
 enum class SchedulerKind { kRoundRobin };
 /** 仅完整校验成功后返回；后端按输入顺序保存。 */
 struct Config {
   Endpoint listen;
   std::vector<Endpoint> backends;
   Protocol protocol = Protocol::kTcp;
+  HealthCheck health_check = HealthCheck::kOff;
   SchedulerKind scheduler = SchedulerKind::kRoundRobin;
 };
 enum class ErrorKind { kFile, kSyntax, kField, kMissing };

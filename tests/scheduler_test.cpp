@@ -7,12 +7,15 @@
 #include "control/service.h"
 #include "control/tcp_service.h"
 #include "control/udp_service.h"
+
 namespace {
 int checks = 0;
+
 void check(bool ok) {
   ++checks;
   if (!ok) throw std::runtime_error("scheduler check failed");
 }
+
 template <class F>
 void rejected(F f) {
   bool threw = false;
@@ -24,6 +27,7 @@ void rejected(F f) {
   check(threw);
 }
 }  // namespace
+
 int main(int argc, char**) {
   try {
     if (argc > 1) check(false);

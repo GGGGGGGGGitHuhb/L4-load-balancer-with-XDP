@@ -3,6 +3,7 @@
 
 #include <chrono>
 #include <functional>
+#include <optional>
 #include <string>
 
 #include "config/config.h"
@@ -22,7 +23,8 @@ struct UdpObservation {
   std::size_t flows, tokens;
 };
 struct UdpCallbacks {
-  std::function<Endpoint()> select_backend;
+  std::function<std::optional<Endpoint>()> select_backend;
+  std::function<void()> maintenance;
   std::function<void()> ready;
   std::function<void(const UdpFlowEvent&)> flow;
   std::function<void(const std::string&, int)> diagnostic;
