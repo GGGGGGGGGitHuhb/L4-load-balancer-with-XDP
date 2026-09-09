@@ -8,8 +8,8 @@
 
 ## 当前状态
 
-- 当前阶段标签：`v0.2-s2`（与远端 main 同指 S2 合并提交 `c6927c0`；不据此声称创建 GitHub Release）
-- 状态：V0.1/S1 已完成；S2 TCP 转发已完成（Completed，独立复审 PASS）；S3 已完成（Completed，独立审查 PASS），V0.1 开发范围完成；V0.2/S1 也已完成并合并，注释标签 v0.2-s1 已核验。S2 已实现并独立验收（PASS）及 Leader 收尾（Completed）；当前在 `codex/v0.2-s3` 完成 S3 独立审查（Reviewer001 PASS）和 Leader003 收尾；S3及V0.2开发范围Completed，尚未提交发布S3
+- 当前阶段标签：`v0.2-s3`（远端main与标签peeled均为S3合并提交 `7821b25`；不据此声称创建GitHub Release）
+- 状态：V0.1/S1 已完成；S2 TCP 转发已完成（Completed，独立复审 PASS）；S3 已完成（Completed，独立审查 PASS），V0.1 开发范围完成；V0.2/S1 也已完成并合并，注释标签 v0.2-s1 已核验。S2 已实现并独立验收（PASS）及 Leader 收尾（Completed）；S3独立审查（Reviewer001 PASS）和Leader003收尾完成，V0.2开发范围Completed；S3已合并且远端v0.2-s3标签核验为7821b25。当前在 `codex/v0.3-s1` 准备V0.3/S1，D1 Draft，尚未实现
 - 主要能力：
   - 明确项目方向：C++ 用户态 L4 负载均衡器 + XDP/eBPF fast path
   - 明确基础技术栈：LLVM、CMake、Ninja、C++20、Linux socket、epoll
@@ -187,14 +187,22 @@ ctest --test-dir build -L s2 --output-on-failure
 
 ## 当前阶段入口
 
-V0.2/S3 已批准，分支 `codex/v0.2-s3`，基线 V0.2-S3-D1 Approved，独立Reviewer001结论PASS，Leader003收尾，S3及V0.2开发范围Completed。已核验 S2 合并提交与远端 main、v0.2-s2 标签均为 c6927c0。
+当前准备V0.3/S1，分支 `codex/v0.3-s1`，V0.3-S1-D1 Draft / Awaiting PM Decision，尚未实现。建议探活默认关闭、显式TCP连接检测；UDP需操作员提供有代表性的同IP/端口TCP服务，详见准备决策。
+
+- [V0.3/S1设计草案](docs/leader/designs/V0.3/S1-design.md)
+- [V0.3/S1审查计划](docs/reviewer/reviews/V0.3/S1-review.md)
+- [V0.3/S1准备决策](docs/leader/reports/V0.3/S1-report-001.md)
+
+### 已完成的V0.2
+
+V0.2/S3 已批准，分支 `codex/v0.2-s3`，基线 V0.2-S3-D1 Approved，独立Reviewer001结论PASS，Leader003收尾，S3及V0.2开发范围Completed。S3已合并，远端main与v0.2-s3标签peeled均核验为7821b25；当前V0.3/S1准备见上节。
 
 - [S3 已批准设计](docs/leader/designs/V0.2/S3-design.md)
 - [S3 审查计划](docs/reviewer/reviews/V0.2/S3-review.md)
 - [S3 准备决策](docs/leader/reports/V0.2/S3-report-001.md)
 - [S3 批准登记](docs/leader/reports/V0.2/S3-report-002.md)
 - [S3 独立审查](docs/reviewer/reports/V0.2/S3-report-001.md)：PASS，Debug快速10/10、Release全11/11及原生产60秒验证。
-- [S3与V0.2完成报告](docs/leader/reports/V0.2/S3-report-003.md)：Completed，未发布。
+- [S3与V0.2完成报告](docs/leader/reports/V0.2/S3-report-003.md)：Completed；保留当时收尾记录，S3现已合并并标记v0.2-s3。
 
 ### 已完成的 V0.2/S2
 

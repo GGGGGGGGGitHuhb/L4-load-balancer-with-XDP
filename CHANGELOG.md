@@ -4,6 +4,11 @@
 
 ## Unreleased
 
+### 2026-09-09 V0.3/S1准备
+
+- 已核验V0.2/S3合并及标签7821b25（含1b16d31），从origin/main创建并切换codex/v0.3-s1；33文件验收指纹一致。历史未提交/发布描述保留当时事实。
+- 形成V0.3-S1-D1 Draft设计、审查计划和准备决策包，Awaiting PM Decision；未实现探活，未重跑长测试。
+
 ### 2026-09-09 V0.2/S3与V0.2完成收尾
 
 - Reviewer001 PASS后，Leader003核对S3七条AC与V0.2六条标准、33文件指纹及独立验证证据，S3和V0.2开发范围Completed。

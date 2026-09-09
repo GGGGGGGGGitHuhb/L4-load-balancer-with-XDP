@@ -9,9 +9,13 @@ V0.1/S1 工程骨架与配置入口已完成（Completed，2026-09-07），Revie
 
 ## 阶段状态
 
+### V0.3 / S1 健康检查状态机
+
+准备完成，V0.3-S1-D1 Draft / Awaiting PM Decision，未实现。起点codex/v0.3-s1 / 7821b25（V0.2/S3合并与标签），33文件验收指纹一致。设计见 `docs/leader/designs/V0.3/S1-design.md`，自包含决策见 `docs/leader/reports/V0.3/S1-report-001.md`。TD-004健康规格安排S1随实现交付，指标规格留S2；当前不新增或关闭债项。默认off/Unknown预热/UDP额外TCP约定待本D1批准，重大偏差与本地阻塞：None。
+
 ### V0.2 / S3 UDP 验证与语义文档
 
-状态：Completed（2026-09-09），V0.2-S3-D1保持Approved，Reviewer001 PASS、Leader003收尾。S3七条AC及V0.2六条标准均满足，见 `docs/specs/v0.2-acceptance.md` 和 `docs/leader/reports/V0.2/S3-report-003.md`。独立Debug快速10/10、Release11/11及原60秒产品验证通过。无新增债项、返工、未解决发现或PM待决策；尚未提交发布S3。
+状态：Completed（2026-09-09），V0.2-S3-D1保持Approved，Reviewer001 PASS、Leader003收尾。S3七条AC及V0.2六条标准均满足，见 `docs/specs/v0.2-acceptance.md` 和 `docs/leader/reports/V0.2/S3-report-003.md`。独立Debug快速10/10、Release11/11及原60秒产品验证通过。无新增债项、返工、未解决发现或PM待决策；S3已合并，远端main与v0.2-s3标签核验为7821b25；当前codex/v0.3-s1为Draft准备。
 
 ### V0.2 / S2 UDP flow table
 
