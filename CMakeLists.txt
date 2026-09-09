@@ -133,3 +133,13 @@ if(BUILD_TESTING)
     set_tests_properties(v03_system_${scene} PROPERTIES LABELS v03_system TIMEOUT 90)
   endforeach()
 endif()
+
+if(BUILD_TESTING)
+  add_test(NAME v04_benchmark_statistics COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/tests/benchmark_tool_test.py")
+  set_tests_properties(v04_benchmark_statistics PROPERTIES LABELS v04_bench_smoke TIMEOUT 20)
+  foreach(protocol tcp udp)
+    add_test(NAME v04_benchmark_${protocol}_smoke COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/tests/benchmark_tool_test.py"
+      smoke "$<TARGET_FILE:l4lb>" "${CMAKE_BINARY_DIR}/benchmark-evidence" "${protocol}")
+    set_tests_properties(v04_benchmark_${protocol}_smoke PROPERTIES LABELS v04_bench_smoke TIMEOUT 45)
+  endforeach()
+endif()

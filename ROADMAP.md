@@ -6,7 +6,7 @@
 
 本项目与高性能 HTTP 服务器项目形成分层互补：HTTP 服务器聚焦应用层协议解析和请求响应处理，本项目聚焦传输层 TCP/UDP 转发、后端调度、UDP flow table、健康检查、控制面与数据面分离，以及 XDP/eBPF 包级 fast path 验证。
 
-当前已完成 V0.1 的 S1 工程骨架、S2 TCP 转发与 S3 产品验证，V0.1 开发范围完成；本地 main 已包含 S3 合并提交 544c8d8；V0.2/S1 已完成 Completed（Reviewer002 PASS、Leader003 收尾），S2 Completed（Reviewer001 PASS、Leader003 收尾），S3 Completed（Reviewer001 PASS、Leader003收尾），V0.2开发范围完成；S3已合并并有远端标签v0.2-s3（7821b25）；V0.3/S1 Completed且已合并/标记9971818b；V0.3/S2 Completed并合并/标记2f5c26d；当前V0.3/S3及V0.3开发范围Completed。总体技术方向如下：
+当前已完成 V0.1 的 S1 工程骨架、S2 TCP 转发与 S3 产品验证，V0.1 开发范围完成；本地 main 已同步至 V0.3/S3 合并提交 281db01；V0.2/S1 已完成 Completed（Reviewer002 PASS、Leader003 收尾），S2 Completed（Reviewer001 PASS、Leader003 收尾），S3 Completed（Reviewer001 PASS、Leader003收尾），V0.2开发范围完成；S3已合并并有远端标签v0.2-s3（7821b25）；V0.3/S1 Completed且已合并/标记9971818b；V0.3/S2 Completed并合并/标记2f5c26d；当前V0.3/S3及V0.3开发范围Completed。总体技术方向如下：
 
 - C++20 优先。
 - WSL2 用户态开发优先，云服务器 Linux 环境用于 XDP/eBPF 功能验证和阶段收尾。
@@ -113,7 +113,7 @@
 
 ### V0.2 UDP 转发与调度策略
 
-状态：S1 Completed（2026-09-08），V0.2-S1-D1 保持 Approved；Reviewer002 PASS、Leader003 收尾；S1 已合并至 main 并标注 v0.2-s1（53236b1）。S2 Completed，V0.2-S2-D1 保持 Approved、Reviewer001 PASS、Leader003 收尾；S2 已合并并有 v0.2-s2 标签（c6927c0）。S3 Completed（2026-09-09），V0.2-S3-D1保持Approved，Reviewer001 PASS、Leader003收尾；V0.2开发范围Completed，六条完成标准均满足，见 `docs/specs/v0.2-acceptance.md`；S3已合并，远端main与v0.2-s3标签核验为7821b25。当前分支 `codex/v0.3-s3`，V0.3/S1已Completed并合并/标记9971818b，S2为Completed（D1保持Approved）。
+状态：S1 Completed（2026-09-08），V0.2-S1-D1 保持 Approved；Reviewer002 PASS、Leader003 收尾；S1 已合并至 main 并标注 v0.2-s1（53236b1）。S2 Completed，V0.2-S2-D1 保持 Approved、Reviewer001 PASS、Leader003 收尾；S2 已合并并有 v0.2-s2 标签（c6927c0）。S3 Completed（2026-09-09），V0.2-S3-D1保持Approved，Reviewer001 PASS、Leader003收尾；V0.2开发范围Completed，六条完成标准均满足，见 `docs/specs/v0.2-acceptance.md`；S3已合并，远端main与v0.2-s3标签核验为7821b25。当前分支 `codex/v0.4-s1`，V0.3/S1已Completed并合并/标记9971818b，S2为Completed（D1保持Approved）。
 
 目标：
 
@@ -161,7 +161,7 @@
 
 ### V0.3 健康检查与可观测性
 
-状态：S1/S2/S3及V0.3开发范围Completed（2026-09-09）。S3-D1保持Approved，Builder001、Reviewer001 PASS、Leader003收尾，六条版本标准均满足，见 `docs/specs/v0.3-acceptance.md`。S1/S2已合并标记，S3当前codex/v0.3-s3，父按已授权流程执行本地提交，尚未合并或发布S3；V0.4未启动。
+状态：S1/S2/S3及V0.3开发范围Completed（2026-09-09）。S3-D1保持Approved，Builder001、Reviewer001 PASS、Leader003收尾，六条版本标准均满足，见 `docs/specs/v0.3-acceptance.md`。S1/S2已合并标记，S3已合并并标记v0.3-s3（281db01，2026-09-09远端核验）；V0.4/S1已Completed，Reviewer002 PASS、Leader003收尾；V0.4其余阶段未完成。
 
 目标：
 
@@ -209,7 +209,7 @@
 
 ### V0.4 用户态性能工程
 
-状态：计划中
+状态：S1 Completed（2026-09-09），V0.4-S1-D1保持Approved；Builder002、Reviewer002 PASS（F-001 Closed）、Leader003收尾齐备，六条AC满足。分支 `codex/v0.4-s1` 基于 `v0.3-s3` / `281db01`，尚未合并或发布本阶段；完成报告见 `docs/leader/reports/V0.4/S1-report-003.md`。S2优化、S3正式性能报告仍计划中，V0.4整体未完成。
 
 目标：
 
@@ -234,7 +234,7 @@
 
 阶段划分：
 
-- `S1 Benchmark 方法与工具`：定义测试环境、工具、指标和报告格式。详细设计文档：`docs/leader/designs/V0.4/S1-design.md`。
+- `S1 Benchmark 方法与工具`（Completed）：已交付测试环境记录、TCP/UDP配对工具、指标口径及报告格式，并通过独立验收。详细设计文档：`docs/leader/designs/V0.4/S1-design.md`。
 - `S2 用户态资源与生命周期优化`：改善缓冲、连接关闭、错误路径和 graceful shutdown。详细设计文档：`docs/leader/designs/V0.4/S2-design.md`。
 - `S3 性能报告与回归验证`：生成可复现性能报告，保护已有行为不回退。详细设计文档：`docs/leader/designs/V0.4/S3-design.md`。
 
