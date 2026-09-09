@@ -136,6 +136,10 @@ class Reactor {
   }
 
  private:
+  void statistic(StatKind kind, std::uint64_t amount = 1) {
+    if (cb_.statistics) cb_.statistics({kind, amount});
+  }
+
   void observe(const char* kind, const Session* s = nullptr, int side = -1,
                std::uint64_t value = 0) {
     if (options_.observe)
@@ -171,8 +175,10 @@ class Reactor {
   void remove(EndpointState& end) {
     if (!end.registered) return;
     if (epoll_ctl(epoll_.get(), EPOLL_CTL_DEL, end.fd.get(), nullptr) < 0 &&
-        errno != ENOENT && errno != EBADF)
+        errno != ENOENT && errno != EBADF) {
+      statistic(StatKind::Error);
       cb_.diagnostic("epoll_ctl DEL", errno);
+    }
     end.registered = false;
     end.interest = 0;
   }
@@ -186,6 +192,7 @@ class Reactor {
     cb_.session(
         {s.id, s.backend, false, reason, error, {s.sent[0], s.sent[1]}});
     sessions_.erase(it);
+    statistic(StatKind::Closed);
     observe("closed");
   }
 
@@ -215,10 +222,13 @@ class Reactor {
         if (errno == ECONNABORTED || errno == EPROTO || errno == ENETDOWN ||
             errno == ENOPROTOOPT || errno == EHOSTDOWN || errno == ENONET ||
             errno == EHOSTUNREACH || errno == EOPNOTSUPP ||
-            errno == ENETUNREACH)
+            errno == ENETUNREACH) {
+          statistic(StatKind::Error);
           continue;
+        }
         if (errno == EMFILE || errno == ENFILE || errno == ENOBUFS ||
             errno == ENOMEM) {
+          statistic(StatKind::Error);
           if (!resource_warning_)
             cb_.diagnostic("accept4 resource backoff", errno);
           resource_warning_ = true;
@@ -232,17 +242,22 @@ class Reactor {
       }
       resource_warning_ = false;
       if (sessions_.size() >= options_.max_sessions) {
+        statistic(StatKind::Rejected);
         observe("capacity-reject");
         continue;
       }
       auto backend = cb_.select_backend();
-      if (!backend) continue;
+      if (!backend) {
+        statistic(StatKind::Rejected);
+        continue;
+      }
       auto session = std::make_unique<Session>();
       session->id = next_id_++;
       session->backend = *backend;
       session->ends[0].fd = std::move(front);
       auto id = session->id;
       sessions_.emplace(id, std::move(session));
+      statistic(StatKind::Created);
       auto& s = *sessions_.at(id);
       cb_.session({id, s.backend, true, "accepted"});
       try {
@@ -270,6 +285,7 @@ class Reactor {
           throw SessionFailure{"connect", errno};
         update(s);
       } catch (const SessionFailure& error) {
+        statistic(StatKind::Error);
         close(id, error.operation, error.error);
       }
     }
@@ -331,6 +347,7 @@ class Reactor {
       buffer.consume(n);
       budget -= n;
       s.sent[source] += n;
+      statistic(source == 0 ? StatKind::BytesC2b : StatKind::BytesB2c, n);
       s.deadline.progress(Clock::now(), n);
     }
     if (s.ends[source].paused && buffer.size() <= kLowWater) {
@@ -426,6 +443,7 @@ class Reactor {
       }
       update(s);
     } catch (const SessionFailure& error) {
+      statistic(StatKind::Error);
       close(id, error.operation, error.error);
     }
   }
@@ -442,6 +460,7 @@ class Reactor {
       auto& s = *sessions_.at(id);
       if (s.deadline.expired(now, s.connecting ? options_.connect_timeout
                                                : options_.idle_timeout)) {
+        statistic(StatKind::Timeout);
         close(id, s.connecting ? "connect-timeout" : "idle-timeout", ETIMEDOUT);
         continue;
       }
@@ -461,6 +480,7 @@ class Reactor {
         }
         update(s);
       } catch (const SessionFailure& error) {
+        statistic(StatKind::Error);
         close(id, error.operation, error.error);
       }
     }

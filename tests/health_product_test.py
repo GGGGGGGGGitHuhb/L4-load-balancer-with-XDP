@@ -133,7 +133,7 @@ class Backend:
 
 
 class Product:
-    def __init__(self, name, backend, protocol, health):
+    def __init__(self, name, backend, protocol, health, metrics=None):
         self.path = ROOT / name
         self.path.mkdir(exist_ok=True)
         reservation = bind_socket(socket.SOCK_STREAM if protocol == "tcp" else socket.SOCK_DGRAM)
@@ -141,6 +141,9 @@ class Product:
         reservation.close()
         config = self.path / "config.conf"
         config.write_text(f"listen=127.0.0.1:{self.port}\nbackend=127.0.0.1:{backend.port}\nprotocol={protocol}\nhealth_check={health}\n")
+        if metrics is not None:
+            with config.open("a") as stream:
+                stream.write(f"metrics={metrics}\n")
         self.stdout = open(self.path / "stdout.log", "w")
         self.stderr = open(self.path / "stderr.log", "w")
         self.process = subprocess.Popen([PROGRAM, "--run", str(config)], stdout=self.stdout, stderr=self.stderr)
@@ -368,12 +371,13 @@ def tcp_off():
         backend.close()
 
 
-try:
-    if MODE in ("all", "tcp"):
-        tcp_off()
-        tcp_scenario()
-    if MODE in ("all", "udp"):
-        udp_scenario()
-except Exception as error:
-    print("FAIL health product:", error, file=sys.stderr, flush=True)
-    sys.exit(1)
+if __name__ == "__main__":
+    try:
+        if MODE in ("all", "tcp"):
+            tcp_off()
+            tcp_scenario()
+        if MODE in ("all", "udp"):
+            udp_scenario()
+    except Exception as error:
+        print("FAIL health product:", error, file=sys.stderr, flush=True)
+        sys.exit(1)

@@ -137,3 +137,7 @@ cmake --build build-production
 ## V0.3/S1 补充
 
 上文 V0.2 场景使用默认 health_check=off，其原11项注册保留。当前新增4项健康测试，共15项，Debug快速14/Release完整15；测试构建需 Python3 标准库，无第三方包，Production无Python依赖。`ctest --test-dir build -R v03_health` 验证默认时序真实 TCP/UDP 摘除和恢复；UDP需同IP/端口且代表UDP状态的TCP端点。既有flow不会因探活摘除而迁移/关闭，完整边界见 [健康规格](../specs/health-check.md)。
+
+## V0.3/S2 指标验证
+
+原场景默认metrics=off保持；新增5项指标测试，当前20项，Debug快速19/Release完整20。`ctest --test-dir build -R v03_metrics` 同时覆盖模型/实际计数落点/真实产品活跃快照。手动在配置增加metrics=stderr并把stderr重定向普通本地文件，按 [metrics规格](../specs/metrics.md) 解析前缀；同步慢sink和SIGPIPE可能影响服务，不将普通文件条件下停止界推广到堵塞管道。

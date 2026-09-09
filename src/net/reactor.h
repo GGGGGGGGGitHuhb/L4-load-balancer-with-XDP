@@ -8,6 +8,8 @@
 
 #include "config/config.h"
 #include "net/state.h"
+#include "net/statistics.h"
+
 namespace l4lb::net {
 /** 结构化生命周期输出；net 不打印日志或载荷。 */
 struct SessionEvent {
@@ -18,6 +20,7 @@ struct SessionEvent {
   int error = 0;
   std::uint64_t sent[2]{};
 };
+
 /** 内部观测，不是产品指标接口。未设置时没有逐 I/O 输出。 */
 struct Observation {
   std::string kind;
@@ -26,6 +29,7 @@ struct Observation {
   std::uint64_t value = 0;
   std::size_t sessions = 0, tokens = 0;
 };
+
 struct Options {
   std::size_t max_sessions = 1024;
   std::chrono::milliseconds connect_timeout{5000}, idle_timeout{60000};
@@ -36,13 +40,16 @@ struct Options {
   std::function<ssize_t(int, const void*, std::size_t, int)> send_call;
   std::function<int(int, sockaddr*, socklen_t*, int)> accept_call;
 };
+
 struct Callbacks {
   std::function<std::optional<Endpoint>()> select_backend;
   std::function<void()> maintenance;
+  std::function<void(StatEvent)> statistics;
   std::function<void()> ready;
   std::function<void(const SessionEvent&)> session;
   std::function<void(const std::string&, int)> diagnostic;
 };
+
 /** 单线程 LT reactor，信号退出返回 0；不可恢复错误抛 system_error。 */
 int run(const Endpoint& listen, const Callbacks& callbacks,
         const Options& options = {});

@@ -70,3 +70,7 @@
 - Unknown 初始拒绝新 flow；2成功变Healthy，3失败变Unhealthy，完成后1s/超时1s。本机资源失败按 local_error 分类，可能保守摘除。
 - 新 key 无 Healthy 则整包丢弃，不创建 flow/backend fd、不消耗轮询或 fallback；既有 flow 后续数据仍到原后端，状态改变不迁移/关闭。自然错误和60s到期继续沿用原规则，新 flow 重新过滤。
 - 全不可选不退出，恢复可接新 flow；日志不代替 UDP nonce 数据证据。详见 [健康规格](health-check.md)。
+
+## V0.3/S2 可选指标
+
+metrics默认off；stderr模式将真实创建/关闭、成功send提交量、拒绝/drop/error/timeout累计为固定schema快照。TCP计入connecting会话，send每次正返回即时计字节，不等关闭；UDP完整成功一包计一次，零长包计包不计字节，recv失败无虚构drop。旧健康不eligible的flow仍可贡献提交量。错误在日志限频前计，关闭不重复计原错误；成功提交不保证对端收到。同步stderr风险、尾快照和全部字段见 [metrics规格](metrics.md)。

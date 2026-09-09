@@ -81,6 +81,7 @@ ConfigResult parse_config(std::string_view text) {
   bool has_protocol = false;
   bool has_scheduler = false;
   bool has_health = false;
+  bool has_metrics = false;
   std::size_t line_number = 0;
   while (!text.empty()) {
     ++line_number;
@@ -119,6 +120,17 @@ ConfigResult parse_config(std::string_view text) {
       else
         return fail(ErrorKind::kField, "protocol 仅支持 tcp/udp");
       has_protocol = true;
+      continue;
+    }
+    if (key == "metrics") {
+      if (has_metrics) return fail(ErrorKind::kField, "metrics 不能重复");
+      if (value == "off")
+        config.metrics = MetricsKind::kOff;
+      else if (value == "stderr")
+        config.metrics = MetricsKind::kStderr;
+      else
+        return fail(ErrorKind::kField, "metrics 仅支持 off/stderr");
+      has_metrics = true;
       continue;
     }
     if (key == "health_check") {

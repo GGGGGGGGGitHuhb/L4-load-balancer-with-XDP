@@ -55,4 +55,23 @@ std::optional<Endpoint> HealthSelection::next() {
   }
   return std::nullopt;
 }
+
+void HealthSelection::copy_health(std::span<metrics::Backend> backends) const {
+  if (backends.size() != config_.backends.size())
+    throw std::invalid_argument("health snapshot size");
+  for (std::size_t i = 0; i < backends.size(); ++i) {
+    if (!checker_) {
+      backends[i] = {};
+      continue;
+    }
+    auto state = checker_->state(i).status;
+    auto health =
+        state == health::Status::Unknown
+            ? metrics::Health::Unknown
+            : (state == health::Status::Healthy ? metrics::Health::Healthy
+                                                : metrics::Health::Unhealthy);
+    backends[i] = {health, state == health::Status::Healthy};
+  }
+}
+
 }  // namespace l4lb

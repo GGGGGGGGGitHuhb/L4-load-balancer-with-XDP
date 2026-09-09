@@ -4,6 +4,43 @@
 
 ## Unreleased
 
+### 2026-09-09 V0.3/S2 完成收尾
+
+- 同V0.3-S2-D1保持Approved，Builder002、Reviewer002 PASS及Leader003收尾完成，S2 Completed；R-S2-01异常漏drop、R-S2-02正式fd断言缺失均关闭，无带债验收。S3未开始，V0.3整体尚未完成。
+- 最终独立Debug19/19（48.74s）、Release20/20（110.44s，含原60s expiry）、Production两协议/38项普通uid CLI通过；静态check无网络/指标输出，五负向各exit1、23产品PID已回收、51文件指纹一致。
+- TD-004 metrics规格义务完成，未来规格继续跟踪。旧ICMP首轮单次失败未在最终完整回归复现，原断言未改，不宣称根因已定位。父将按用户授权完成本地提交，下方保留各次交接历史。
+
+### 2026-09-09 V0.3/S2 独立复审通过
+
+- Reviewer002 PASS，R-S2-01/02关闭，无新增债项；原异常探针error1/drop1，五路正式收包断言及fd失败传播经独立正负验证。
+- Reviewer独立新目录Debug19/19（48.74s）、Release20/20（110.44s，含原60s expiry），Production两协议指标/38项普通uid CLI/check零网络与零指标输出通过；五类Release负向各退出1，51指纹匹配。首轮旧ICMP单次失败根因未声称解决，本轮完整回归未复现。
+- 当前Closing，交Leader同步阶段与TD-004后再由父按授权提交；保留001 FAIL和全部历史。
+
+### 2026-09-09 V0.3/S2 Builder返工001
+
+- 修复R-S2-01：已取得有效UDP包后create/选择异常先计一次drop，再原样传播；Error仍由control计，不重复正常空选择或成功发送计数。
+- 修复R-S2-02：正式UDP事件测试补结束fd比较及失败传播；未发现产品fd泄漏，纠正Builder001对此证据覆盖的过度声明。新增真实收包后异常/正常失败/拒绝/成功控制以及两个返工负向。
+- 独立rework-01重新构建验证：Debug19/19（48.92s）、Release20/20（109.58s，含原60s expiry）、Production两协议指标/普通uid38CLI/check纯静态均通过；原三类与新增两类Release负向均退出1。Reviewer旧ICMP首次失败原因仍未归因，本次完整Debug未复现且原断言未改。
+- 原批准基线保持，不覆盖Builder001/Reviewer001；Builder002 Ready for Review，待Reviewer复审与Leader收尾。
+
+### 2026-09-09 V0.3/S2 首轮独立审查
+
+- Reviewer结论FAIL / Reworking：R-S2-01为UDP已取得数据报后建flow服务异常漏drop，R-S2-02为正式UDP指标事件测试缺fd结束比较；独立补验未发现fd泄漏，均待正式返工。
+- 独立Release20/20（109.64s）、Production38项普通uid CLI/两协议指标/纯静态check通过，三类Release负向各退出1。Debug首轮18/19，旧UDP ICMP项单独重跑通过，保留原失败，修复后需完整复验。尚未阶段完成或提交。
+
+### 2026-09-09 V0.3/S2 实现与 Builder 自测
+
+- 新增独立可选metrics=off|stderr，默认off无collector/周期；schema=1快照记录实际业务生命周期、即时成功提交字节/UDP包、拒绝/drop/error/timeout及只读健康状态。TCP connecting计入会话，UDP零长成功也计一包。
+- 错误在诊断限频前计，关闭不重复原错误；ready/每秒periodic/清理后final或error。同步stderr可能阻塞业务、SIGPIPE或留半行；已返回失败禁用后续指标，无新线程/端口/生产依赖。
+- 新增5项测试保留原15项：Builder Debug19/19（48.81s）、Release20/20（109.72s，含原60s expiry）；Production两协议指标、普通uid CLI38项、check strace零网络调用/零指标行通过。三类Release实际落点错误副本均被正式测试检出，退出1。
+- 新增metrics完整规格并同步配置/网络语义/README/架构/运行手册；沿用.h/.cpp同目录和函数定义间空行。当前Ready for Review，尚未独立验收/LeaderClosing；不宣告S3完成。
+
+### 2026-09-09 V0.3/S1合并与S2准备
+
+- S1已由PR7合并，origin/main与远端v0.3-s1注释标签peeled核验为9971818b，含实现0780b7d。按用户要求补齐19个cpp函数定义间空行及格式规则，不改变功能。
+- 新分支codex/v0.3-s2基于9971818b；形成V0.3-S2-D1 Draft设计、审查计划和自包含准备决策，Awaiting PM Decision。仅准备，尚未实现指标或获得开发批准。
+- README/ROADMAP/TD-004入口同步；metrics规格等待S2实现与独立验收，不提前关闭义务。历史交接记录保留。
+
 ### 2026-09-09 V0.3/S1 完成收尾
 
 - V0.3-S1-D1保持Approved，Builder001、Reviewer001独立PASS及Leader003收尾齐备，S1 Completed；S2/S3未开始，V0.3整体尚未完成。
