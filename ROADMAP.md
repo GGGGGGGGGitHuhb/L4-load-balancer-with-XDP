@@ -6,7 +6,7 @@
 
 本项目与高性能 HTTP 服务器项目形成分层互补：HTTP 服务器聚焦应用层协议解析和请求响应处理，本项目聚焦传输层 TCP/UDP 转发、后端调度、UDP flow table、健康检查、控制面与数据面分离，以及 XDP/eBPF 包级 fast path 验证。
 
-当前已完成 V0.1 的 S1 工程骨架、S2 TCP 转发与 S3 产品验证，V0.1 开发范围完成；本地 main 已包含 S3 合并提交 544c8d8；V0.2/S1 已完成 Completed（Reviewer002 PASS、Leader003 收尾），S2 Completed（Reviewer001 PASS、Leader003 收尾），S3 Completed（Reviewer001 PASS、Leader003收尾），V0.2开发范围完成；S2 已合并并有远端标签 v0.2-s2（c6927c0）。总体技术方向如下：
+当前已完成 V0.1 的 S1 工程骨架、S2 TCP 转发与 S3 产品验证，V0.1 开发范围完成；本地 main 已包含 S3 合并提交 544c8d8；V0.2/S1 已完成 Completed（Reviewer002 PASS、Leader003 收尾），S2 Completed（Reviewer001 PASS、Leader003 收尾），S3 Completed（Reviewer001 PASS、Leader003收尾），V0.2开发范围完成；S3已合并并有远端标签v0.2-s3（7821b25）；当前V0.3/S1 Completed（Reviewer001 PASS、Leader003收尾）。总体技术方向如下：
 
 - C++20 优先。
 - WSL2 用户态开发优先，云服务器 Linux 环境用于 XDP/eBPF 功能验证和阶段收尾。
@@ -113,7 +113,7 @@
 
 ### V0.2 UDP 转发与调度策略
 
-状态：S1 Completed（2026-09-08），V0.2-S1-D1 保持 Approved；Reviewer002 PASS、Leader003 收尾；S1 已合并至 main 并标注 v0.2-s1（53236b1）。S2 Completed，V0.2-S2-D1 保持 Approved、Reviewer001 PASS、Leader003 收尾；S2 已合并并有 v0.2-s2 标签（c6927c0）。S3 Completed（2026-09-09），V0.2-S3-D1保持Approved，Reviewer001 PASS、Leader003收尾；V0.2开发范围Completed，六条完成标准均满足，见 `docs/specs/v0.2-acceptance.md`；S3未提交发布。当前分支 `codex/v0.2-s3`。
+状态：S1 Completed（2026-09-08），V0.2-S1-D1 保持 Approved；Reviewer002 PASS、Leader003 收尾；S1 已合并至 main 并标注 v0.2-s1（53236b1）。S2 Completed，V0.2-S2-D1 保持 Approved、Reviewer001 PASS、Leader003 收尾；S2 已合并并有 v0.2-s2 标签（c6927c0）。S3 Completed（2026-09-09），V0.2-S3-D1保持Approved，Reviewer001 PASS、Leader003收尾；V0.2开发范围Completed，六条完成标准均满足，见 `docs/specs/v0.2-acceptance.md`；S3已合并，远端main与v0.2-s3标签核验为7821b25。当前分支 `codex/v0.3-s1`，V0.3/S1为Completed状态（D1保持Approved）。
 
 目标：
 
@@ -161,7 +161,7 @@
 
 ### V0.3 健康检查与可观测性
 
-状态：计划中
+状态：S1 Completed（2026-09-09），V0.3-S1-D1保持Approved，Builder001、Reviewer001 PASS、Leader003收尾；S2/S3未开始，V0.3整体尚未完成。分支codex/v0.3-s1，当前HEAD为准备提交9d8310d，历史合并基点7821b25；本S1成果尚未提交或发布。
 
 目标：
 
@@ -187,13 +187,13 @@
 
 阶段划分：
 
-- `S1 健康检查状态机`：实现后端探活、状态转换、失败阈值和恢复阈值。详细设计文档：`docs/leader/designs/V0.3/S1-design.md`。
+- `S1 健康检查状态机`（Completed）：实现后端探活、状态转换、失败阈值和恢复阈值。详细设计文档：`docs/leader/designs/V0.3/S1-design.md`。
 - `S2 指标模型与输出`：实现连接数、字节数、错误计数和后端状态快照。详细设计文档：`docs/leader/designs/V0.3/S2-design.md`。
 - `S3 故障场景验证`：验证后端停止、恢复、连接失败和指标变化。详细设计文档：`docs/leader/designs/V0.3/S3-design.md`。
 
 完成标准：
 
-- 不健康后端不会继续接收新流量。
+- 启用健康检查时，不健康后端不再获得新TCP会话/新UDP flow；已有绑定不迁移。探测为TCP连接信号，UDP需显式配置对应TCP健康端点约定。
 - 后端恢复后可以重新参与调度。
 - 用户可以观察基础运行状态。
 - 健康检查和指标模块有自动化测试。

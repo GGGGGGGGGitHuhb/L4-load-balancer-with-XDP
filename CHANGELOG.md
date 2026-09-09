@@ -4,6 +4,26 @@
 
 ## Unreleased
 
+### 2026-09-09 V0.3/S1 完成收尾
+
+- V0.3-S1-D1保持Approved，Builder001、Reviewer001独立PASS及Leader003收尾齐备，S1 Completed；S2/S3未开始，V0.3整体尚未完成。
+- 独立Debug14/14、Release15/15（含原60s expiry）、Production两协议健康和29项普通uid CLI通过；三类负向均检出，42文件指纹核对一致、16个健康测试产品PID已回收。
+- ROADMAP与TD-004同步：健康规格义务完成，指标/XDP/benchmark后续义务保留。无新增技术债或未解决发现；成果尚未提交或发布。下方保留各次交接历史。
+
+### 2026-09-09 V0.3/S1 实现与独立验收
+
+- 实现可选 `health_check=off|tcp_connect`，默认 off 保持 TCP/UDP 兼容；独立非阻塞 checker、Unknown/Healthy/Unhealthy、连续2成功/3失败、固定完成后1s/超时1s，资源失败区分 local_error。
+- control 对新会话/flow 过滤健康资格，空集合不推进轮询/不 fallback，旧 TCP 连接和 UDP flow 保持绑定。UDP 显式启用依赖同 IP/端口有代表性的 TCP 健康端点；check-config 保持纯静态。
+- 新增4项测试保留原11项：Builder Debug快速14/14（34.84s）、Release完整15/15（94.62s，含60s expiry），Production构建/29项普通uid CLI/两协议健康冒烟通过；strace网络调用0，三类Release错误副本均被正式测试检出（退出1）。
+- 健康规格、配置/调度/TCP/UDP语义、README/架构及运行手册同步。Python3仅新增产品测试fixture依赖；生产无第三方依赖。不含S2指标或S3完整故障矩阵；Reviewer独立验收PASS，当前Closing，待Leader收尾。
+
+- Reviewer独立Debug14/14（35.37s）、Release15/15（95.09s），Production无测试构建/29项普通uid CLI/两协议健康通过；静态check网络调用0，三类独立Release负向各退出1，16个健康测试产品PID回收。修正README已知限制旧“无健康检查”措辞，无新增技术债。
+
+### 2026-09-09 V0.3/S1准备
+
+- 已核验V0.2/S3合并及标签7821b25（含1b16d31），从origin/main创建并切换codex/v0.3-s1；33文件验收指纹一致。历史未提交/发布描述保留当时事实。
+- 形成V0.3-S1-D1 Draft设计、审查计划和准备决策包，Awaiting PM Decision；未实现探活，未重跑长测试。
+
 ### 2026-09-09 V0.2/S3与V0.2完成收尾
 
 - Reviewer001 PASS后，Leader003核对S3七条AC与V0.2六条标准、33文件指纹及独立验证证据，S3和V0.2开发范围Completed。

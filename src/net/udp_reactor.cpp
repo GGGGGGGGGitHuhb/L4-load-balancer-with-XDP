@@ -17,12 +17,15 @@
 #include <vector>
 
 #include "net/fd.h"
+
 namespace l4lb::net {
 namespace {
 using UClock = UdpDeadline::Clock;
+
 [[noreturn]] void udp_fail(const char* operation, int error = errno) {
   throw std::system_error(error, std::generic_category(), operation);
 }
+
 sockaddr_in udp_address(const Endpoint& e) {
   sockaddr_in a{};
   a.sin_family = AF_INET;
@@ -30,19 +33,23 @@ sockaddr_in udp_address(const Endpoint& e) {
   std::memcpy(&a.sin_addr, e.address.data(), 4);
   return a;
 }
+
 bool unicast(const std::array<std::uint8_t, 4>& a) {
   return a != std::array<std::uint8_t, 4>{} &&
          a != std::array<std::uint8_t, 4>{255, 255, 255, 255} &&
          !(a[0] >= 224 && a[0] <= 239);
 }
+
 bool pressure(int e) {
   return e == EAGAIN || e == EWOULDBLOCK || e == ENOBUFS || e == ENOMEM ||
          e == EMSGSIZE;
 }
+
 bool shared_error(int e) {
   return pressure(e) || e == ECONNREFUSED || e == ECONNRESET ||
          e == ENETUNREACH || e == EHOSTUNREACH || e == EACCES;
 }
+
 class UdpSignalMask {
  public:
   UdpSignalMask() {
@@ -51,12 +58,15 @@ class UdpSignalMask {
     sigaddset(&set_, SIGTERM);
     if (sigprocmask(SIG_BLOCK, &set_, &old_) < 0) udp_fail("sigprocmask");
   }
+
   ~UdpSignalMask() { sigprocmask(SIG_SETMASK, &old_, nullptr); }
+
   const sigset_t* get() const { return &set_; }
 
  private:
   sigset_t set_{}, old_{};
 };
+
 struct UdpFlow {
   FlowKey key;
   Endpoint backend;
@@ -64,6 +74,7 @@ struct UdpFlow {
   std::uint64_t token;
   UdpDeadline deadline;
 };
+
 class UdpReactor {
   friend struct UdpTestAccess;
 
@@ -91,6 +102,7 @@ class UdpReactor {
     registration(listener_.get(), 1);
     registration(signals_.get(), 2);
   }
+
   ~UdpReactor() {
     // 析构必须始终释放所有 owner；控制观察函数异常不能中断资源清理。
     while (!flows_.empty()) {
@@ -100,6 +112,7 @@ class UdpReactor {
       }
     }
   }
+
   int loop() {
     if (cb_.ready) cb_.ready();
     std::array<epoll_event, 128> events{};
@@ -113,6 +126,7 @@ class UdpReactor {
       }
       if (stopping()) break;
       expire();
+      if (cb_.maintenance) cb_.maintenance();
       for (int i = 0; i < count; ++i) {
         if (stopping()) return 0;
         dispatch(events[i].data.u64, events[i].events);
@@ -125,10 +139,12 @@ class UdpReactor {
   UClock::time_point now() const {
     return opt_.now ? opt_.now() : UClock::now();
   }
+
   void observe(const char* kind, std::uint64_t token = 0, int fd = -1) {
     if (opt_.observe)
       opt_.observe({kind, token, fd, flows_.size(), keys_.size()});
   }
+
   void diagnostic(const char* kind, int error = 0) {
     observe(kind);
     auto time = now();
@@ -139,6 +155,7 @@ class UdpReactor {
     diagnostic_times_[kind] = time;
     if (cb_.diagnostic) cb_.diagnostic(kind, error);
   }
+
   void registration(int fd, std::uint64_t token) {
     epoll_event e{};
     e.events = EPOLLIN;
@@ -146,6 +163,7 @@ class UdpReactor {
     if (epoll_ctl(epoll_.get(), EPOLL_CTL_ADD, fd, &e) < 0)
       udp_fail("UDP epoll add");
   }
+
   bool stopping() {
     signalfd_siginfo info{};
     auto n = read(signals_.get(), &info, sizeof(info));
@@ -153,6 +171,7 @@ class UdpReactor {
     if (n < 0 && (errno == EAGAIN || errno == EINTR)) return false;
     udp_fail("UDP signalfd read", n < 0 ? errno : EIO);
   }
+
   void erase(std::uint64_t token, const char* reason, int error = 0) {
     auto it = flows_.find(token);
     if (it == flows_.end()) return;
@@ -165,6 +184,7 @@ class UdpReactor {
     observe(reason, token, fd);
     if (cb_.flow) cb_.flow({token, flow->backend, reason, error});
   }
+
   void expire() {
     auto time = now();
     for (auto it = flows_.begin(); it != flows_.end();) {
@@ -174,17 +194,20 @@ class UdpReactor {
       if (due) erase(token, "idle-timeout");
     }
   }
+
   int setup_error(const char* name, int fd) {
     return opt_.setup_error ? opt_.setup_error(name, fd) : 0;
   }
+
   std::uint64_t create(const FlowKey& key) {
     expire();
     if (flows_.size() >= opt_.max_flows) {
       diagnostic("capacity-drop");
       return 0;
     }
-    Endpoint backend =
-        cb_.select_backend();  // 异常传播，不能当成可恢复网络错误。
+    auto selected = cb_.select_backend();  // 真正异常仍传播。
+    if (!selected) return 0;
+    Endpoint backend = *selected;
     int error = setup_error("socket", -1);
     Fd fd(error
               ? -1
@@ -246,6 +269,7 @@ class UdpReactor {
     if (cb_.flow) cb_.flow({token, backend, "created"});
     return token;
   }
+
   bool metadata(const msghdr& msg, const sockaddr_in& from,
                 FlowKey& key) const {
     if (msg.msg_namelen < sizeof(sockaddr_in) || from.sin_family != AF_INET ||
@@ -272,10 +296,12 @@ class UdpReactor {
     return found == 1 && (endpoint_.address == std::array<std::uint8_t, 4>{} ||
                           endpoint_.address == key.local);
   }
+
   ssize_t receive(int fd, msghdr& msg) {
     return opt_.recvmsg_call ? opt_.recvmsg_call(fd, &msg, 0)
                              : recvmsg(fd, &msg, 0);
   }
+
   bool error(int code, bool listener, std::uint64_t token, const char* kind) {
     if (code == EBADF || code == ENOTSOCK || code == EINVAL)
       udp_fail(kind, code);
@@ -291,6 +317,7 @@ class UdpReactor {
     erase(token, kind, code);
     return false;
   }
+
   void send_packet(UdpFlow& flow, std::size_t size, bool reply) {
     iovec vector{scratch_.data(), size};
     msghdr msg{};
@@ -334,6 +361,7 @@ class UdpReactor {
     }
     diagnostic("send-budget-drop");
   }
+
   void listener_read() {
     for (int attempt = 0; attempt < 64; ++attempt) {
       sockaddr_in from{};
@@ -377,6 +405,7 @@ class UdpReactor {
     }
     observe("listener-budget");
   }
+
   void backend_read(std::uint64_t token) {
     for (int attempt = 0; attempt < 64; ++attempt) {
       auto it = flows_.find(token);
@@ -406,6 +435,7 @@ class UdpReactor {
     }
     observe("backend-budget", token);
   }
+
   void dispatch(std::uint64_t token, std::uint32_t events) {
     if (token == 2) return;
     bool listener = token == 1;
@@ -449,6 +479,7 @@ class UdpReactor {
         backend_read(token);
     }
   }
+
   Endpoint endpoint_;
   const UdpCallbacks& cb_;
   const UdpOptions& opt_;
@@ -461,6 +492,7 @@ class UdpReactor {
   std::unordered_map<std::string, UClock::time_point> diagnostic_times_;
 };
 }  // namespace
+
 int run_udp(const Endpoint& endpoint, const UdpCallbacks& callbacks,
             const UdpOptions& options) {
   if (!options.max_flows || options.idle_timeout.count() <= 0 ||

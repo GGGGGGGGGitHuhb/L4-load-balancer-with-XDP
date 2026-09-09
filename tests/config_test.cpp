@@ -7,6 +7,7 @@
 namespace {
 int checks = 0;
 int failures = 0;
+
 void check(bool condition, const std::string& name) {
   ++checks;
   if (!condition) {
@@ -14,6 +15,7 @@ void check(bool condition, const std::string& name) {
     std::cerr << "失败：" << name << '\n';
   }
 }
+
 void invalid(const std::string& text, std::size_t line, bool eof,
              const std::string& name) {
   const auto result = l4lb::parse_config(text);

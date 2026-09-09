@@ -8,16 +8,20 @@
 
 #include "core/round_robin.h"
 #include "net/udp_reactor.cpp"
+
 namespace l4lb::net {
 namespace {
 using namespace std::chrono_literals;
+
 void require_udp(bool ok, const std::string& why) {
   if (!ok) throw std::runtime_error(why);
 }
+
 struct Datagram {
   std::string bytes;
   Endpoint from;
 };
+
 Endpoint socket_endpoint(int fd) {
   sockaddr_in a{};
   socklen_t size = sizeof(a);
@@ -28,6 +32,7 @@ Endpoint socket_endpoint(int fd) {
   std::memcpy(e.address.data(), &a.sin_addr, 4);
   return e;
 }
+
 Fd bound_udp(std::array<std::uint8_t, 4> ip = {127, 0, 0, 1}) {
   Fd fd(socket(AF_INET, SOCK_DGRAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0));
   require_udp(fd.get() >= 0, "test UDP socket");
@@ -36,6 +41,7 @@ Fd bound_udp(std::array<std::uint8_t, 4> ip = {127, 0, 0, 1}) {
               "test UDP bind");
   return fd;
 }
+
 void put(int fd, Endpoint e, const std::string& bytes) {
   auto a = udp_address(e);
   require_udp(
@@ -43,12 +49,14 @@ void put(int fd, Endpoint e, const std::string& bytes) {
              sizeof(a)) == static_cast<ssize_t>(bytes.size()),
       "test send datagram");
 }
+
 bool readable(int fd, int ms = 0) {
   pollfd p{fd, POLLIN, 0};
   int n = poll(&p, 1, ms);
   require_udp(n >= 0, "test poll");
   return n && (p.revents & POLLIN);
 }
+
 Datagram take(int fd) {
   require_udp(readable(fd, 500),
               "datagram deadline / zero-length EOF mutation");
@@ -64,10 +72,12 @@ Datagram take(int fd) {
   std::memcpy(d.from.address.data(), &from.sin_addr, 4);
   return d;
 }
+
 std::size_t fd_count() {
   return std::distance(std::filesystem::directory_iterator("/proc/self/fd"),
                        std::filesystem::directory_iterator{});
 }
+
 struct UdpTestAccess {
   struct Rig {
     Fd a = bound_udp(), b = bound_udp();
@@ -78,6 +88,7 @@ struct UdpTestAccess {
     std::vector<UdpFlowEvent> lifecycle;
     std::unique_ptr<UdpReactor> r;
     Endpoint listen;
+
     Rig(bool wildcard = false) {
       cb.select_backend = [&] {
         auto e = socket_endpoint(selects % 2 ? b.get() : a.get());
@@ -88,12 +99,14 @@ struct UdpTestAccess {
       opt.observe = [&](const UdpObservation& e) { observed.push_back(e); };
       start(wildcard);
     }
+
     ~Rig() {
       if (std::uncaught_exceptions())
         for (auto& event : observed)
           std::cerr << "observed=" << event.kind << " token=" << event.token
                     << " flows=" << event.flows << '\n';
     }
+
     void start(bool wildcard = false) {
       r = std::make_unique<UdpReactor>(
           Endpoint{wildcard ? std::array<std::uint8_t, 4>{}
@@ -103,6 +116,7 @@ struct UdpTestAccess {
       listen = socket_endpoint(r->listener_.get());
       listen.address = {127, 0, 0, 1};
     }
+
     void pump(int ms = 20) {
       epoll_event events[128]{};
       int n = epoll_wait(r->epoll_.get(), events, 128, ms);
@@ -111,14 +125,17 @@ struct UdpTestAccess {
       for (int i = 0; i < n; ++i)
         r->dispatch(events[i].data.u64, events[i].events);
     }
+
     std::uint64_t token() {
       require_udp(r->flows_.size() == 1, "one flow");
       return r->flows_.begin()->first;
     }
+
     bool seen(const std::string& s) {
       return std::any_of(observed.begin(), observed.end(),
                          [&](auto& e) { return e.kind == s; });
     }
+
     Datagram request(Fd& c, int backend, const std::string& value,
                      Endpoint dest = {}) {
       if (!dest.port) dest = listen;
@@ -130,6 +147,7 @@ struct UdpTestAccess {
       require_udp(d.bytes == value, "request payload mismatch");
       return d;
     }
+
     void reply(Fd& c, int backend, const Datagram& d, const std::string& value,
                Endpoint source = {}) {
       put(backend, d.from, value);
@@ -141,12 +159,14 @@ struct UdpTestAccess {
       require_udp(got.bytes == value, "reply payload mismatch");
       require_udp(got.from == source, "reply source mismatch");
     }
+
     void exchange(Fd& c, int backend, const std::string& value,
                   Endpoint dest = {}) {
       auto d = request(c, backend, value, dest);
       reply(c, backend, d, value, dest);
     }
   };
+
   static void values() {
     FlowKey base{{{127, 0, 0, 1}, 1234}, {127, 0, 0, 1}};
     auto changed = base;
@@ -185,6 +205,7 @@ struct UdpTestAccess {
     }
     std::cout << "AC05 UNIT key/deadline/options PASS\n";
   }
+
   static void identity_and_boundaries() {
     Rig t;
     auto c = bound_udp(), d = bound_udp(), e = bound_udp({127, 0, 0, 2});
@@ -229,6 +250,7 @@ struct UdpTestAccess {
     std::cout << "AC03 REAL wildcard same client 127.0.0.1/127.0.0.2 separate "
                  "flow and exact source IP PASS\n";
   }
+
   static void truncation_metadata() {
     Rig t;
     auto c = bound_udp();
@@ -281,6 +303,7 @@ struct UdpTestAccess {
         << "AC03 INJECT missing/CTRUNC/specdiff/multicast/incomplete/explicit "
            "mismatch/zero client port before selection PASS\n";
   }
+
   static void deadlines_capacity_setup() {
     Rig t;
     auto c = bound_udp(), d = bound_udp(), e = bound_udp();
@@ -331,6 +354,7 @@ struct UdpTestAccess {
     std::cout << "AC05 INJECT socket/bind/connect(EINPROGRESS)/epoll failure: "
                  "fd and both indexes rollback, next selection B PASS\n";
   }
+
   static void initial_drop_and_fatal_contracts() {
     auto count = fd_count();
     {
@@ -383,6 +407,7 @@ struct UdpTestAccess {
     std::cout << "AC05/06 INJECT first EAGAIN bounded initial lifetime, token "
                  "exhaustion and selection throw resource cleanup PASS\n";
   }
+
   static void send_errors() {
     for (bool reply : {false, true}) {
       for (int injected :
@@ -443,6 +468,7 @@ struct UdpTestAccess {
         << "AC04/05 INJECT both directions pressure/EMSGSIZE/short/EINTR=4 "
            "drop no queue/no refresh; fourth succeeds PASS\n";
   }
+
   static void identity_errors() {
     Rig t;
     auto c = bound_udp();
@@ -531,6 +557,7 @@ struct UdpTestAccess {
     std::cout << "AC06 REAL connected UDP loopback ICMP ECONNREFUSED one-flow "
                  "cleanup other flow exact bytes PASS\n";
   }
+
   static void receive_and_shared_errors() {
     for (bool listener : {false, true}) {
       for (int code : {EAGAIN, EMSGSIZE, ECONNREFUSED}) {
@@ -595,6 +622,7 @@ struct UdpTestAccess {
         << "AC04/06 INJECT recv pressure/fatal scoped, shared send refusal "
            "preserved, SO_ERROR zero/failure/HUP and diagnostic1/sec PASS\n";
   }
+
   static void budgets_cleanup() {
     auto original_count = fd_count();
     sigset_t before{}, after{};
@@ -666,6 +694,7 @@ struct UdpTestAccess {
     std::cout << "AC06 REAL hot traffic expiry+SIGTERM bounded, resource/mask "
                  "restoration; INJECT recv EINTR budget64 both fds PASS\n";
   }
+
   static int run() {
     values();
     identity_and_boundaries();
@@ -681,6 +710,7 @@ struct UdpTestAccess {
 };
 }  // namespace
 }  // namespace l4lb::net
+
 int main() {
   try {
     return l4lb::net::UdpTestAccess::run();

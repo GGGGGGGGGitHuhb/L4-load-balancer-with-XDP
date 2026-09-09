@@ -12,6 +12,7 @@ namespace {
 void require(bool condition, const char* why) {
   if (!condition) throw std::runtime_error(why);
 }
+
 struct ReactorTestAccess {
   static void run_test() {
     Endpoint listen{{127, 0, 0, 1}, 0};
@@ -160,6 +161,7 @@ struct ReactorTestAccess {
 };
 }  // namespace
 }  // namespace l4lb::net
+
 int main() {
   try {
     sigset_t before{}, after{};

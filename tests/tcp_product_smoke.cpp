@@ -20,26 +20,34 @@
 namespace {
 using Clock = std::chrono::steady_clock;
 using namespace std::chrono_literals;
+
 void require(bool ok, const std::string& reason) {
   if (!ok) throw std::runtime_error(reason);
 }
+
 std::string read(const std::string& path) {
   std::ifstream in(path);
   return {std::istreambuf_iterator<char>(in), {}};
 }
+
 void write(const std::string& path, const std::string& value) {
   std::ofstream out(path);
   out << value;
   out.close();
   require(!out.fail(), "write " + path);
 }
+
 struct Fd {
   int value;
+
   explicit Fd(int fd) : value(fd) { require(fd >= 0, "socket/open"); }
+
   ~Fd() { close(value); }
+
   Fd(const Fd&) = delete;
   Fd& operator=(const Fd&) = delete;
 };
+
 sockaddr_in address(int port) {
   sockaddr_in a{};
   a.sin_family = AF_INET;
@@ -47,6 +55,7 @@ sockaddr_in address(int port) {
   a.sin_port = htons(port);
   return a;
 }
+
 int bind_port(int fd, int port) {
   int yes = 1;
   require(setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)) == 0,
@@ -59,10 +68,12 @@ int bind_port(int fd, int port) {
           "getsockname");
   return ntohs(a.sin_port);
 }
+
 int reserve_port() {
   Fd fd(socket(AF_INET, SOCK_STREAM | SOCK_CLOEXEC, 0));
   return bind_port(fd.value, 0);
 }
+
 /** Own only our children; even exception paths reap them before reporting. */
 struct Child {
   pid_t pid;
@@ -70,6 +81,7 @@ struct Child {
   bool reaped = false;
   bool product;
   std::string base;
+
   Child(const std::vector<std::string>& args, std::string path, bool is_product)
       : product(is_product), base(std::move(path)) {
     pid = fork();
@@ -90,6 +102,7 @@ struct Child {
       _exit(126);
     }
   }
+
   ~Child() {
     if (!reaped) {
       kill(pid, SIGKILL);
@@ -97,6 +110,7 @@ struct Child {
       }
     }
   }
+
   bool alive() {
     if (reaped) return false;
     pid_t result;
@@ -107,9 +121,11 @@ struct Child {
     reaped = result == pid;
     return !reaped;
   }
+
   int code() const {
     return WIFEXITED(status) ? WEXITSTATUS(status) : 128 + WTERMSIG(status);
   }
+
   int wait() {
     auto end = Clock::now() + 3s;
     while (alive()) {
@@ -118,6 +134,7 @@ struct Child {
     }
     return code();
   }
+
   void stop() {
     require(alive(), "unexpected child exit " + base +
                          " code=" + std::to_string(code()));
@@ -126,6 +143,7 @@ struct Child {
     require(product ? result == 0 : result == 128 + SIGTERM,
             "stop status " + base + " code=" + std::to_string(result));
   }
+
   std::string ready(const std::string& prefix) {
     auto end = Clock::now() + 3s;
     for (;;) {
@@ -144,12 +162,14 @@ struct Child {
     }
   }
 };
+
 struct Run {
   std::string dir, product, echo;
   std::vector<std::unique_ptr<Child>> children;
   std::vector<int> ports;
   std::ostringstream summary;
   int serial = 0;
+
   Child& start(const std::vector<std::string>& args, const std::string& name,
                bool is_product) {
     auto path = dir + "/" + name + "-" + std::to_string(serial++);
@@ -157,6 +177,7 @@ struct Run {
     summary << "child pid=" << children.back()->pid << " log=" << path << '\n';
     return *children.back();
   }
+
   std::pair<Child*, int> backend(int port = 0, int mask = 0) {
     auto& c = start({echo, std::to_string(port), std::to_string(mask)}, "echo",
                     false);
@@ -170,6 +191,7 @@ struct Run {
     summary << "backend ready port=" << actual << '\n';
     return {&c, actual};
   }
+
   std::string config(int port, const std::vector<int>& backends) {
     std::string text = "listen=127.0.0.1:" + std::to_string(port) + "\n";
     for (int b : backends)
@@ -178,6 +200,7 @@ struct Run {
     write(path, text);
     return path;
   }
+
   std::pair<Child*, int> proxy(const std::vector<int>& backends,
                                bool explicit_fields = false) {
     for (int attempt = 0; attempt < 5; ++attempt) {
@@ -207,6 +230,7 @@ struct Run {
     }
     throw std::runtime_error("proxy bind conflicts exhausted");
   }
+
   void cleanup() {
     std::string failure;
     for (auto& c : children) {
@@ -238,12 +262,14 @@ struct Run {
     require(failure.empty(), "cleanup: " + failure);
   }
 };
+
 void wait_io(int fd, short events, Clock::time_point end) {
   require(Clock::now() < end, "I/O timeout");
   pollfd p{fd, events, 0};
   int rc = poll(&p, 1, 10);
   require(rc >= 0 || errno == EINTR, "poll");
 }
+
 void connect_to(int fd, int port, Clock::time_point end) {
   auto a = address(port);
   int rc = connect(fd, reinterpret_cast<sockaddr*>(&a), sizeof(a));
@@ -261,6 +287,7 @@ void connect_to(int fd, int port, Clock::time_point end) {
     return;
   }
 }
+
 /** Interleave nonblocking sends and receives, with one deadline and EOF proof.
  */
 void exchange(int port, size_t size, int mask = 0) {
@@ -302,6 +329,7 @@ void exchange(int port, size_t size, int mask = 0) {
   for (char& byte : payload) byte ^= mask;
   require(shut && received == payload, "payload mismatch after EOF");
 }
+
 void failed_session(int port) {
   Fd fd(socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0));
   auto end = Clock::now() + 3s;
@@ -316,6 +344,7 @@ void failed_session(int port) {
     wait_io(fd.value, POLLIN, end);
   }
 }
+
 void stage_scenarios(Run& run) {
   auto [a, ap] = run.backend(0, 0x55);
   auto [b, bp] = run.backend(0, 0xaa);
@@ -343,6 +372,7 @@ void stage_scenarios(Run& run) {
   a->stop();
   b->stop();
 }
+
 void scenarios(Run& run) {
   auto [a, ap] = run.backend();
   auto [b, bp] = run.backend();
@@ -408,6 +438,7 @@ void scenarios(Run& run) {
                  "EADDRINUSE\n";
 }
 }  // namespace
+
 int main(int argc, char** argv) {
   if (argc != 4) {
     std::cerr << "用法: tcp_product_smoke <l4lb> <tcp_echo_backend> <证据根>\n";

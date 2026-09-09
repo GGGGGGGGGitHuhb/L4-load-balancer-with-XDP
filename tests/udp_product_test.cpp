@@ -22,29 +22,38 @@
 namespace {
 using Clock = std::chrono::steady_clock;
 using namespace std::chrono_literals;
+
 void require(bool ok, const std::string& reason) {
   if (!ok) throw std::runtime_error(reason);
 }
+
 std::string read(const std::string& path) {
   std::ifstream in(path);
   return {std::istreambuf_iterator<char>(in), {}};
 }
+
 void write(const std::string& path, const std::string& value) {
   std::ofstream out(path);
   out << value;
   out.close();
   require(!out.fail(), "write " + path);
 }
+
 struct Fd {
   int value;
+
   explicit Fd(int fd) : value(fd) { require(fd >= 0, "socket/open"); }
+
   ~Fd() { reset(); }
+
   void reset() {
     if (value >= 0) close(std::exchange(value, -1));
   }
+
   Fd(const Fd&) = delete;
   Fd& operator=(const Fd&) = delete;
 };
+
 sockaddr_in address(int port) {
   sockaddr_in a{};
   a.sin_family = AF_INET;
@@ -52,6 +61,7 @@ sockaddr_in address(int port) {
   a.sin_port = htons(port);
   return a;
 }
+
 int bind_port(int fd, int port) {
   auto a = address(port);
   require(bind(fd, reinterpret_cast<sockaddr*>(&a), sizeof(a)) == 0,
@@ -61,10 +71,12 @@ int bind_port(int fd, int port) {
           "getsockname");
   return ntohs(a.sin_port);
 }
+
 int reserve_port() {
   Fd fd(socket(AF_INET, SOCK_DGRAM | SOCK_CLOEXEC, 0));
   return bind_port(fd.value, 0);
 }
+
 /** Own only our children; even exception paths reap them before reporting. */
 struct Child {
   pid_t pid;
@@ -72,6 +84,7 @@ struct Child {
   bool reaped = false;
   bool product;
   std::string base;
+
   Child(const std::vector<std::string>& args, std::string path, bool is_product)
       : product(is_product), base(std::move(path)) {
     pid = fork();
@@ -92,6 +105,7 @@ struct Child {
       _exit(126);
     }
   }
+
   ~Child() {
     if (!reaped) {
       kill(pid, SIGKILL);
@@ -99,6 +113,7 @@ struct Child {
       }
     }
   }
+
   bool alive() {
     if (reaped) return false;
     pid_t result;
@@ -109,9 +124,11 @@ struct Child {
     reaped = result == pid;
     return !reaped;
   }
+
   int code() const {
     return WIFEXITED(status) ? WEXITSTATUS(status) : 128 + WTERMSIG(status);
   }
+
   int wait() {
     auto end = Clock::now() + 3s;
     while (alive()) {
@@ -120,6 +137,7 @@ struct Child {
     }
     return code();
   }
+
   void stop() {
     require(alive(), "unexpected child exit " + base +
                          " code=" + std::to_string(code()));
@@ -128,6 +146,7 @@ struct Child {
     require(product ? result == 0 : result == 128 + SIGTERM,
             "stop status " + base + " code=" + std::to_string(result));
   }
+
   std::string ready(const std::string& prefix) {
     auto end = Clock::now() + 3s;
     for (;;) {
@@ -146,10 +165,12 @@ struct Child {
     }
   }
 };
+
 struct Packet {
   std::string bytes;
   sockaddr_in from{};
 };
+
 Packet receive_packet(int fd) {
   pollfd event{fd, POLLIN, 0};
   require(poll(&event, 1, 700) == 1 && (event.revents & POLLIN),
@@ -164,12 +185,14 @@ Packet receive_packet(int fd) {
   p.bytes = std::move(bytes);
   return p;
 }
+
 void send_packet(int fd, const sockaddr_in& to, const std::string& value) {
   require(sendto(fd, value.data(), value.size(), 0,
                  reinterpret_cast<const sockaddr*>(&to),
                  sizeof(to)) == static_cast<ssize_t>(value.size()),
           "UDP test send");
 }
+
 struct ProductRun {
   std::string program, dir, mutation;
   std::vector<std::unique_ptr<Child>> children;
@@ -177,12 +200,14 @@ struct ProductRun {
   int serial = 0;
   std::set<int> owned_ports;
   Clock::time_point total_deadline = Clock::now() + 75s;
+
   Child& start(std::vector<std::string> args, bool product = true) {
     auto path = dir + "/child-" + std::to_string(serial++);
     children.push_back(std::make_unique<Child>(args, path, product));
     summary << "child pid=" << children.back()->pid << " path=" << path << '\n';
     return *children.back();
   }
+
   std::string config(int port, int a, int b,
                      const std::string& host = "127.0.0.1") {
     auto file = dir + "/config-" + std::to_string(serial++) + ".conf";
@@ -192,6 +217,7 @@ struct ProductRun {
                     "\nbackend=127.0.0.1:" + std::to_string(b) + "\n");
     return file;
   }
+
   void cleanup() {
     std::string errors;
     for (auto& child : children) {
@@ -215,21 +241,25 @@ struct ProductRun {
     }
     require(errors.empty(), "cleanup " + errors);
   }
+
   int bind_owned(int fd, int port = 0) {
     int value = bind_port(fd, port);
     owned_ports.insert(value);
     return value;
   }
+
   void quiet(int fd, const std::string& reason, int ms = 30) {
     pollfd p{fd, POLLIN, 0};
     int n = poll(&p, 1, ms);
     require(n == 0, reason);
   }
+
   sockaddr_in target(int port, const char* ip = "127.0.0.1") {
     auto result = address(port);
     require(inet_pton(AF_INET, ip, &result.sin_addr) == 1, "target IP");
     return result;
   }
+
   void exact_client(int fd, const std::string& value,
                     const sockaddr_in& source) {
     auto packet = receive_packet(fd);
@@ -239,6 +269,7 @@ struct ProductRun {
             "P1 reply source");
     quiet(fd, "P1 extra client packet");
   }
+
   Packet system_request(int client, int backend, const sockaddr_in& dest,
                         const std::string& value) {
     send_packet(client, dest, value);
@@ -247,12 +278,14 @@ struct ProductRun {
     quiet(backend, "extra backend request");
     return packet;
   }
+
   void system_exchange(int client, int backend, const sockaddr_in& dest,
                        const std::string& value) {
     auto packet = system_request(client, backend, dest, value);
     send_packet(backend, packet.from, value);
     exact_client(client, value, dest);
   }
+
   std::pair<Child*, int> system_proxy(int ap, int bp,
                                       const std::string& host = "127.0.0.1") {
     for (int attempt = 0; attempt < 5; ++attempt) {
@@ -278,6 +311,7 @@ struct ProductRun {
     }
     throw std::runtime_error("system bind conflicts exhausted");
   }
+
   void wildcard_system() {
     summary << "reached P1 wildcard\n";
     Fd a(socket(AF_INET, SOCK_DGRAM | SOCK_CLOEXEC, 0)),
@@ -311,6 +345,7 @@ struct ProductRun {
                "reverse same-backend replies; forged drop+legitimate control\n";
     proxy->stop();
   }
+
   void recovery_system() {
     summary << "reached P2 recovery\n";
     Fd a(socket(AF_INET, SOCK_DGRAM | SOCK_CLOEXEC, 0)),
@@ -365,6 +400,7 @@ struct ProductRun {
             << " restored new key A; B stable\n";
     proxy->stop();
   }
+
   void expiry_system() {
     summary << "reached P3 default 60000ms timeout\n";
     Fd a(socket(AF_INET, SOCK_DGRAM | SOCK_CLOEXEC, 0)),
@@ -403,6 +439,7 @@ struct ProductRun {
     proxy->stop();
     require(Clock::now() < total_deadline, "P3 total75s");
   }
+
   void scenarios() {
     Fd a(socket(AF_INET, SOCK_DGRAM | SOCK_CLOEXEC, 0)),
         b(socket(AF_INET, SOCK_DGRAM | SOCK_CLOEXEC, 0));
@@ -482,6 +519,7 @@ struct ProductRun {
   }
 };
 }  // namespace
+
 int main(int argc, char** argv) {
   if (argc < 3 || argc > 4) return 2;
   ProductRun run;

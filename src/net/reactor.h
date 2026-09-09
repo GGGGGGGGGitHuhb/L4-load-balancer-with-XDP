@@ -3,6 +3,7 @@
 
 #include <chrono>
 #include <functional>
+#include <optional>
 #include <string>
 
 #include "config/config.h"
@@ -36,7 +37,8 @@ struct Options {
   std::function<int(int, sockaddr*, socklen_t*, int)> accept_call;
 };
 struct Callbacks {
-  std::function<Endpoint()> select_backend;
+  std::function<std::optional<Endpoint>()> select_backend;
+  std::function<void()> maintenance;
   std::function<void()> ready;
   std::function<void(const SessionEvent&)> session;
   std::function<void(const std::string&, int)> diagnostic;

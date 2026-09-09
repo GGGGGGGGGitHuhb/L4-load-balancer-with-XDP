@@ -133,3 +133,7 @@ cmake --build build-production
 ```
 
 预期全部退出0；Production不构建测试工具，也不需要Python运行服务。完整语义见 [UDP flow](../specs/udp-flow-table.md)，版本分层见 [V0.2 完成矩阵](../specs/v0.2-acceptance.md)。1024是生产默认值静态确认，容量拒绝语义由内部capacity=2动态证据验证；没有1024满载/吞吐测量。本手册快速步骤不表示已经等待60秒；只有P3验证原生产默认过期。无公网、可靠交付、源地址反欺骗或跨超时迟到包隔离承诺。
+
+## V0.3/S1 补充
+
+上文 V0.2 场景使用默认 health_check=off，其原11项注册保留。当前新增4项健康测试，共15项，Debug快速14/Release完整15；测试构建需 Python3 标准库，无第三方包，Production无Python依赖。`ctest --test-dir build -R v03_health` 验证默认时序真实 TCP/UDP 摘除和恢复；UDP需同IP/端口且代表UDP状态的TCP端点。既有flow不会因探活摘除而迁移/关闭，完整边界见 [健康规格](../specs/health-check.md)。

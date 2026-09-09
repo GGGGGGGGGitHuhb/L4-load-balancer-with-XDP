@@ -52,7 +52,7 @@
 
 ## 适用限制
 
-受控 IPv4 用户态实验代理，无认证、源地址反欺骗、限速、DDoS 防护或公网 relay 承诺。静态后端限制目的地，但 UDP 源伪造和后端放大风险仍可能存在。没有 IPv6、DNS、多 listener、多策略、健康检查、持久化、热加载、性能结论或 XDP；S2 完成不代表 V0.2/S3 完成。
+受控 IPv4 用户态实验代理，无认证、源地址反欺骗、限速、DDoS 防护或公网 relay 承诺。静态后端限制目的地，但 UDP 源伪造和后端放大风险仍可能存在。没有 IPv6、DNS、多 listener、多策略、持久化、热加载、性能结论或 XDP；S2 完成不代表 V0.2/S3 完成。
 
 
 ## S3 产品与版本验收分层
@@ -63,3 +63,10 @@
 - `udp_fast`只含基础产品和system两项，可重复/并行；`udp_long`仅expiry长项，Debug快速不运行，Release最终一次。当前注册11项、Debug快速10项、Release全套11项。
 - [完整UDP运行手册](../runbooks/local-udp-validation.md)提供普通clone可复现的固定客户端、nonce/零长/二进制、wildcard、停机/新flow恢复、错误端口和信号清理；[V0.2六条矩阵](v0.2-acceptance.md)区分继承、新增、静态默认值与未验证边界。
 - UDP尽力丢弃、后端临时端口、ICMP可能延迟、OS元组复用后网络迟到包无法由用户态token辨认、无公网防护等限制保持。S3验证不增加可靠性、认证或发布承诺。
+
+## V0.3/S1 TCP 代理健康信号
+
+- 默认 off，UDP-only 服务完全兼容。显式 tcp_connect 需相同 IP/数字端口的 TCP 健康端点，且操作员保证其状态代表 UDP。UDP connect 不证明健康；无 TCP 端点会被摘除。启动 stderr 一次说明约定。
+- Unknown 初始拒绝新 flow；2成功变Healthy，3失败变Unhealthy，完成后1s/超时1s。本机资源失败按 local_error 分类，可能保守摘除。
+- 新 key 无 Healthy 则整包丢弃，不创建 flow/backend fd、不消耗轮询或 fallback；既有 flow 后续数据仍到原后端，状态改变不迁移/关闭。自然错误和60s到期继续沿用原规则，新 flow 重新过滤。
+- 全不可选不退出，恢复可接新 flow；日志不代替 UDP nonce 数据证据。详见 [健康规格](health-check.md)。

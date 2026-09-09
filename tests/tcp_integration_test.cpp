@@ -21,16 +21,20 @@
 
 using l4lb::net::Fd;
 using namespace std::chrono_literals;
+
 namespace {
 std::string product, driver, root;
 int sequence = 0;
+
 void check(bool ok, const std::string& why) {
   if (!ok) throw std::runtime_error(why);
 }
+
 std::string read_file(const std::string& path) {
   std::ifstream in(path);
   return {std::istreambuf_iterator<char>(in), {}};
 }
+
 void until(const std::function<bool()>& condition, const std::string& why,
            std::chrono::milliseconds limit = 4000ms) {
   auto end = std::chrono::steady_clock::now() + limit;
@@ -39,6 +43,7 @@ void until(const std::function<bool()>& condition, const std::string& why,
     std::this_thread::sleep_for(5ms);
   }
 }
+
 sockaddr_in addr(int port) {
   sockaddr_in a{};
   a.sin_family = AF_INET;
@@ -46,6 +51,7 @@ sockaddr_in addr(int port) {
   a.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
   return a;
 }
+
 int port_of(int fd) {
   sockaddr_in a{};
   socklen_t n = sizeof(a);
@@ -53,6 +59,7 @@ int port_of(int fd) {
         "getsockname");
   return ntohs(a.sin_port);
 }
+
 Fd listener(int port = 0) {
   Fd fd(socket(AF_INET, SOCK_STREAM | SOCK_CLOEXEC, 0));
   check(fd.get() >= 0, "socket");
@@ -64,11 +71,13 @@ Fd listener(int port = 0) {
   check(listen(fd.get(), 128) == 0, "listen fixture");
   return fd;
 }
+
 void timeout(int fd) {
   timeval tv{12, 0};
   setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
   setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
 }
+
 Fd client(int port) {
   Fd fd(socket(AF_INET, SOCK_STREAM | SOCK_CLOEXEC, 0));
   check(fd.get() >= 0, "client socket");
@@ -78,6 +87,7 @@ Fd client(int port) {
         "client connect");
   return fd;
 }
+
 void send_all(int fd, const std::string& data) {
   std::size_t done = 0;
   while (done < data.size()) {
@@ -87,6 +97,7 @@ void send_all(int fd, const std::string& data) {
     done += n;
   }
 }
+
 std::string receive(int fd) {
   std::string out;
   char bytes[65536];
@@ -98,6 +109,7 @@ std::string receive(int fd) {
     out.append(bytes, n);
   }
 }
+
 std::string exact(int fd, std::size_t size) {
   std::string out(size, '\0');
   std::size_t n = 0;
@@ -108,19 +120,25 @@ std::string exact(int fd, std::size_t size) {
   }
   return out;
 }
+
 std::string binary(std::size_t size) {
   std::string data(size, '\0');
   for (std::size_t i = 0; i < size; ++i)
     data[i] = char((i * 19 + i / 251) % 256);
   return data;
 }
+
 struct Child {
   pid_t pid = -1;
   Child() = default;
+
   explicit Child(pid_t p) : pid(p) {}
+
   Child(const Child&) = delete;
   Child& operator=(const Child&) = delete;
+
   Child(Child&& other) noexcept : pid(std::exchange(other.pid, -1)) {}
+
   Child& operator=(Child&& other) noexcept {
     if (this != &other) {
       stop();
@@ -128,7 +146,9 @@ struct Child {
     }
     return *this;
   }
+
   ~Child() { stop(); }
+
   void stop() {
     if (pid > 0) {
       kill(pid, SIGKILL);
@@ -138,6 +158,7 @@ struct Child {
       pid = -1;
     }
   }
+
   int finish(int signal = 0) {
     if (signal) check(kill(pid, signal) == 0, "signal child");
     int status = 0;
@@ -152,6 +173,7 @@ struct Child {
     return WIFEXITED(status) ? WEXITSTATUS(status) : 128 + WTERMSIG(status);
   }
 };
+
 Child exec_process(const std::vector<std::string>& args, const std::string& out,
                    const std::string& err) {
   auto pid = fork();
@@ -172,10 +194,12 @@ Child exec_process(const std::vector<std::string>& args, const std::string& out,
   }
   return Child(pid);
 }
+
 struct Backend {
   int port;
   Child child;
   Fd completion;
+
   explicit Backend(std::string mode = "echo", char label = 'A') {
     auto server = listener();
     port = port_of(server.get());
@@ -255,6 +279,7 @@ struct Backend {
     }
     child = Child(pid);
   }
+
   void verify_reverse_fin() {
     std::string status;
     until(
@@ -279,10 +304,12 @@ struct Backend {
           "backend assertion: " + status);
   }
 };
+
 struct Service {
   int port = 0;
   std::string base, config, out, err, trace, original;
   Child child;
+
   Service(const std::vector<int>& backends, std::string mode = "product",
           int fixed_port = 0, bool expect_ready = true) {
     for (int attempt = 0; attempt < 5; ++attempt) {
@@ -319,11 +346,13 @@ struct Service {
     }
     throw std::runtime_error("bounded port retries exhausted");
   }
+
   void stop(int sig = SIGTERM) {
     check(read_file(config) == original, "configuration unchanged");
     check(child.finish(sig) == 0, "service clean exit");
     auto rebound = listener(port);
   }
+
   void drained() {
     until(
         [&] {
@@ -335,6 +364,7 @@ struct Service {
         "session/token zero");
   }
 };
+
 std::string roundtrip(int port, const std::string& payload,
                       std::chrono::milliseconds slow = 0ms) {
   auto fd = client(port);
@@ -361,6 +391,7 @@ std::string roundtrip(int port, const std::string& payload,
   if (error) std::rethrow_exception(error);
   return reply;
 }
+
 std::size_t occurrences(const std::string& text, const std::string& needle) {
   std::size_t count = 0, p = 0;
   while ((p = text.find(needle, p)) != std::string::npos) {
@@ -369,12 +400,15 @@ std::size_t occurrences(const std::string& text, const std::string& needle) {
   }
   return count;
 }
+
 std::size_t fd_count(pid_t pid) {
   return std::distance(std::filesystem::directory_iterator(
                            "/proc/" + std::to_string(pid) + "/fd"),
                        std::filesystem::directory_iterator{});
 }
+
 void evidence(const std::string& text) { std::cout << text << std::endl; }
+
 void cli_cases() {
   Backend backend;
   {
@@ -431,6 +465,7 @@ void cli_cases() {
       "AC-02 PASS: ready/bind/config/usage; INT+TERM idle+active <1.8s; "
       "rebind");
 }
+
 void data_and_rr() {
   Backend a("label", 'A'), b("label", 'B'), c("label", 'C');
   Service proxy({a.port, b.port, c.port}, "observe");
@@ -472,6 +507,7 @@ void data_and_rr() {
       "binding; trace=" +
       proxy.trace);
 }
+
 void failures_and_timeouts() {
   Backend backend;
   auto unused = listener();
@@ -513,6 +549,7 @@ void failures_and_timeouts() {
       "timeout via internal 0ms (unit verifies 5s); traces=" +
       proxy.trace + "," + connecting.trace);
 }
+
 void backpressure() {
   for (bool slow_client : {false, true}) {
     Backend backend(slow_client ? "echo" : "slow");
@@ -603,6 +640,7 @@ void backpressure() {
         "short stub observed");
   short_write.stop();
 }
+
 void half_close() {
   auto data = binary(256 * 1024 + 17);
   Backend backend("after-eof");
@@ -650,6 +688,7 @@ void half_close() {
       "AC-06 PASS: both first-FIN directions, data+FIN, RST abnormal, "
       "immediate frontend close");
 }
+
 void resources() {
   Backend a("label", 'A'), b("label", 'B');
   Service capped({a.port, b.port}, "capacity");
@@ -694,6 +733,7 @@ void resources() {
   backoff.stop();
 }
 }  // namespace
+
 int main(int argc, char** argv) {
   if (argc != 4) return 2;
   product = argv[1];

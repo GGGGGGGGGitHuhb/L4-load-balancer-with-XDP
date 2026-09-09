@@ -8,8 +8,8 @@
 
 ## 当前状态
 
-- 当前阶段标签：`v0.2-s2`（与远端 main 同指 S2 合并提交 `c6927c0`；不据此声称创建 GitHub Release）
-- 状态：V0.1/S1 已完成；S2 TCP 转发已完成（Completed，独立复审 PASS）；S3 已完成（Completed，独立审查 PASS），V0.1 开发范围完成；V0.2/S1 也已完成并合并，注释标签 v0.2-s1 已核验。S2 已实现并独立验收（PASS）及 Leader 收尾（Completed）；当前在 `codex/v0.2-s3` 完成 S3 独立审查（Reviewer001 PASS）和 Leader003 收尾；S3及V0.2开发范围Completed，尚未提交发布S3
+- 当前阶段标签：`v0.2-s3`（远端main与标签peeled均为S3合并提交 `7821b25`；不据此声称创建GitHub Release）
+- 状态：V0.1/S1 已完成；S2 TCP 转发已完成（Completed，独立复审 PASS）；S3 已完成（Completed，独立审查 PASS），V0.1 开发范围完成；V0.2/S1 也已完成并合并，注释标签 v0.2-s1 已核验。S2 已实现并独立验收（PASS）及 Leader 收尾（Completed）；S3独立审查（Reviewer001 PASS）和Leader003收尾完成，V0.2开发范围Completed；S3已合并且远端v0.2-s3标签核验为7821b25。当前在 `codex/v0.3-s1` 进入V0.3/S1开发，D1 Approved；Builder001实现、Reviewer001独立PASS、Leader003收尾完成，S1 Completed；S2/S3未开始
 - 主要能力：
   - 明确项目方向：C++ 用户态 L4 负载均衡器 + XDP/eBPF fast path
   - 明确基础技术栈：LLVM、CMake、Ninja、C++20、Linux socket、epoll
@@ -19,7 +19,7 @@
 
 当前提供离线 C++20 构建、静态 TCP/UDP 配置检查、固定轮询 TCP 双向转发、有界背压及半关闭。
 
-当前增加 UDP 按 flow 双向数据报转发；健康检查、指标和 XDP/eBPF 由后续阶段引入，范围见 `ROADMAP.md`。
+当前增加 UDP 按 flow 双向数据报转发；增加默认关闭的 TCP 握手健康检查；指标和 XDP/eBPF 由后续阶段引入，范围见 `ROADMAP.md`。
 
 ## 环境要求
 
@@ -160,7 +160,7 @@ ctest --test-dir build-release --output-on-failure
 
 ## 测试与验证
 
-当前注册11项；Debug快速执行 `ctest --test-dir build -LE udp_long`（10项），Release完整11项含一次约61秒原生产过期测试。`udp_fast`两项可重复/并行，`udp_long`不加入快速组；容量1024只作静态默认值确认，未做1024满载产品验收。
+当前注册15项；Debug快速执行 `ctest --test-dir build -LE udp_long`（14项），Release完整15项含一次约61秒原生产过期测试。`udp_fast`两项可重复/并行，`udp_long`不加入快速组；容量1024只作静态默认值确认，未做1024满载产品验收。
 
 CTest 包含配置单元测试和 CLI 进程集成测试，覆盖合法输入、拒绝规则、端点顺序、64 KiB 边界、精确退出码与输出、FIFO 超时、普通文件符号链接及配置内容不变。
 
@@ -187,14 +187,24 @@ ctest --test-dir build -L s2 --output-on-failure
 
 ## 当前阶段入口
 
-V0.2/S3 已批准，分支 `codex/v0.2-s3`，基线 V0.2-S3-D1 Approved，独立Reviewer001结论PASS，Leader003收尾，S3及V0.2开发范围Completed。已核验 S2 合并提交与远端 main、v0.2-s2 标签均为 c6927c0。
+当前V0.3/S1已获开发授权，分支 `codex/v0.3-s1`，V0.3-S1-D1 Approved；Builder001实现、Reviewer001独立PASS、Leader003收尾完成，S1 Completed；S2/S3未开始。批准方案为探活默认关闭、显式TCP连接检测；UDP需操作员提供有代表性的同IP/端口TCP服务，详见准备决策。
+
+- [V0.3/S1批准设计](docs/leader/designs/V0.3/S1-design.md)
+- [V0.3/S1审查计划](docs/reviewer/reviews/V0.3/S1-review.md)
+- [V0.3/S1准备决策](docs/leader/reports/V0.3/S1-report-001.md)
+- [V0.3/S1授权登记](docs/leader/reports/V0.3/S1-report-002.md)
+- [V0.3/S1完成报告](docs/leader/reports/V0.3/S1-report-003.md)
+
+### 已完成的V0.2
+
+V0.2/S3 已批准，分支 `codex/v0.2-s3`，基线 V0.2-S3-D1 Approved，独立Reviewer001结论PASS，Leader003收尾，S3及V0.2开发范围Completed。S3已合并，远端main与v0.2-s3标签peeled均核验为7821b25；当前V0.3/S1完成状态见上节。
 
 - [S3 已批准设计](docs/leader/designs/V0.2/S3-design.md)
 - [S3 审查计划](docs/reviewer/reviews/V0.2/S3-review.md)
 - [S3 准备决策](docs/leader/reports/V0.2/S3-report-001.md)
 - [S3 批准登记](docs/leader/reports/V0.2/S3-report-002.md)
 - [S3 独立审查](docs/reviewer/reports/V0.2/S3-report-001.md)：PASS，Debug快速10/10、Release全11/11及原生产60秒验证。
-- [S3与V0.2完成报告](docs/leader/reports/V0.2/S3-report-003.md)：Completed，未发布。
+- [S3与V0.2完成报告](docs/leader/reports/V0.2/S3-report-003.md)：Completed；保留当时收尾记录，S3现已合并并标记v0.2-s3。
 
 ### 已完成的 V0.2/S2
 
@@ -266,7 +276,7 @@ S1/S2 已完成；S2-D1 保持 Approved，Reviewer002 复审 PASS，S2-R001 已�
 
 - TCP 代理采用单线程与固定资源上限，停止时不等待在途字节排空。
 - 仅支持静态数字 IPv4 TCP/UDP 端点，不支持 DNS、IPv6 或热加载。
-- TCP 按连接、UDP 按 flow 静态轮询，无健康检查、失败切换、UDP 可靠交付或性能承诺。UDP 仅用于受控实验网络，不提供源地址反欺骗或公网开放 relay 防护。
+- TCP 按连接、UDP 按 flow 静态轮询；默认 health_check=off，可显式启用 TCP 握手资格过滤，无失败切换、UDP 可靠交付或性能承诺。UDP 仅用于受控实验网络，不提供源地址反欺骗或公网开放 relay 防护。
 - WSL2 不适合作为 XDP/eBPF native mode 的最终性能验证环境。
 - XDP/eBPF 阶段计划使用云服务器进行功能验证和收尾；性能结论必须标注云环境限制。
 - 本项目主线聚焦 L4 负载均衡与 XDP/eBPF，不包含 DPDK 实现。
@@ -276,3 +286,13 @@ S1/S2 已完成；S2-D1 保持 Approved，Reviewer002 复审 PASS，S2-R001 已�
 ## 许可证
 
 暂未指定。
+
+## V0.3/S1 健康检查
+
+配置可增加 `health_check=tcp_connect`，缺省为 `off`，旧示例无需修改。启用时 Unknown 初始拒绝新 TCP 会话/UDP flow，连续2次成功开放、3次失败摘除，完成后间隔1s、超时1s。ready 只表示监听就绪。全部不可选不 fallback，恢复后自动允许新业务；已有 TCP/UDP 绑定不因健康摘除而迁移或关闭。
+
+TCP 握手不证明应用业务可用。UDP 必须在后端相同 IP/数字端口提供有代表性的 TCP 健康端点，并由操作员保证信号代表 UDP；UDP-only 服务应保持 off。探活产生空 TCP 连接，本机资源不足也可能保守摘除并标识 local_error。完整阈值、日志和边界见 [健康规格](docs/specs/health-check.md)。
+
+测试构建新增 Python3 标准库 fixture，无额外包；生产 `BUILD_TESTING=OFF` 无 Python 依赖。原11项保留、新增4项，总15项；Debug快速 `ctest --test-dir <Debug目录> -LE udp_long` 为14项，Release完整 `ctest --test-dir <Release目录>` 为15项。单独健康测试可用 `ctest --test-dir <构建目录> -R v03_health`，真实产品用默认时序。原始执行证据见 [Builder报告](docs/builder/reports/V0.3/S1-report-001.md)。
+
+Reviewer独立验收 PASS：Debug快速14/14、Release完整15/15，Production两协议健康/普通uid CLI与三类Release负向通过，见 [审查报告](docs/reviewer/reports/V0.3/S1-report-001.md)。Leader收尾完成，S1 Completed，见 [完成报告](docs/leader/reports/V0.3/S1-report-003.md)；S2/S3未开始。

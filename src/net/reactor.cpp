@@ -19,9 +19,11 @@
 namespace l4lb::net {
 namespace {
 using namespace std::chrono_literals;
+
 [[noreturn]] void fail(const char* operation) {
   throw std::system_error(errno, std::generic_category(), operation);
 }
+
 sockaddr_in address(const Endpoint& endpoint) {
   sockaddr_in result{};
   result.sin_family = AF_INET;
@@ -29,6 +31,7 @@ sockaddr_in address(const Endpoint& endpoint) {
   std::memcpy(&result.sin_addr, endpoint.address.data(), 4);
   return result;
 }
+
 /** mask owner 在所有异常退出路径恢复原状态。 */
 class SignalMask {
  public:
@@ -38,12 +41,15 @@ class SignalMask {
     sigaddset(&set_, SIGTERM);
     if (sigprocmask(SIG_BLOCK, &set_, &old_) < 0) fail("sigprocmask");
   }
+
   ~SignalMask() { sigprocmask(SIG_SETMASK, &old_, nullptr); }
+
   const sigset_t* get() const { return &set_; }
 
  private:
   sigset_t set_{}, old_{};
 };
+
 struct EndpointState {
   Fd fd;
   std::uint64_t token = 0;
@@ -51,6 +57,7 @@ struct EndpointState {
   std::uint32_t interest = 0;
   Clock::time_point deferred{};
 };
+
 struct Session {
   std::uint64_t id;
   Endpoint backend;
@@ -60,10 +67,12 @@ struct Session {
   Deadline deadline{Clock::now()};
   std::uint64_t sent[2]{};
 };
+
 struct SessionFailure {
   std::string operation;
   int error;
 };
+
 class Reactor {
   friend struct ReactorTestAccess;
 
@@ -90,10 +99,12 @@ class Reactor {
     registration(EPOLL_CTL_ADD, listener_.get(), 1, EPOLLIN);
     registration(EPOLL_CTL_ADD, signals_.get(), 2, EPOLLIN);
   }
+
   ~Reactor() {
     while (!sessions_.empty())
       close(sessions_.begin()->first, "service-stop", 0);
   }
+
   int loop() {
     cb_.ready();
     std::array<epoll_event, 128> events{};
@@ -107,6 +118,7 @@ class Reactor {
       // 即使高流量始终产生事件，也先处理停止和截止。
       if (stopping()) break;
       deadlines();
+      if (cb_.maintenance) cb_.maintenance();
       for (int i = 0; i < n && !stopping(); ++i) {
         auto token = events[i].data.u64;
         if (token == 1) {
@@ -130,6 +142,7 @@ class Reactor {
       options_.observe(
           {kind, s ? s->id : 0, side, value, sessions_.size(), tokens_.size()});
   }
+
   bool stopping() {
     if (stop_) return true;
     signalfd_siginfo info{};
@@ -146,6 +159,7 @@ class Reactor {
       fail("read signalfd");
     }
   }
+
   void registration(int operation, int fd, std::uint64_t token,
                     std::uint32_t mask) {
     epoll_event event{};
@@ -153,6 +167,7 @@ class Reactor {
     event.events = mask;
     if (epoll_ctl(epoll_.get(), operation, fd, &event) < 0) fail("epoll_ctl");
   }
+
   void remove(EndpointState& end) {
     if (!end.registered) return;
     if (epoll_ctl(epoll_.get(), EPOLL_CTL_DEL, end.fd.get(), nullptr) < 0 &&
@@ -161,6 +176,7 @@ class Reactor {
     end.registered = false;
     end.interest = 0;
   }
+
   void close(std::uint64_t id, const std::string& reason, int error) {
     auto it = sessions_.find(id);
     if (it == sessions_.end()) return;
@@ -172,6 +188,7 @@ class Reactor {
     sessions_.erase(it);
     observe("closed");
   }
+
   int socket_error(int fd) {
     int error = 0;
     socklen_t len = sizeof(error);
@@ -181,6 +198,7 @@ class Reactor {
     if (rc < 0) throw SessionFailure{"getsockopt SO_ERROR", errno};
     return error;
   }
+
   void accept_sessions() {
     for (int i = 0; i < 64 && !stopping(); ++i) {
       Fd front(options_.accept_call
@@ -217,9 +235,11 @@ class Reactor {
         observe("capacity-reject");
         continue;
       }
+      auto backend = cb_.select_backend();
+      if (!backend) continue;
       auto session = std::make_unique<Session>();
       session->id = next_id_++;
-      session->backend = cb_.select_backend();
+      session->backend = *backend;
       session->ends[0].fd = std::move(front);
       auto id = session->id;
       sessions_.emplace(id, std::move(session));
@@ -254,6 +274,7 @@ class Reactor {
       }
     }
   }
+
   void update(Session& s) {
     for (int side = 0; side < 2; ++side) {
       auto& end = s.ends[side];
@@ -286,6 +307,7 @@ class Reactor {
       observe("interest", &s, side, mask);
     }
   }
+
   void write_direction(Session& s, int source, std::size_t& budget) {
     auto& buffer = s.pending[source];
     while (buffer.size() && budget && !stopping()) {
@@ -316,6 +338,7 @@ class Reactor {
       observe("resume", &s, source, buffer.size());
     }
   }
+
   void read_direction(Session& s, int source) {
     auto& end = s.ends[source];
     auto& buffer = s.pending[source];
@@ -344,6 +367,7 @@ class Reactor {
       }
     }
   }
+
   bool pump(Session& s) {
     std::size_t budgets[2]{kBufferLimit, kBufferLimit};
     for (int side = 0; side < 2; ++side)
@@ -366,6 +390,7 @@ class Reactor {
     return s.ends[0].eof && s.ends[1].eof && s.ends[0].shutdown &&
            s.ends[1].shutdown;
   }
+
   void dispatch(std::uint64_t token, std::uint32_t events) {
     auto target = tokens_.find(token);
     if (!target) {
@@ -404,6 +429,7 @@ class Reactor {
       close(id, error.operation, error.error);
     }
   }
+
   void deadlines() {
     auto now = Clock::now();
     if (listener_deferred_ && now >= listener_retry_) {
@@ -439,6 +465,7 @@ class Reactor {
       }
     }
   }
+
   const Callbacks& cb_;
   const Options& options_;
   SignalMask mask_;
@@ -450,6 +477,7 @@ class Reactor {
   bool listener_deferred_ = false, resource_warning_ = false, stop_ = false;
 };
 }  // namespace
+
 int run(const Endpoint& listen, const Callbacks& callbacks,
         const Options& options) {
   Reactor reactor(listen, callbacks, options);
