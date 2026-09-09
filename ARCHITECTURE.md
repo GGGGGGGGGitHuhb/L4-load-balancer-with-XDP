@@ -661,3 +661,7 @@ XDP/eBPF 状态：
 - `metrics/metrics.h/.cpp` 固定Collector/Snapshot、纯schema=1格式化与Output；control的MetricsService独占它们，健康采集为HealthSelection只读复制，不tick或移动cursor。各模块继续.h/.cpp同目录。
 - off无collector/output/回调/周期；stderr模式ready后1s维护，健康先行，reactor释放后单final/error。最多256backend与32768字节完整行，单线程同步stderr、不建异步队列。慢sink、SIGPIPE、半行与失败禁用边界见metrics规格，不承诺非阻塞日志。
 - 新增5项正式模型/两reactor落点/两协议产品指标测试，保留原15项；当前20注册，Debug快速19、Release完整20。未提前实现S3完整故障矩阵/Prometheus/XDP。
+
+## V0.3/S3 测试边界
+
+新增Python标准库双backend fixture、三项真实产品CTest及独立工具负向。fixture区分健康空连接与业务nonce，以backend观测建立期望账本，再比较产品指标；测试线程/PID/socket由单run拥有。原metrics产品模块仅加main入口保护供schema解析复用，默认执行和既有断言保持。生产src、配置和模块边界不变，当前23项注册；执行见 `docs/runbooks/local-v0.3-validation.md`。

@@ -45,3 +45,5 @@ control 持有 checker 和原 Scheduler，两个 reactor 在每轮唤醒、处�
 - `v03_health_tcp_product` / `v03_health_udp_product`：标准库 Python fixture 启动原产品，默认 1s/3fail/2success，nonce 数据与空 probe 分别计数；Unknown、摘除/恢复、无 fallback、旧 TCP/UDP 绑定、热业务下维护与停止。
 - 原 11 项回归保留；总 15 项，Debug 排除 udp_long 后 14，Release 15 含真实 60s expiry。Python3 仅测试依赖，Production `BUILD_TESTING=OFF` 不需要 Python。
 - 原始日志、源码指纹及 Release 负向验证见 Builder/Reviewer 报告。未实现指标快照、应用层/UDP 主动探测、重试、迁移、热加载或 XDP。
+
+V0.3/S3双backend故障与指标联合验证见 [本机运行手册](../runbooks/local-v0.3-validation.md) 和 [版本验收矩阵](v0.3-acceptance.md)；不改变本规格的生产语义。

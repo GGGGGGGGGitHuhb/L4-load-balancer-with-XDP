@@ -8,8 +8,8 @@
 
 ## 当前状态
 
-- 当前阶段标签：`v0.2-s3`（远端main与标签peeled均为S3合并提交 `7821b25`；不据此声称创建GitHub Release）
-- 状态：V0.1/S1 已完成；S2 TCP 转发已完成（Completed，独立复审 PASS）；S3 已完成（Completed，独立审查 PASS），V0.1 开发范围完成；V0.2/S1 也已完成并合并，注释标签 v0.2-s1 已核验。S2 已实现并独立验收（PASS）及 Leader 收尾（Completed）；S3独立审查（Reviewer001 PASS）和Leader003收尾完成，V0.2开发范围Completed；S3已合并且远端v0.2-s3标签核验为7821b25。V0.3/S1 Completed，已合并并标记v0.3-s1（9971818b）；当前分支 `codex/v0.3-s2`，S2已批准，V0.3-S2-D1 Approved；Builder002、Reviewer002独立PASS及Leader003收尾完成，S2 Completed；S3未开始。
+- 最近已核验阶段标签：`v0.3-s2`（S2合并提交 `2f5c26d`；当前S3开发完成，尚未创建S3标签或发布）
+- 状态：V0.1/S1 已完成；S2 TCP 转发已完成（Completed，独立复审 PASS）；S3 已完成（Completed，独立审查 PASS），V0.1 开发范围完成；V0.2/S1 也已完成并合并，注释标签 v0.2-s1 已核验。S2 已实现并独立验收（PASS）及 Leader 收尾（Completed）；S3独立审查（Reviewer001 PASS）和Leader003收尾完成，V0.2开发范围Completed；S3已合并且远端v0.2-s3标签核验为7821b25。V0.3/S1 Completed，已合并并标记v0.3-s1（9971818b）；V0.3/S2 Completed，已合并并标记v0.3-s2（2f5c26d）；当前分支 `codex/v0.3-s3`，S3 Completed，V0.3-S3-D1保持Approved，Builder001、Reviewer001 PASS、Leader003齐备；V0.3开发范围Completed。
 - 主要能力：
   - 明确项目方向：C++ 用户态 L4 负载均衡器 + XDP/eBPF fast path
   - 明确基础技术栈：LLVM、CMake、Ninja、C++20、Linux socket、epoll
@@ -160,7 +160,7 @@ ctest --test-dir build-release --output-on-failure
 
 ## 测试与验证
 
-当前注册20项；Debug快速执行 `ctest --test-dir build -LE udp_long`（19项），Release完整20项含一次约61秒原生产过期测试。`udp_fast`两项可重复/并行，`udp_long`不加入快速组；容量1024只作静态默认值确认，未做1024满载产品验收。
+当前注册23项；Debug快速执行 `ctest --test-dir build -LE udp_long`（22项），Release完整23项含一次约61秒原生产过期测试。`udp_fast`两项可重复/并行，`udp_long`不加入快速组；容量1024只作静态默认值确认，未做1024满载产品验收。
 
 CTest 包含配置单元测试和 CLI 进程集成测试，覆盖合法输入、拒绝规则、端点顺序、64 KiB 边界、精确退出码与输出、FIFO 超时、普通文件符号链接及配置内容不变。
 
@@ -187,12 +187,20 @@ ctest --test-dir build -L s2 --output-on-failure
 
 ## 当前阶段入口
 
-当前V0.3/S2已获开发批准，分支 `codex/v0.3-s2`，V0.3-S2-D1 Approved；Builder002、Reviewer002独立PASS及Leader003收尾完成，S2 Completed；S3未开始。批准方案为默认关闭、显式每秒stderr指标快照，计数表示成功提交而非对端送达；同步stderr可能受慢消费者影响，详见自包含准备决策。
+当前V0.3/S3及V0.3开发范围Completed，分支 `codex/v0.3-s3`，V0.3-S3-D1保持Approved；Builder001、Reviewer001独立PASS及Leader003收尾齐备，六条版本标准全部满足。范围为双后端故障/恢复、业务连接拒绝、指标联动及公开V0.3验收手册，不新增产品功能或性能承诺。
+
+- [V0.3/S3批准设计](docs/leader/designs/V0.3/S3-design.md)
+- [V0.3/S3审查计划](docs/reviewer/reviews/V0.3/S3-review.md)
+- [V0.3/S3准备决策](docs/leader/reports/V0.3/S3-report-001.md)
+- [V0.3/S3批准登记](docs/leader/reports/V0.3/S3-report-002.md)
+- [V0.3/S3与版本完成报告](docs/leader/reports/V0.3/S3-report-003.md)
+
+### 已完成的V0.3/S2
+
+S2 Completed，Builder002、Reviewer002 PASS、Leader003齐备；已合并PR8并标记v0.3-s2（2f5c26d，含dfcffe6）。当前S3与V0.3完成状态见上节。
 
 - [V0.3/S2批准设计](docs/leader/designs/V0.3/S2-design.md)
 - [V0.3/S2审查计划](docs/reviewer/reviews/V0.3/S2-review.md)
-- [V0.3/S2准备决策](docs/leader/reports/V0.3/S2-report-001.md)
-- [V0.3/S2批准登记](docs/leader/reports/V0.3/S2-report-002.md)
 - [V0.3/S2完成报告](docs/leader/reports/V0.3/S2-report-003.md)
 
 ### 已完成的V0.3/S1
@@ -303,12 +311,16 @@ TCP 握手不证明应用业务可用。UDP 必须在后端相同 IP/数字端�
 
 测试构建新增 Python3 标准库 fixture，无额外包；生产 `BUILD_TESTING=OFF` 无 Python 依赖。S1验收时原11项保留、新增4项，总15项；Debug快速 `ctest --test-dir <Debug目录> -LE udp_long` 为14项，Release完整 `ctest --test-dir <Release目录>` 为15项。单独健康测试可用 `ctest --test-dir <构建目录> -R v03_health`，真实产品用默认时序。原始执行证据见 [Builder报告](docs/builder/reports/V0.3/S1-report-001.md)。
 
-Reviewer独立验收 PASS：Debug快速14/14、Release完整15/15，Production两协议健康/普通uid CLI与三类Release负向通过，见 [审查报告](docs/reviewer/reports/V0.3/S1-report-001.md)。Leader收尾完成，S1 Completed，见 [完成报告](docs/leader/reports/V0.3/S1-report-003.md)；S2准备中，S3未开始。
+Reviewer独立验收 PASS：Debug快速14/14、Release完整15/15，Production两协议健康/普通uid CLI与三类Release负向通过，见 [审查报告](docs/reviewer/reports/V0.3/S1-report-001.md)。Leader收尾完成，S1 Completed，见 [完成报告](docs/leader/reports/V0.3/S1-report-003.md)；S2/S3及V0.3开发范围均已完成。
 
 ## V0.3/S2 指标输出
 
 配置可增加 `metrics=stderr`，默认off，与health_check独立。原stderr日志中每秒增加 `metrics ` 前缀JSON快照，并在ready和清理后final/error各输出相应快照。计数包括活动会话/flow、已成功向内核提交的双向payload字节/UDP包、拒绝/丢弃/错误/超时以及后端健康；不保证对端收到，探活不算业务量，UDP零长包也计一包。
 
-同步stderr可能拖慢业务及停止；堵塞管道不保证及时退出，关闭管道可能SIGPIPE终止。建议写本地普通文件并外部管理日志。写失败/短写禁用后续指标，半行不保证修复；仅解析完整 `metrics ` JSON行，详见 [指标规格](docs/specs/metrics.md)。无新端口/线程/生产依赖。新增5项metrics测试，当前总20项（Debug快速19、Release完整20含原60s expiry）；单独运行 `ctest --test-dir build -R v03_metrics`。
+同步stderr可能拖慢业务及停止；堵塞管道不保证及时退出，关闭管道可能SIGPIPE终止。建议写本地普通文件并外部管理日志。写失败/短写禁用后续指标，半行不保证修复；仅解析完整 `metrics ` JSON行，详见 [指标规格](docs/specs/metrics.md)。无新端口/线程/生产依赖。新增5项metrics测试，S2阶段总20项；S3增加3项后当前23项（Debug快速22、Release完整23含原60s expiry）；单独运行 `ctest --test-dir build -R v03_metrics`。
 
-当前实现证据：[V0.3/S2 Builder002](docs/builder/reports/V0.3/S2-report-002.md)，两项首轮问题已由 [Reviewer002 PASS](docs/reviewer/reports/V0.3/S2-report-002.md) 独立确认关闭；Debug19/19、Release20/20、Production及五类负向通过，Leader收尾完成，S2 Completed，见 [完成报告](docs/leader/reports/V0.3/S2-report-003.md)。历史 [Builder001](docs/builder/reports/V0.3/S2-report-001.md) / [Reviewer001 FAIL](docs/reviewer/reports/V0.3/S2-report-001.md) 保留：UDP建flow异常漏drop和正式fd结束断言缺失；两项均已关闭，S3未开始。
+当前实现证据：[V0.3/S2 Builder002](docs/builder/reports/V0.3/S2-report-002.md)，两项首轮问题已由 [Reviewer002 PASS](docs/reviewer/reports/V0.3/S2-report-002.md) 独立确认关闭；Debug19/19、Release20/20、Production及五类负向通过，Leader收尾完成，S2 Completed，见 [完成报告](docs/leader/reports/V0.3/S2-report-003.md)。历史 [Builder001](docs/builder/reports/V0.3/S2-report-001.md) / [Reviewer001 FAIL](docs/reviewer/reports/V0.3/S2-report-001.md) 保留：UDP建flow异常漏drop和正式fd结束断言缺失；两项均已关闭，S3及V0.3开发范围已完成。
+
+## V0.3/S3 故障场景验证
+
+新增双backend TCP/UDP部分摘除、全不可选、分步恢复和真实TCP连接拒绝场景，以独立nonce和指标账本验证旧绑定、轮询及最终清理。使用 `bash tests/v03_validate.sh build-release/bin/l4lb validation-v03`；网络隔离、构建、工具负向及证据说明见 [公开运行手册](docs/runbooks/local-v0.3-validation.md)，逐条版本标准见 [验收矩阵](docs/specs/v0.3-acceptance.md)。Builder与 [Reviewer001 PASS](docs/reviewer/reports/V0.3/S3-report-001.md) 齐备：独立Debug22/22、Release23/23及公开重复/并行/工具负向通过。Leader003最终同步完成，S3及V0.3开发范围Completed；父按授权处理本地提交，尚未合并或发布S3。

@@ -84,3 +84,7 @@ V0.3/S1 测试构建需 Python3 标准库（健康产品 fixture），无第三�
 ## V0.3/S2 指标验证
 
 原场景默认metrics=off保持；新增5项指标测试，当前20项，Debug快速19/Release完整20。`ctest --test-dir build -R v03_metrics` 同时覆盖模型/实际计数落点/真实产品活跃快照。手动在配置增加metrics=stderr并把stderr重定向普通本地文件，按 [metrics规格](../specs/metrics.md) 解析前缀；同步慢sink和SIGPIPE可能影响服务，不将普通文件条件下停止界推广到堵塞管道。
+
+## V0.3/S3 验证入口
+
+当前新增3项系统故障场景后共23项（Debug快速22、Release完整23）。上文各阶段数量保留为历史口径；双backend故障、健康/指标联动和公开命令见 [V0.3运行手册](local-v0.3-validation.md)。
