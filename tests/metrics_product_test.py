@@ -148,11 +148,12 @@ def startup_error():
         occupied.close()
 
 
-try:
-    if f.MODE in ['all', 'tcp']:
-        tcp(); startup_error()
-    if f.MODE in ['all', 'udp']:
-        udp()
-except Exception as error:
-    print('FAIL metrics product:', error, file=sys.stderr, flush=True)
-    sys.exit(1)
+if __name__ == "__main__":
+    try:
+        if f.MODE in ['all', 'tcp']:
+            tcp(); startup_error()
+        if f.MODE in ['all', 'udp']:
+            udp()
+    except Exception as error:
+        print('FAIL metrics product:', error, file=sys.stderr, flush=True)
+        sys.exit(1)

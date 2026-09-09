@@ -4,6 +4,25 @@
 
 ## Unreleased
 
+### 2026-09-09 V0.3/S3与V0.3完成收尾
+
+- S3-D1保持Approved，Builder001、Reviewer001独立PASS与Leader003收尾齐备；S3及V0.3开发范围Completed，六条版本标准全部满足。生产代码、配置与格式文件零差异；V0.4未启动。
+- 独立Debug22/22（93.26s）、Release23/23（152.60s）、Production三场景/38CLI、10次ICMP采样、工具五路目标负向、Release新增重复/并行/空格路径通过；29个产品PID回收且fixture fd相等，55文件指纹一致。
+- TD-004本V0.3健康/指标/公开故障手册与版本矩阵义务完成，未来XDP/benchmark保持；无返工或带债。Builder额外Debug expiry为已披露命令偏差；ICMP历史根因未定位，不宣称修复。
+- 交父按授权执行本地提交，不提前宣称合并、标签或发布；下方保留历史交接记录。
+
+### 2026-09-09 V0.3/S3 独立验收通过
+
+- Reviewer001 PASS：双backend TCP/UDP部分摘除、全不可选、分步恢复、旧绑定与独立指标账本及真实TCP拒绝全部通过，无新增债项。
+- 独立Debug快速22/22（93.26s）、Release23/23（152.60s，唯一一次expiry），Production三场景/38项普通uid CLI/check静态通过；Release新增重复2次、并行2组、空格路径及五路工具负向通过。29个run（24正向、5故意负向）PID全部回收、fixture fd相等，55文件指纹一致，生产/C++零变化。
+- 10次新namespace ICMP采样及完整回归未复现历史失败，根因仍未定位。当前Closing，待Leader同步S3/V0.3与TD-004后再由父按授权提交；未代签版本Completed。
+
+### 2026-09-09 V0.3/S2合并与S3准备
+
+- S2已由PR8合并，origin/main与远端v0.3-s2注释标签peeled核验为2f5c26d，含实现dfcffe6且树一致；S2独立复审PASS和历史返工结论保持。
+- 新分支codex/v0.3-s3基于2f5c26d；形成V0.3-S3-D1 Draft故障矩阵、审查计划与准备决策，Awaiting PM Decision，尚未实施验证或获开发批准。
+- 计划补双backend故障/恢复、连接拒绝与公开V0.3六条验收矩阵，保留旧ICMP失败证据边界；不新增产品功能、不提前宣告V0.3完成。历史交接记录保留。
+
 ### 2026-09-09 V0.3/S2 完成收尾
 
 - 同V0.3-S2-D1保持Approved，Builder002、Reviewer002 PASS及Leader003收尾完成，S2 Completed；R-S2-01异常漏drop、R-S2-02正式fd断言缺失均关闭，无带债验收。S3未开始，V0.3整体尚未完成。
@@ -233,3 +252,9 @@
 - Leader 规则：`docs/leader/GUIDE.md`
 - Builder 规则：`docs/builder/GUIDE.md`
 - Reviewer 规则：`docs/reviewer/GUIDE.md`
+
+### V0.3/S3 Builder交付（2026-09-09，待独立验收）
+
+- 新增TCP/UDP双backend部分/全故障与分步恢复、真实TCP拒绝无重试的产品验证及独立nonce/指标账本。
+- 工具错误传播、PID/fd清理、重复/并行/空格路径已验证；提供普通clone运行手册与六条版本矩阵。
+- Builder Debug完整23/23、Release23/23，Production三场景及普通uid38CLI通过。10次独立ICMP采样未复现历史偶发，根因未定位；生产功能无变化，Reviewer/Leader尚待完成。
