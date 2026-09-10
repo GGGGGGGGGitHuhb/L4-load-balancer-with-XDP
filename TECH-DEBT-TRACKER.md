@@ -1,6 +1,8 @@
 # 当前概况
 
-当前阶段V1.0/S1已Completed（2026-09-10），D1 Approved，Builder002、Reviewer002独立PASS及Leader003齐备；F-001返工关闭，无新增债项、阻塞或PM决策。TD-004本阶段用户态冻结契约义务已完成，S2/S3文档与发布审查及后续XDP义务保持。以下早期阶段说明保留其历史语境。
+本文角色报告/设计路径为本地治理记录（或未来计划位置），不随普通clone分发；公开复核使用README和规格/运行手册。
+
+当前阶段V1.0/S2已Completed（2026-09-10），D1 Approved，Builder001、Reviewer001独立PASS及Leader002齐备；无新增债项、阻塞或PM决策。TD-004本阶段公开文档与验收索引义务已完成，S3发布审查及后续XDP义务保持。以下早期阶段说明保留其历史语境。
 
 V0.1/S1 工程骨架与配置入口已完成（Completed，2026-09-07），Reviewer 结论 PASS。S2 已完成（2026-09-08，Reviewer002 PASS），S3 已完成（Reviewer001 PASS），V0.1 开发范围完成，本地 main 已包含 S3 合并提交 544c8d8；远端发布状态本轮未核验。
 
@@ -10,6 +12,10 @@ V0.1/S1 工程骨架与配置入口已完成（Completed，2026-09-07），Revie
 - 无本阶段阻塞或新增技术债；S2-R001 已修复并复审关闭，完成报告为 `docs/leader/reports/V0.1/S2-report-004.md`；S3 已完成且无新增债项，见 `docs/leader/reports/V0.1/S3-report-003.md`。
 
 ## 阶段状态
+
+### V1.0 / S2 文档与验收补齐
+
+六项AC满足，独立公开来源Debug30/30、Release31/31含长expiry、三构建及普通UID CLI44通过；原参数TCP/UDP示例、26文档117链接及两负向、当前短benchmark和历史包完整JSON重算通过，34保护文件不变。无新债或发现，S3/发布未完成。公开事实见 [V1.0验收索引](docs/specs/v1.0-acceptance.md)，本地授权/收尾记录为 `docs/leader/reports/V1.0/S2-report-001.md`、`S2-report-002.md`。
 
 ### V1.0 / S1 用户态行为冻结
 
@@ -217,6 +223,8 @@ M1..M4 与 AC-01..07 已完成：独立 Debug/Release 各 7/7，Production 验�
 ### TD-004 长期规格文档随阶段补齐
 
 状态：部分完成，剩余部分按原阶段接受延期。
+
+2026-09-10补充：V1.0/S2公开README/架构/规格/运行/benchmark导航与验收索引、实际命令及链接验证已由Reviewer001独立PASS并经Leader002收尾。本阶段文档义务完成，S3最终归档和后续XDP义务保持，无新债项。
 
 2026-09-10补充：V1.0/S1 `docs/specs/v1.0-user-visible-contract.md` 及配置/健康/metrics对应边界已交付，经Reviewer002 PASS和Leader003收尾验收。本阶段义务完成，S2完整文档核对、S3发布审查和后续XDP文档义务继续按原阶段推进。
 

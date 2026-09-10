@@ -1,6 +1,6 @@
 # 本地 UDP 验证
 
-适用 V0.2/S3。普通 clone 只需源码、tests 工具和本手册；不依赖忽略的角色报告或既有证据目录。构建依赖 Linux/WSL2、Clang/C++20、CMake≥3.20、Ninja；手动工具额外使用 Python3 标准库，单 shell 演示脚本使用 Bash、coreutils、ripgrep。无需下载 Python 包。
+UDP流程始于 V0.2/S3，以下构建计数已同步V1.0/S2；历史阶段结果保持原语境。普通 clone 只需源码、tests 工具和本手册；不依赖忽略的角色报告或既有证据目录。构建依赖 Linux/WSL2、Clang/C++20、CMake≥3.20、Ninja；手动工具额外使用 Python3 标准库，单 shell 演示脚本使用 Bash、coreutils、ripgrep。无需下载 Python 包。
 
 ## 构建、测试数量与网络环境
 
@@ -17,7 +17,7 @@ cmake --build build-release
 ctest --test-dir build -N
 ```
 
-注册 **11 项**，保留 S2 九项，新增 `v02_udp_system` 和 `v02_udp_expiry`。Debug 常规执行 10 项快速测试；Release 执行全部 11 项，长项只需一次。
+当前注册 **31项**，Debug快速30项，Release全部31项，长expiry至少一次。历史V0.2/S3为11项（S2九项加system/expiry），不代表当前总数。
 
 若允许真实本机 loopback，直接执行下列 CTest 命令即可。当前已知部分执行环境把 127/8 经 loopback0 转发，会丢弃超过1472字节UDP；在临时 user/net namespace 内启用独立 lo 可排除该环境问题，不改宿主接口、路由、代理或限额：
 
@@ -29,7 +29,7 @@ ctest --test-dir build -R 'config_unit|cli_integration|v02_scheduler_unit'
 ctest --test-dir build-release -R 'config_unit|cli_integration|v02_scheduler_unit'
 ```
 
-预期依次执行 10/10、11/11、3/3、3/3，退出0。namespace 不可用时应在具有正常本地回环的环境执行，不能缩小最大包或把环境失败当通过。未修改生产源代码、默认时限或配置，不需要 root 修改系统网络。
+当前命令预期依次执行30/30、31/31、3/3、3/3，退出0。namespace 不可用时应在具有正常本地回环的环境执行，不能缩小最大包或把环境失败当通过。未修改生产源代码、默认时限或配置，不需要 root 修改系统网络。
 
 ## 快速组与生产默认长项
 

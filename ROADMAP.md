@@ -1,5 +1,7 @@
 # 项目概述
 
+本文所有 `docs/leader/`、`docs/builder/`、`docs/reviewer/` 路径均为本地治理记录或未来计划位置，不随普通clone分发，不表示未来文件已存在。公开运行与验收入口见[README](README.md)及[V1.0验收索引](docs/specs/v1.0-acceptance.md)。
+
 本项目是一个面向高性能网络方向的四层负载均衡器实验项目。它以 C++20 用户态 TCP/UDP 负载均衡器为基础，逐步建立配置、调度、健康检查、连接与会话管理、可观测性和性能验证能力；在用户态语义稳定后，再引入 XDP/eBPF fast path，探索 Linux 网络栈中的包级高性能数据面。
 
 最终目标是形成一个可以讲清楚、可以运行、可以测试、可以观察性能瓶颈的 L4 load balancer，而不是只完成一次性 demo。项目同时服务于高性能网络方向的学习、简历展示和后续 DPDK/L3 forwarding 等独立项目的能力准备。
@@ -256,9 +258,9 @@
 
 ### V1.0 用户态稳定版
 
-状态：进行中；S1 Completed（2026-09-10），S2/S3待开展，尚未发布V1.0。
+状态：进行中；S1、S2 Completed（2026-09-10），S3待开展，尚未发布V1.0。
 
-S1依据V1.0-S1-D1 Approved完成；批准登记Leader002，Builder002、Reviewer002独立PASS与Leader003收尾齐备。F-001测试夹具端口竞争已返工关闭，六项AC满足，无新增技术债或阻塞。验证为首轮有效证据与复审受影响补验组合，不宣称一次最终31/31。当前分支 `codex/v1.0-s1`，起点V0.4/S3合并提交 `1bb9ea9`；父按用户授权完成后本地提交，推送与发布未执行。完成报告：`docs/leader/reports/V1.0/S1-report-003.md`。
+S1依据V1.0-S1-D1 Approved完成；F-001已返工关闭，历史组合证据保持。S2依据V1.0-S2-D1 Approved完成，授权登记Leader001、Builder001、Reviewer001独立PASS与Leader002收尾齐备。独立Debug30/30、Release31/31含长expiry、三构建、公开示例/链接/重算验证通过，六项AC满足，无新增技术债或阻塞。当前分支 `codex/v1.0-s2`，基线S1合并提交 `55399b4`；父按授权本地提交，S3及发布未完成。可公开复核结果见 [V1.0验收索引](docs/specs/v1.0-acceptance.md)。
 
 目标：
 
@@ -283,7 +285,7 @@ S1依据V1.0-S1-D1 Approved完成；批准登记Leader002，Builder002、Reviewe
 阶段划分：
 
 - `S1 用户态行为冻结`（Completed，2026-09-10）：冻结 V1.0 用户可见语义，清理配置、日志和错误输出。详细设计文档：`docs/leader/designs/V1.0/S1-design.md`。
-- `S2 文档与验收补齐`：补齐 README、架构、规格、测试和 benchmark 文档。详细设计文档：`docs/leader/designs/V1.0/S2-design.md`。
+- `S2 文档与验收补齐`（Completed，2026-09-10）：补齐 README、架构、规格、测试和 benchmark 文档。详细设计文档：`docs/leader/designs/V1.0/S2-design.md`。
 - `S3 发布审查`：完成 Reviewer 审查、技术债归档和发布前验证。详细设计文档：`docs/leader/designs/V1.0/S3-design.md`。
 
 完成标准：

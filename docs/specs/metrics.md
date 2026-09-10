@@ -68,7 +68,7 @@ with open("service.stderr", encoding="utf-8") as source:
 - `v03_metrics_unit`：严格配置组合/错误、模型每字段、饱和/隔离/重启/不变量、受控周期/seq/格式化、writer失败/短写及真实`/dev/full`。
 - `v03_metrics_tcp_events` / `v03_metrics_udp_events`：同一reactor代码实际落点，真实TCP部分send与受控UDP syscall结果，验证限频前错误、零长、短发/EAGAIN/EINTR/recv无drop/setup/timeout/清理。注入不宣称自然网络故障。
 - `v03_metrics_tcp_product` / `v03_metrics_udp_product`：原CLI、普通stderr文件、严格JSON字段/顺序/类型；独立nonce验证活跃periodic、半关闭/停止、健康probe排除、旧flow不eligible仍传、新key的Rejected+Dropped及启动error。
-- 原15项保留，总20项，Debug快速19、Release完整20含一次原60s expiry；Production不构建测试。三类Release负向、PID/fd审计、日志和源码指纹见Builder/Reviewer报告。没有S3完整故障矩阵、速率/延迟、Prometheus或XDP。
+- V0.3/S2历史验收：原15项保留，当时总20项，Debug快速19、Release完整20含一次原60s expiry；Production不构建测试。三类Release负向、PID/fd审计、日志和源码指纹见Builder/Reviewer报告。当时未含S3完整故障矩阵或速率/延迟测量；后续入口见下节和benchmark方法，当前仍无Prometheus或XDP。
 
 V0.3/S3双backend故障与指标联合验证见 [本机运行手册](../runbooks/local-v0.3-validation.md) 和 [版本验收矩阵](v0.3-acceptance.md)；不改变本规格的生产语义。
 
