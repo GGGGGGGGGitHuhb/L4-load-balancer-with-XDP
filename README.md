@@ -10,7 +10,8 @@
 
 - 最近已核验阶段标签：`v0.4-s2`，合并提交 `48a1283`（2026-09-10本地/远端注释对象及peeled核验一致）。
 - V0.1、V0.2、V0.3开发范围均Completed；V0.4/S1、S2均已完成并合并/标记，S2 Builder001、Reviewer001 PASS、Leader003齐备。
-- 当前分支 `codex/v0.4-s3`，基于最新main / `v0.4-s2`；S3性能报告与回归验证已通过 [Reviewer001独立验收](docs/reviewer/reports/V0.4/S3-report-001.md)：最终Debug28/28、Release29/29、独立48run及公开原始包数学/全表重算通过。V0.4-S3-D1 Approved，S3及V0.4开发范围Completed，Leader003收尾完成；尚未发布V1.0。
+- 当前分支 `codex/v1.0-s1`，起点为V0.4/S3合并提交 `1bb9ea9`。V0.4开发范围已完成；V1.0/S1用户态行为冻结已完成，D1 Approved，Builder002、Reviewer002独立PASS和Leader003收尾齐备。交付 [稳定行为契约](docs/specs/v1.0-user-visible-contract.md)，修正UDP健康端点帮助条件并增加契约与测试夹具保护；S2/S3及V1.0发布尚未完成。
+- S1独立验证采用首轮Release30/30（含长expiry）、Debug28个通过项及复审Debug/Release各4/4受影响补验；最终31项注册，未宣称一次31/31。批准、复审与收尾记录见 [Leader002](docs/leader/reports/V1.0/S1-report-002.md)、[Reviewer002](docs/reviewer/reports/V1.0/S1-report-002.md)、[Leader003](docs/leader/reports/V1.0/S1-report-003.md)。
 - S3准备：[阶段设计](docs/leader/designs/V0.4/S3-design.md)、[审查方案](docs/reviewer/reviews/V0.4/S3-review.md)、[Leader准备报告](docs/leader/reports/V0.4/S3-report-001.md)、[批准登记](docs/leader/reports/V0.4/S3-report-002.md)、[完成报告](docs/leader/reports/V0.4/S3-report-003.md)。
 - S2记录：[批准设计](docs/leader/designs/V0.4/S2-design.md)、[独立验收PASS](docs/reviewer/reports/V0.4/S2-report-001.md)、[完成报告](docs/leader/reports/V0.4/S2-report-003.md)。
 - 主要能力：
@@ -398,3 +399,7 @@ python3 tests/format_hook_test.py --output "$B/evidence"
 ```
 
 历史benchmark报告和数据包的源码指纹对应当时被测版本，格式维护不会重写它们，也不据此重新宣称性能结果。
+
+## V1.0/S1 用户态行为契约
+
+[用户态行为契约](docs/specs/v1.0-user-visible-contract.md) 汇总配置、CLI 退出码和输出稳定性、ready 含义、健康检查与有界停止限制。UDP 仅在启用 `health_check=tcp_connect` 时需要同 IP/端口的 TCP 健康端点。新增静态/启动/停止契约测试：`ctest --test-dir build -R 'cli_integration|v10_' --output-on-failure`。V1.0 发布仍待后续阶段。

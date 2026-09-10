@@ -161,3 +161,15 @@ if(BUILD_TESTING)
   add_test(NAME v04_compare_validation COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/tests/v04_benchmark_compare_test.py")
   set_tests_properties(v04_compare_validation PROPERTIES LABELS v04_compare TIMEOUT 30)
 endif()
+
+if(BUILD_TESTING)
+  add_test(NAME v10_user_visible_contract COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/tests/v10_contract_test.py"
+    "$<TARGET_FILE:l4lb>" "${CMAKE_BINARY_DIR}/v10-contract")
+  set_tests_properties(v10_user_visible_contract PROPERTIES LABELS v10_contract TIMEOUT 25)
+endif()
+
+if(BUILD_TESTING)
+  add_test(NAME v10_fixture_pair COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/tests/v10_fixture_test.py"
+    "$<TARGET_FILE:l4lb>" "${CMAKE_BINARY_DIR}/v10-fixture")
+  set_tests_properties(v10_fixture_pair PROPERTIES LABELS v10_contract TIMEOUT 10)
+endif()

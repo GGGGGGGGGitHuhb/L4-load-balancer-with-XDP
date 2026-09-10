@@ -1,5 +1,12 @@
 # Changelog
 
+### 2026-09-10 V1.0/S1 用户态行为冻结完成
+
+- 新增稳定行为契约，明确六键配置、CLI退出码及输出、转发/健康/metrics/停止边界；帮助明确只有UDP启用tcp_connect健康检查才需要TCP健康端点，保留同步输出和尽力送达限制。
+- 补充静态配置、精确ready及失败无ready、输出/清理契约测试；修复旧TCP idle测试等待trace的竞态，以及UDP/TCP健康夹具同号端口预留竞争。夹具仅EADDRINUSE最多16次重试，异常清理和确定性测试有独立验证；生产数据面及metrics schema不变。
+- Builder002、Reviewer002独立PASS（F-001 Closed）、Leader003齐备，S1 Completed，D1保持Approved。独立Release首轮30/30含原长expiry、Debug首轮28个通过项和复审两配置各4/4共同覆盖最终31项注册；三构建、普通UID44、静态无socket与两负向证据有效，不宣称一次31/31。
+- 无新增技术债或阻塞，历史失败与返工证据保留；TD-004本阶段冻结契约义务完成，S2/S3及XDP后续义务保持。仅完成S1开发与验收，由父随后按授权本地提交；未推送、合并、标记或发布V1.0。
+
 ### 2026-09-10 阶段后格式维护与提交hook
 
 - 按现有Google / SeparateDefinitionBlocks规则检查全部98个追踪文件，44个C/C++中仅9个头文件增加31个分隔空行；非空白token、注释正文、字面量和预处理指令保持，原.clang-format未改。历史benchmark报告/原始包保留原字节与当时指纹。

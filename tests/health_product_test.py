@@ -151,6 +151,7 @@ class Product:
         self.started = time.monotonic()
         try:
             until(lambda: "服务已启动" in (self.path / "stdout.log").read_text(), "product ready missing", 3)
+            check((self.path / "stdout.log").read_text() == f"{protocol.upper()} 服务已启动：127.0.0.1:{self.port}\n", "ready contract mismatch")
             self.initial_fds = len(list(Path(f"/proc/{self.pid}/fd").iterdir()))
         except BaseException:
             self.close()

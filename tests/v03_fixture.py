@@ -1,4 +1,5 @@
 """S3 own-socket fixture, independent data ledger and failure-safe evidence."""
+import errno
 import json
 import os
 from pathlib import Path
@@ -31,6 +32,32 @@ def bound(kind, port=0):
         raise
 
 
+def bound_udp_tcp():
+    """Reserve both protocols before starting workers; UDP port 0 alone is insufficient."""
+    for _ in range(16):
+        udp = None
+        listener = None
+        try:
+            udp = bound(socket.SOCK_DGRAM)
+            listener = bound(socket.SOCK_STREAM, udp.getsockname()[1])
+            listener.listen(64)
+            return udp, listener
+        except OSError as error:
+            if listener is not None:
+                listener.close()
+            if udp is not None:
+                udp.close()
+            if error.errno != errno.EADDRINUSE:
+                raise
+        except BaseException:
+            if listener is not None:
+                listener.close()
+            if udp is not None:
+                udp.close()
+            raise
+    raise OSError(errno.EADDRINUSE, 'UDP/TCP paired port allocation exhausted after 16 attempts')
+
+
 class Backend:
     def __init__(self, suite, index, udp):
         self.suite = suite
@@ -46,10 +73,11 @@ class Backend:
         self.port = 0
         try:
             if udp:
-                self.udp = bound(socket.SOCK_DGRAM)
+                self.udp, self.listener = bound_udp_tcp()
                 self.port = self.udp.getsockname()[1]
-                self.launch(self.datagrams)
             self.start_tcp()
+            if udp:
+                self.launch(self.datagrams)
         except Exception:
             self.close()
             raise
@@ -69,9 +97,10 @@ class Backend:
         worker.start()
 
     def start_tcp(self):
-        self.listener = bound(socket.SOCK_STREAM, self.port)
+        if self.listener is None:
+            self.listener = bound(socket.SOCK_STREAM, self.port)
+            self.listener.listen(64)
         self.port = self.listener.getsockname()[1]
-        self.listener.listen(64)
         self.launch(self.accept, self.listener)
         self.suite.action('health-listen', backend=self.index, port=self.port)
 

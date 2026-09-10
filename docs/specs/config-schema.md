@@ -1,6 +1,6 @@
 # 配置规格
 
-适用至 V0.3/S2：静态 TCP/UDP 配置格式。`--check-config` 不创建 socket、不启动监听、不连接后端，也不检查可达性；`--run` 按配置启动 TCP 或 UDP。
+适用至 V1.0/S1：静态 TCP/UDP 配置格式。`--check-config` 不创建 socket、不启动监听、不连接后端，也不检查可达性；`--run` 按配置启动 TCP 或 UDP。
 
 ## 格式与字段
 
@@ -48,7 +48,7 @@ backend=127.0.0.1:9002
 - 参数错误（无参数、未知参数、缺路径、重复选项、额外参数、help 混用）退出 2，stdout 为空，stderr 为用法错误和 help 提示。
 - 文件或配置错误退出 1，stdout 为空，stderr 包含原因。
 
-`health_check` 可选，缺省 `off`，仅接受 `off`/`tcp_connect`；任意顺序、至多一次，同值重复也报后出现行，大小写变体/空/未知值失败。启用后初始 Unknown 拒绝新会话/flow，连续2成功开放、3失败摘除，固定完成后1s/超时1s。UDP 必须提供相同 IP/端口且有代表性的 TCP 健康端点；TCP 握手不是 UDP 协议健康证明。详见 [健康规格](health-check.md)。目前不支持权重和热加载。
+`health_check` 可选，缺省 `off`，仅接受 `off`/`tcp_connect`；任意顺序、至多一次，同值重复也报后出现行，大小写变体/空/未知值失败。启用后初始 Unknown 拒绝新会话/flow，连续2成功开放、3失败摘除，固定完成后1s/超时1s。UDP 仅在启用 `health_check=tcp_connect` 时必须提供相同 IP/端口且有代表性的 TCP 健康端点；TCP 握手不是 UDP 协议健康证明。详见 [健康规格](health-check.md)。目前不支持权重和热加载。
 
 - V0.1/S2 新增 `l4lb --run <path>`：复用同一只读加载与错误规则，校验成功后启动 TCP 服务；与 check-config/help 互斥。详见 [TCP 转发语义](tcp-forwarding-semantics.md)，配置格式及默认值未变。
 
