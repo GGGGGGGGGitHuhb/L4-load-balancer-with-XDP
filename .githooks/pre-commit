@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+# Format tracked C/C++ worktree files; never stage or rewrite index contents.
+set -euo pipefail
+
+if ! command -v clang-format >/dev/null 2>&1; then
+  printf '%s\n' '提交已停止：缺少 clang-format，请安装后重试。' >&2
+  exit 1
+fi
+root=$(git rev-parse --show-toplevel)
+cd -- "$root"
+if [[ ! -f .clang-format || -L .clang-format ]]; then
+  printf '%s\n' '提交已停止：需要仓库中的普通文件 .clang-format。' >&2
+  exit 1
+fi
+mkdir -p -- "$root/.stage-tmp/git-hooks"
+temporary=$(mktemp -d "$root/.stage-tmp/git-hooks/format.XXXXXXXX")
+trap 'rm -rf -- "$temporary"' EXIT
+
+# A partially staged style would validate against rules not present in the commit.
+git cat-file blob :.clang-format > "$temporary/style"
+if ! cmp -s -- .clang-format "$temporary/style"; then
+  printf '%s\n' '提交已停止：.clang-format 的工作树与暂存版本不同，请先核对并暂存格式规则。' >&2
+  exit 1
+fi
+git ls-files --stage -z > "$temporary/tracked"
+changed=0
+index_needs_format=0
+while IFS= read -r -d '' entry; do
+  metadata=${entry%%$'\t'*}
+  file=${entry#*$'\t'}
+  read -r mode object stage <<< "$metadata"
+  if [[ "$stage" != 0 ]]; then
+    printf '提交已停止：存在未解决的 index 冲突：%q\n' "$file" >&2
+    exit 1
+  fi
+  # Symlinks/submodules are not formatted or followed outside the worktree.
+  case "$mode" in 100644|100755) ;; *) continue ;; esac
+  case "$file" in
+    *.c|*.cc|*.cpp|*.cxx|*.c++|*.h|*.hh|*.hpp|*.hxx|*.h++|*.ipp|*.tpp|*.inl|*.C|*.H|*.cu|*.cuh) ;;
+    *) continue ;;
+  esac
+  path="$root/$file"
+  # Unstaged deletions stay deleted. Staged deletions are absent from this list.
+  if [[ -f "$path" && ! -L "$path" ]]; then
+    clang-format --style=file -- "$path" > "$temporary/work"
+    if ! cmp -s -- "$path" "$temporary/work"; then
+      cat -- "$temporary/work" > "$path"
+      printf '已格式化工作树：%q\n' "$file" >&2
+      changed=1
+    fi
+  fi
+  # Inspect the staged blob independently: a formatted worktree may hide an
+  # unformatted partial stage. Formatting the index here could stage user logic.
+  git cat-file blob "$object" > "$temporary/index"
+  clang-format --style=file --assume-filename="$path" < "$temporary/index" > "$temporary/formatted-index"
+  if ! cmp -s -- "$temporary/index" "$temporary/formatted-index"; then
+    printf '暂存版本需要格式化：%q\n' "$file" >&2
+    index_needs_format=1
+  fi
+done < "$temporary/tracked"
+
+if [[ "$changed" != 0 || "$index_needs_format" != 0 ]]; then
+  printf '%s\n' '提交已停止；index 未修改。请检查 git diff / git diff --cached，选择性 git add 后重新提交；部分暂存请保留未暂存逻辑边界。' >&2
+  exit 1
+fi

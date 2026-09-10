@@ -1,5 +1,11 @@
 # Changelog
 
+### 2026-09-10 阶段后格式维护与提交hook
+
+- 按现有Google / SeparateDefinitionBlocks规则检查全部98个追踪文件，44个C/C++中仅9个头文件增加31个分隔空行；非空白token、注释正文、字面量和预处理指令保持，原.clang-format未改。历史benchmark报告/原始包保留原字节与当时指纹。
+- 新增.githooks/pre-commit，提交前格式化全部追踪C/C++工作树并独立检查暂存blob；需要重新暂存时阻止提交，绝不自动git add，保护部分暂存。README给出启用和处理步骤。
+- 临时仓库12次真实commit覆盖正常/拒绝、部分暂存、空格/换行/删除/未追踪/符号链接/缺工具等路径；Release构建及6项短单元/产品smoke通过，不重跑或改写S3性能结果。
+
 ### 2026-09-10 V0.4/S3及V0.4开发范围完成
 
 - D1保持Approved，Builder001、Reviewer001独立PASS及Leader003收尾齐备，S3六AC与V0.4六标准全部完成。正式S1/S2报告、公开原始包和离线重算入口交付，数据保持Builder最终48run，Reviewer独立48run不混入报告。
