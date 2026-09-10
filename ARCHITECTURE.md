@@ -669,3 +669,7 @@ XDP/eBPF 状态：
 ## V0.4/S1 Benchmark 工具边界
 
 `tests/benchmark_runner.py`负责有界生命周期、ready/配置和独立run证据；`benchmark_fixture.py`为独立echo进程；`benchmark_traffic.py`负责TCP闭环partial I/O与UDP总pps节拍/有界pending；`benchmark_stats.py`提供纯统计；`benchmark_environment.py`负责环境白名单和每PID测量窗口资源采样。工具只使用Python3标准库，不进入生产依赖、不改变src/配置/调度/健康/metrics。`benchmark_tool_test.py`注册3项短CTest（原23项保留），`benchmark_acceptance.py`提供显式长矩阵、失败和隔离验证。公开口径与schema见 `docs/benchmarks/methodology.md`；不提前实现生产优化或XDP。
+
+## V0.4/S2资源与停止边界
+
+Buffer保留初始化的固定64KiB数组，用head/size和连续读写span代替memmove压缩；net I/O同时受span/容量/budget限制。TCP用Running/Draining/Stopped逻辑状态，首次消费信号固定1s deadline并使listener失效，内层pump只标记停止、在安全调度边界移除session，避免悬空引用。Draining冻结新recv/连接和maintenance，仅发送已有pending；control通过StopEvent输出一次生命周期队列/截止摘要，不新增metrics schema或配置。TCP/UDP从索引中移出owner、DEL/close后才独立通知，显式清理传播首异常、noexcept析构清理所有owner。新增2项有限CTest及公开runbook，原26项保持；S1方法和样本身份不重写，兼容验证不作S3性能结论。

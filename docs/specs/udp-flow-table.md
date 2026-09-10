@@ -74,3 +74,9 @@
 ## V0.3/S2 可选指标
 
 metrics默认off；stderr模式将真实创建/关闭、成功send提交量、拒绝/drop/error/timeout累计为固定schema快照。TCP计入connecting会话，send每次正返回即时计字节，不等关闭；UDP完整成功一包计一次，零长包计包不计字节，recv失败无虚构drop。旧健康不eligible的flow仍可贡献提交量。错误在日志限频前计，关闭不重复计原错误；成功提交不保证对端收到。同步stderr风险、尾快照和全部字段见 [metrics规格](metrics.md)。
+
+## V0.4/S2异常安全清理
+
+- erase先使flow/key索引失效并移出owner，再DEL及关闭fd，最后独立尝试DEL错误诊断、Closed、observe和flow通知；一项抛出不阻止其他必要通知，最终传播首异常。重复erase为no-op，旧token不命中新fd。
+- 正常显式停止逐个回收全部flow后传播通知首异常；noexcept析构在正常/栈展开路径同样前进并抑制异常，不覆盖正在传播的主因。生产statistics回调noexcept，成功创建项最终Closed一次。
+- UDP仍立即停止、没有用户态排空/重传；wildcard/IP_PKTINFO/65507字节、容量1024、60秒idle和既有网络分类不变。受控异常与真实系统路径分别见[生命周期验证](../runbooks/local-v0.4-lifecycle-validation.md)。

@@ -33,6 +33,7 @@ struct Observation {
 struct Options {
   std::size_t max_sessions = 1024;
   std::chrono::milliseconds connect_timeout{5000}, idle_timeout{60000};
+  std::chrono::milliseconds drain_timeout{1000};
   std::function<void(const Observation&)> observe;
   // 故障注入仅用于内部测试；缺省始终调用真实系统接口。
   std::function<int(int, const sockaddr*, socklen_t)> connect_call;
@@ -41,11 +42,18 @@ struct Options {
   std::function<int(int, sockaddr*, socklen_t*, int)> accept_call;
 };
 
+/** 停止屏障只报告已在用户态的队列，不代表内核中在途数据。 */
+struct StopEvent {
+  std::uint64_t pending[2]{};
+  std::int64_t deadline_ns = 0;
+};
+
 struct Callbacks {
   std::function<std::optional<Endpoint>()> select_backend;
   std::function<void()> maintenance;
   std::function<void(StatEvent)> statistics;
   std::function<void()> ready;
+  std::function<void(const StopEvent&)> stopping;
   std::function<void(const SessionEvent&)> session;
   std::function<void(const std::string&, int)> diagnostic;
 };

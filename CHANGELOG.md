@@ -1,5 +1,33 @@
 # Changelog
 
+### 2026-09-10 V0.4/S2完成
+
+- D1保持Approved，Builder001、Reviewer001独立PASS和Leader003收尾齐备，S2 Completed；固定环形缓冲、有界TCP待发队列停止和异常安全清理已交付。
+- 最终源码独立Debug27/27、Release28/28（含expiry）、Sanitizer5/5、普通uid38及Production/重复/并行/空格/工具负向通过；43产品run的43PID、4兼容run的6PID回收，fd一致。额外随机nonce双向pending在ASan/UBSan通过。
+- 同步阶段、README、ROADMAP及技术债状态；无未解决发现或新增债项，Builder日志行屏障首次失败与修复证据保留。S3正式性能报告和V0.4整体尚未完成，不宣称吞吐提升；本阶段尚未提交、合并或发布，父按授权本地提交。
+
+### 2026-09-10 V0.4/S2独立验收PASS
+
+- Reviewer (Athena) 对最终源码独立 Debug 27/27、Release 28/28、Production、Sanitizer 五项、普通 uid 38 例及新增专项两次重复验收通过；另用随机字节加强双向 pending 排空验证。
+- Production 五场景、并行/空格/目标负向、TCP/UDP 短 paired 与 F-001 通过；独立审计 43 产品 run（含 3 预期负向）及 4 兼容 run 的 PID/fd 回收。无新增发现或技术债，详见 Reviewer001。
+- 当前 Closing，交 Leader 同步最终阶段状态；未提交、推送或发布，不提前完成 S3 或宣称性能提升。Builder 首次工具竞态失败记录保留。
+
+### 2026-09-10 V0.4/S2实现与自测完成
+
+- TCP 固定环形缓冲与连续 span 转发、有界 1 秒用户态 pending 排空和第二信号强制停止；TCP/UDP 先释放资源再独立通知，析构回收多 owner 并保留异常边界。同步规格、停机文案与公开生命周期验证 runbook。
+- Debug 27/27、Release 28/28、Production、Sanitizer 五项、普通 uid 权限通过；最后停止守卫修正后完成受影响状态/Sanitizer/产品补测。保留并修复产品工具读取未完成日志行的首次并行失败；最终 23 个产品正负场景与 4 个短兼容 run 的 PID/fd 审计通过。
+- Builder001 Ready for Review，尚待独立 Reviewer 与 Leader Closing；未提交、推送或发布，不宣称性能提升，S3 未开始。
+
+### 2026-09-10 V0.4/S2批准登记
+
+- PM批准V0.4-S2-D1决策包，含TCP最多1秒尝试排空已进入用户态队列的停止行为、环形缓冲及异常安全关闭；设计和审查方案转Approved / Ready for Builder，新增Leader002。
+- 范围与七条AC保持，授权实现、自测、独立验收和收尾，完成后本地提交；尚未实施或验收，不含推送或发布，S3正式性能报告仍留后续。
+
+### 2026-09-09 V0.4/S1标签核验与S2准备
+
+- 已核验远端main与v0.4-s1注释标签peeled一致为8a1b939，包含S1验收提交8143236；同步本地main并创建codex/v0.4-s2。
+- 形成V0.4-S2-D1 Draft设计、审查方案与准备报告，明确环形缓冲、有界TCP待发队列停机、异常安全清理及七条验收要求。未改变产品行为、未运行测试、未批准实现；历史完成/发布记录保留原时点事实。
+
 ### 2026-09-09 V0.4/S1完成
 
 - Leader003核对D1批准、Builder002与Reviewer002 PASS并完成收尾，S1标记Completed，D1保持Approved；F-001已修复关闭，首轮FAIL及原始证据保留。

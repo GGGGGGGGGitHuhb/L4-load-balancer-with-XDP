@@ -39,6 +39,11 @@ int run_tcp_service(const Config& config) {
                 << std::endl;
       metrics.ready();
     };
+    callbacks.stopping = [](const net::StopEvent& e) {
+      std::cerr << "TCP draining pending_c2b=" << e.pending[0]
+                << " pending_b2c=" << e.pending[1]
+                << " deadline_ns=" << e.deadline_ns << '\n';
+    };
     callbacks.session = [](const net::SessionEvent& e) {
       std::cerr << "session=" << e.id << " backend=" << endpoint_text(e.backend)
                 << " reason=" << e.reason;
@@ -54,7 +59,8 @@ int run_tcp_service(const Config& config) {
                 << std::generic_category().message(error) << '\n';
     };
     auto result = net::run(config.listen, callbacks);
-    std::cerr << "TCP 服务已停止：全部会话已关闭（不保证在途数据排空）\n";
+    std::cerr
+        << "TCP 服务已停止：已尝试有界排空用户态待发队列，不保证在途数据送达\n";
     metrics.finish(false);
     return result;
   } catch (...) {

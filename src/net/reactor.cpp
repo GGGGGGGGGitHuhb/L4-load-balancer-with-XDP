@@ -9,6 +9,8 @@
 #include <algorithm>
 #include <array>
 #include <cerrno>
+#include <exception>
+#include <limits>
 #include <memory>
 #include <system_error>
 #include <unordered_map>
@@ -100,39 +102,63 @@ class Reactor {
     registration(EPOLL_CTL_ADD, signals_.get(), 2, EPOLLIN);
   }
 
-  ~Reactor() {
-    while (!sessions_.empty())
-      close(sessions_.begin()->first, "service-stop", 0);
+  ~Reactor() noexcept {
+    try {
+      close_all("service-error");
+    } catch (...) {
+    }
   }
 
   int loop() {
     cb_.ready();
     std::array<epoll_event, 128> events{};
-    while (!stopping()) {
-      deadlines();
-      int n = epoll_wait(epoll_.get(), events.data(), events.size(), 100);
+    for (;;) {
+      stopping();
+      if (stop_) {
+        close_all(stop_reason_);
+        return 0;
+      }
+      if (draining_) {
+        drain_tick();
+        if (sessions_.empty()) return 0;
+      } else {
+        deadlines();
+      }
+      int wait_ms = 100;
+      if (draining_) {
+        auto left = std::chrono::ceil<std::chrono::milliseconds>(
+                        drain_deadline_ - Clock::now())
+                        .count();
+        wait_ms = static_cast<int>(std::clamp<std::int64_t>(left, 0, 100));
+      }
+      observe("poll", nullptr, -1, wait_ms);
+      int n = epoll_wait(epoll_.get(), events.data(), events.size(), wait_ms);
       if (n < 0) {
         if (errno == EINTR) continue;
         fail("epoll_wait");
       }
-      // 即使高流量始终产生事件，也先处理停止和截止。
-      if (stopping()) break;
-      deadlines();
-      if (cb_.maintenance) cb_.maintenance();
-      for (int i = 0; i < n && !stopping(); ++i) {
+      stopping();
+      if (stop_) continue;
+      if (!draining_) {
+        deadlines();
+        if (!draining_ && cb_.maintenance) cb_.maintenance();
+      }
+      for (int i = 0; i < n; ++i) {
+        stopping();
+        if (stop_) break;
         auto token = events[i].data.u64;
         if (token == 1) {
+          if (draining_) continue;
           if (events[i].events & (EPOLLERR | EPOLLHUP)) {
             errno = EIO;
             fail("listener epoll");
           }
           if (Clock::now() >= listener_retry_) accept_sessions();
-        } else if (token != 2)
+        } else if (token != 2) {
           dispatch(token, events[i].events);
+        }
       }
-      deadlines();
     }
-    return 0;
   }
 
  private:
@@ -153,14 +179,75 @@ class Reactor {
     for (;;) {
       auto count = read(signals_.get(), &info, sizeof(info));
       if (count == sizeof(info)) {
-        stop_ = true;
-        return true;
+        if (draining_) {
+          stop_ = true;
+          stop_reason_ = "service-stop-forced";
+          observe("stop-forced");
+          return true;
+        }
+        draining_ = true;
+        drain_deadline_ = Clock::now() + options_.drain_timeout;
+        // Only invalidate the listener here: callers may hold a Session&.
+        // Session removal is deferred to the safe outer dispatch boundary.
+        int del_error = 0;
+        if (!listener_deferred_ && epoll_ctl(epoll_.get(), EPOLL_CTL_DEL,
+                                             listener_.get(), nullptr) < 0)
+          del_error = errno;
+        listener_.reset();
+        listener_deferred_ = false;
+        StopEvent event;
+        event.deadline_ns =
+            std::chrono::duration_cast<std::chrono::nanoseconds>(
+                drain_deadline_.time_since_epoch())
+                .count();
+        for (auto& [id, session] : sessions_)
+          for (int side = 0; side < 2; ++side)
+            event.pending[side] += session->pending[side].size();
+        observe("draining");
+        if (cb_.stopping) cb_.stopping(event);
+        if (del_error && cb_.diagnostic)
+          cb_.diagnostic("stop listener DEL", del_error);
+        continue;
       }
       if (count < 0 && errno == EINTR) continue;
-      if (count < 0 && errno == EAGAIN) return false;
+      if (count < 0 && errno == EAGAIN) break;
       if (count < 0) fail("read signalfd");
       errno = EIO;
       fail("read signalfd");
+    }
+    if (draining_ && Clock::now() >= drain_deadline_) {
+      stop_ = true;
+      stop_reason_ = "service-stop-deadline";
+      observe("stop-deadline");
+    }
+    return draining_ || stop_;
+  }
+
+  void close_all(const std::string& reason) {
+    std::exception_ptr failure;
+    while (!sessions_.empty()) {
+      try {
+        close(sessions_.begin()->first, reason, 0);
+      } catch (...) {
+        if (!failure) failure = std::current_exception();
+      }
+    }
+    if (failure) std::rethrow_exception(failure);
+  }
+
+  void drain_tick() {
+    for (auto it = sessions_.begin(); it != sessions_.end();) {
+      auto id = it++->first;
+      stopping();
+      if (stop_) return;
+      auto& s = *sessions_.at(id);
+      if (s.connecting) {
+        close(id, "service-stop-connecting", 0);
+        continue;
+      }
+      for (auto& end : s.ends)
+        if (Clock::now() >= end.deferred) end.deferred = {};
+      dispatch(s.ends[0].token, 0);
     }
   }
 
@@ -172,28 +259,60 @@ class Reactor {
     if (epoll_ctl(epoll_.get(), operation, fd, &event) < 0) fail("epoll_ctl");
   }
 
-  void remove(EndpointState& end) {
-    if (!end.registered) return;
-    if (epoll_ctl(epoll_.get(), EPOLL_CTL_DEL, end.fd.get(), nullptr) < 0 &&
-        errno != ENOENT && errno != EBADF) {
-      statistic(StatKind::Error);
-      cb_.diagnostic("epoll_ctl DEL", errno);
-    }
+  int detach(EndpointState& end) noexcept {
+    int error = 0;
+    if (end.registered &&
+        epoll_ctl(epoll_.get(), EPOLL_CTL_DEL, end.fd.get(), nullptr) < 0 &&
+        errno != ENOENT && errno != EBADF)
+      error = errno;
     end.registered = false;
     end.interest = 0;
+    return error;
+  }
+
+  void remove(EndpointState& end) {
+    int error = detach(end);
+    if (error) {
+      statistic(StatKind::Error);
+      if (cb_.diagnostic) cb_.diagnostic("epoll_ctl DEL", error);
+    }
   }
 
   void close(std::uint64_t id, const std::string& reason, int error) {
     auto it = sessions_.find(id);
     if (it == sessions_.end()) return;
-    auto& s = *it->second;
-    for (auto& end : s.ends) tokens_.erase(end.token);
-    for (auto& end : s.ends) remove(end);
-    cb_.session(
-        {s.id, s.backend, false, reason, error, {s.sent[0], s.sent[1]}});
+    auto owner = std::move(it->second);
     sessions_.erase(it);
-    statistic(StatKind::Closed);
-    observe("closed");
+    auto& s = *owner;
+    for (auto& end : s.ends) tokens_.erase(end.token);
+    int errors[2]{};
+    for (int side = 0; side < 2; ++side) {
+      errors[side] = detach(s.ends[side]);
+      s.ends[side].fd.reset();
+    }
+    std::exception_ptr failure;
+    auto attempt = [&](auto action) {
+      try {
+        action();
+      } catch (...) {
+        if (!failure) failure = std::current_exception();
+      }
+    };
+    for (int code : errors)
+      if (code) {
+        attempt([&] { statistic(StatKind::Error); });
+        attempt([&] {
+          if (cb_.diagnostic) cb_.diagnostic("epoll_ctl DEL", code);
+        });
+      }
+    attempt([&] {
+      if (cb_.session)
+        cb_.session(
+            {s.id, s.backend, false, reason, error, {s.sent[0], s.sent[1]}});
+    });
+    attempt([&] { statistic(StatKind::Closed); });
+    attempt([&] { observe("closed"); });
+    if (failure) std::rethrow_exception(failure);
   }
 
   int socket_error(int fd) {
@@ -299,7 +418,9 @@ class Reactor {
         remove(end);
         continue;
       }
-      if (s.connecting) {
+      if (draining_) {
+        if (s.pending[1 - side].size()) mask = EPOLLOUT;
+      } else if (s.connecting) {
         mask = side == 1 ? EPOLLOUT : EPOLLRDHUP;
       } else {
         if (!end.eof && !end.paused) mask |= EPOLLIN | EPOLLRDHUP;
@@ -326,8 +447,10 @@ class Reactor {
 
   void write_direction(Session& s, int source, std::size_t& budget) {
     auto& buffer = s.pending[source];
-    while (buffer.size() && budget && !stopping()) {
-      auto size = std::min(buffer.size(), budget);
+    while (buffer.size() && budget) {
+      stopping();
+      if (stop_) break;
+      auto size = std::min(buffer.readable_size(), budget);
       auto n = options_.send_call
                    ? options_.send_call(s.ends[1 - source].fd.get(),
                                         buffer.data(), size, MSG_NOSIGNAL)
@@ -350,7 +473,7 @@ class Reactor {
       statistic(source == 0 ? StatKind::BytesC2b : StatKind::BytesB2c, n);
       s.deadline.progress(Clock::now(), n);
     }
-    if (s.ends[source].paused && buffer.size() <= kLowWater) {
+    if (!draining_ && s.ends[source].paused && buffer.size() <= kLowWater) {
       s.ends[source].paused = false;
       observe("resume", &s, source, buffer.size());
     }
@@ -361,7 +484,7 @@ class Reactor {
     auto& buffer = s.pending[source];
     std::size_t budget = kBufferLimit;
     while (!end.eof && !end.paused && budget && !stopping()) {
-      auto size = std::min(buffer.room(), budget);
+      auto size = std::min(buffer.writable_size(), budget);
       if (!size) break;
       auto n = recv(end.fd.get(), buffer.writable(), size, 0);
       if (n < 0) {
@@ -392,6 +515,7 @@ class Reactor {
     for (int side = 0; side < 2; ++side) read_direction(s, side);
     for (int side = 0; side < 2; ++side)
       write_direction(s, side, budgets[side]);
+    if (draining_) return !s.pending[0].size() && !s.pending[1].size();
     for (int side = 0; side < 2; ++side) {
       auto& target = s.ends[1 - side];
       if (s.ends[side].eof && !s.pending[side].size() && !target.shutdown) {
@@ -418,6 +542,10 @@ class Reactor {
     int side = target->side;
     auto& s = *sessions_.at(id);
     try {
+      if (draining_ && s.connecting) {
+        close(id, "service-stop-connecting", 0);
+        return;
+      }
       bool connecting_event = s.connecting && side == 1 &&
                               (events & (EPOLLOUT | EPOLLERR | EPOLLHUP));
       if (connecting_event || (events & EPOLLERR)) {
@@ -432,7 +560,10 @@ class Reactor {
       }
       auto before = s.deadline.last;
       if (!s.connecting && pump(s)) {
-        close(id, "drained", 0);
+        close(id,
+              stop_ ? stop_reason_
+                    : (draining_ ? "service-stop-drained" : "drained"),
+              0);
         return;
       }
       // HUP 不可通过事件掩码屏蔽。无进展时暂挂，定时器主动恢复双向 I/O。
@@ -449,6 +580,7 @@ class Reactor {
   }
 
   void deadlines() {
+    if (draining_ || stop_) return;
     auto now = Clock::now();
     if (listener_deferred_ && now >= listener_retry_) {
       registration(EPOLL_CTL_ADD, listener_.get(), 1, EPOLLIN);
@@ -457,6 +589,7 @@ class Reactor {
     std::vector<std::uint64_t> ids;
     for (auto& [id, session] : sessions_) ids.push_back(id);
     for (auto id : ids) {
+      if (draining_ || stop_) return;
       auto& s = *sessions_.at(id);
       if (s.deadline.expired(now, s.connecting ? options_.connect_timeout
                                                : options_.idle_timeout)) {
@@ -475,7 +608,10 @@ class Reactor {
       try {
         observe("hup-retry", &s);
         if (!s.connecting && pump(s)) {
-          close(id, "drained", 0);
+          close(id,
+                stop_ ? stop_reason_
+                      : (draining_ ? "service-stop-drained" : "drained"),
+                0);
           continue;
         }
         update(s);
@@ -494,12 +630,18 @@ class Reactor {
   std::unordered_map<std::uint64_t, std::unique_ptr<Session>> sessions_;
   std::uint64_t next_id_ = 1;
   Clock::time_point listener_retry_{};
-  bool listener_deferred_ = false, resource_warning_ = false, stop_ = false;
+  Clock::time_point drain_deadline_{};
+  std::string stop_reason_ = "service-stop-deadline";
+  bool listener_deferred_ = false, resource_warning_ = false, stop_ = false,
+       draining_ = false;
 };
 }  // namespace
 
 int run(const Endpoint& listen, const Callbacks& callbacks,
         const Options& options) {
+  if (options.drain_timeout.count() <= 0 ||
+      options.drain_timeout.count() > std::numeric_limits<int>::max())
+    throw std::invalid_argument("invalid TCP drain timeout");
   Reactor reactor(listen, callbacks, options);
   return reactor.loop();
 }
