@@ -113,7 +113,7 @@
 
 ### V0.2 UDP 转发与调度策略
 
-状态：S1 Completed（2026-09-08），V0.2-S1-D1 保持 Approved；Reviewer002 PASS、Leader003 收尾；S1 已合并至 main 并标注 v0.2-s1（53236b1）。S2 Completed，V0.2-S2-D1 保持 Approved、Reviewer001 PASS、Leader003 收尾；S2 已合并并有 v0.2-s2 标签（c6927c0）。S3 Completed（2026-09-09），V0.2-S3-D1保持Approved，Reviewer001 PASS、Leader003收尾；V0.2开发范围Completed，六条完成标准均满足，见 `docs/specs/v0.2-acceptance.md`；S3已合并，远端main与v0.2-s3标签核验为7821b25。当前分支 `codex/v0.4-s2`，V0.3/S1已Completed并合并/标记9971818b，S2为Completed（D1保持Approved）。
+状态：S1 Completed（2026-09-08），V0.2-S1-D1 保持 Approved；Reviewer002 PASS、Leader003 收尾；S1 已合并至 main 并标注 v0.2-s1（53236b1）。S2 Completed，V0.2-S2-D1 保持 Approved、Reviewer001 PASS、Leader003 收尾；S2 已合并并有 v0.2-s2 标签（c6927c0）。S3 Completed（2026-09-09），V0.2-S3-D1保持Approved，Reviewer001 PASS、Leader003收尾；V0.2开发范围Completed，六条完成标准均满足，见 `docs/specs/v0.2-acceptance.md`；S3已合并，远端main与v0.2-s3标签核验为7821b25。当前分支 `codex/v0.4-s3`，V0.3/S1已Completed并合并/标记9971818b，S2为Completed（D1保持Approved）。
 
 目标：
 
@@ -161,7 +161,7 @@
 
 ### V0.3 健康检查与可观测性
 
-状态：S1/S2/S3及V0.3开发范围Completed（2026-09-09）。S3-D1保持Approved，Builder001、Reviewer001 PASS、Leader003收尾，六条版本标准均满足，见 `docs/specs/v0.3-acceptance.md`。S1/S2已合并标记，S3已合并并标记v0.3-s3（281db01，2026-09-09远端核验）；V0.4/S1已Completed，Reviewer002 PASS、Leader003收尾；V0.4/S2也已Completed，S3及V0.4整体尚未完成。
+状态：S1/S2/S3及V0.3开发范围Completed（2026-09-09）。S3-D1保持Approved，Builder001、Reviewer001 PASS、Leader003收尾，六条版本标准均满足，见 `docs/specs/v0.3-acceptance.md`。S1/S2已合并标记，S3已合并并标记v0.3-s3（281db01，2026-09-09远端核验）；V0.4/S1已Completed，Reviewer002 PASS、Leader003收尾；V0.4/S2也已Completed，S3及V0.4开发范围现已Completed，见下节。
 
 目标：
 
@@ -209,7 +209,7 @@
 
 ### V0.4 用户态性能工程
 
-状态：S1 Completed（2026-09-09），D1保持Approved；Builder002、Reviewer002 PASS（F-001 Closed）、Leader003齐备，已合并并标记`v0.4-s1`（8a1b939，远端本轮核验）。S2 Completed（2026-09-10），V0.4-S2-D1保持Approved，Builder001、Reviewer001独立PASS及Leader003收尾齐备；当前分支`codex/v0.4-s2`。完成报告见`docs/leader/reports/V0.4/S2-report-003.md`，批准与准备历史见Leader002/001。本阶段尚未合并或发布，S3正式性能报告仍计划中，V0.4整体未完成。
+状态：S1、S2 Completed；S2 Builder001、Reviewer001独立PASS、Leader003齐备，已合并并标记`v0.4-s2`（48a1283，2026-09-10远端核验）。S3及V0.4开发范围Completed（2026-09-10），V0.4-S3-D1保持Approved，Builder001、Reviewer001独立PASS和Leader003收尾齐备；分支`codex/v0.4-s3`。六标准见`docs/specs/v0.4-acceptance.md`，完成报告`docs/leader/reports/V0.4/S3-report-003.md`。尚未合并或发布本阶段，不表示V1.0完成。
 
 目标：
 
@@ -236,7 +236,7 @@
 
 - `S1 Benchmark 方法与工具`（Completed）：已交付测试环境记录、TCP/UDP配对工具、指标口径及报告格式，并通过独立验收。详细设计文档：`docs/leader/designs/V0.4/S1-design.md`。
 - `S2 用户态资源与生命周期优化`（Completed）：已交付固定环形缓冲、异常安全清理及TCP用户态待发队列最多1秒尽力停止，并经独立验收。详细设计文档：`docs/leader/designs/V0.4/S2-design.md`。
-- `S3 性能报告与回归验证`：生成可复现性能报告，保护已有行为不回退。详细设计文档：`docs/leader/designs/V0.4/S3-design.md`。
+- `S3 性能报告与回归验证`（Completed）：已交付正式S1/S2对照、公开可重算原始包与六标准矩阵，独立48run及回归通过。详细设计文档：`docs/leader/designs/V0.4/S3-design.md`。
 
 完成标准：
 

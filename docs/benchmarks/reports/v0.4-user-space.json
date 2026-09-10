@@ -1,0 +1,6488 @@
+{
+  "schema": 1,
+  "valid": true,
+  "formal": true,
+  "runs": [
+    {
+      "index": 0,
+      "cell": {
+        "protocol": "tcp",
+        "clients": 1,
+        "round": 0,
+        "role": "baseline",
+        "mode": "direct"
+      },
+      "run_id": "ea41c3bd-6a85-4ae1-8a09-b5b3f0e302e7",
+      "sent_per_second": 12187.0,
+      "unique_echoes_per_second": 12186.654501032903,
+      "goodput_bytes_per_second": 49916536.83623077,
+      "goodput_bits_per_second": 399332294.68984616,
+      "delivery_ratio": 1.0,
+      "unconfirmed": 0,
+      "loss_ratio": 0.0,
+      "p50_ns": 64816,
+      "p95_ns": 145512,
+      "p99_ns": 241552,
+      "max_ns": 417307,
+      "product_cpu_percent": null,
+      "product_rss_bytes": null,
+      "product_fd": null,
+      "generator_cpu_percent": 48.389940911998956,
+      "generator_rss_bytes": 21135360,
+      "generator_fd": 7,
+      "backend_cpu_percent": 55.98814960424291,
+      "backend_rss_bytes": 14254080,
+      "backend_fd": 6,
+      "missed_slots": 0,
+      "loss": 0,
+      "duplicate": 0,
+      "late": 0,
+      "rtt_count": 610,
+      "under_target": false
+    },
+    {
+      "index": 1,
+      "cell": {
+        "protocol": "tcp",
+        "clients": 1,
+        "round": 0,
+        "role": "baseline",
+        "mode": "proxy"
+      },
+      "run_id": "ae08bdb9-64b0-4994-a019-2f23bd2be61a",
+      "sent_per_second": 6231.6,
+      "unique_echoes_per_second": 6231.495657344115,
+      "goodput_bytes_per_second": 25524206.212481495,
+      "goodput_bits_per_second": 204193649.69985196,
+      "delivery_ratio": 1.0,
+      "unconfirmed": 0,
+      "loss_ratio": 0.0,
+      "p50_ns": 144062,
+      "p95_ns": 250735,
+      "p99_ns": 321017,
+      "max_ns": 349993,
+      "generator_cpu_percent": 31.591968146475942,
+      "generator_rss_bytes": 20971520,
+      "generator_fd": 9,
+      "backend_cpu_percent": 33.39187217121367,
+      "backend_rss_bytes": 14090240,
+      "backend_fd": 6,
+      "product_cpu_percent": 35.79140498042519,
+      "product_rss_bytes": 3604480,
+      "product_fd": 8,
+      "missed_slots": 0,
+      "loss": 0,
+      "duplicate": 0,
+      "late": 0,
+      "rtt_count": 312,
+      "under_target": false
+    },
+    {
+      "index": 2,
+      "cell": {
+        "protocol": "tcp",
+        "clients": 1,
+        "round": 0,
+        "role": "candidate",
+        "mode": "direct"
+      },
+      "run_id": "cf6a2d2a-e90e-4ca4-a783-ea1c8a31365c",
+      "sent_per_second": 11163.6,
+      "unique_echoes_per_second": 11163.445004496869,
+      "goodput_bytes_per_second": 45725470.738419175,
+      "goodput_bits_per_second": 365803765.9073534,
+      "delivery_ratio": 1.0,
+      "unconfirmed": 0,
+      "loss_ratio": 0.0,
+      "p50_ns": 72912,
+      "p95_ns": 145888,
+      "p99_ns": 197648,
+      "max_ns": 305757,
+      "product_cpu_percent": null,
+      "product_rss_bytes": null,
+      "product_fd": null,
+      "generator_cpu_percent": 49.59046792853474,
+      "generator_rss_bytes": 20643840,
+      "generator_fd": 7,
+      "backend_cpu_percent": 55.58923601163843,
+      "backend_rss_bytes": 14417920,
+      "backend_fd": 6,
+      "missed_slots": 0,
+      "loss": 0,
+      "duplicate": 0,
+      "late": 0,
+      "rtt_count": 559,
+      "under_target": false
+    },
+    {
+      "index": 3,
+      "cell": {
+        "protocol": "tcp",
+        "clients": 1,
+        "round": 0,
+        "role": "candidate",
+        "mode": "proxy"
+      },
+      "run_id": "763f727d-e7d3-4767-962c-185205b4a8dd",
+      "sent_per_second": 5467.8,
+      "unique_echoes_per_second": 5467.466859589792,
+      "goodput_bytes_per_second": 22394744.256879788,
+      "goodput_bits_per_second": 179157954.0550383,
+      "delivery_ratio": 1.0,
+      "unconfirmed": 0,
+      "loss_ratio": 0.0,
+      "p50_ns": 150268,
+      "p95_ns": 312040,
+      "p99_ns": 440023,
+      "max_ns": 600894,
+      "generator_cpu_percent": 31.59201221876498,
+      "generator_rss_bytes": 20807680,
+      "generator_fd": 9,
+      "backend_cpu_percent": 33.791479552772024,
+      "backend_rss_bytes": 14417920,
+      "backend_fd": 6,
+      "product_cpu_percent": 35.39110862807537,
+      "product_rss_bytes": 3604480,
+      "product_fd": 8,
+      "missed_slots": 0,
+      "loss": 0,
+      "duplicate": 0,
+      "late": 0,
+      "rtt_count": 274,
+      "under_target": false
+    },
+    {
+      "index": 4,
+      "cell": {
+        "protocol": "tcp",
+        "clients": 1,
+        "round": 1,
+        "role": "candidate",
+        "mode": "proxy"
+      },
+      "run_id": "4d4021b8-6533-46c1-89f0-98a95ddec11e",
+      "sent_per_second": 6877.6,
+      "unique_echoes_per_second": 6877.2064243535415,
+      "goodput_bytes_per_second": 28169037.514152106,
+      "goodput_bits_per_second": 225352300.11321685,
+      "delivery_ratio": 1.0,
+      "unconfirmed": 0,
+      "loss_ratio": 0.0,
+      "p50_ns": 112623,
+      "p95_ns": 286900,
+      "p99_ns": 342329,
+      "max_ns": 472182,
+      "generator_cpu_percent": 31.790248048940704,
+      "generator_rss_bytes": 20971520,
+      "generator_fd": 9,
+      "backend_cpu_percent": 32.58992599761517,
+      "backend_rss_bytes": 14090240,
+      "backend_fd": 6,
+      "product_cpu_percent": 35.588967839919434,
+      "product_rss_bytes": 3604480,
+      "product_fd": 8,
+      "missed_slots": 0,
+      "loss": 0,
+      "duplicate": 0,
+      "late": 0,
+      "rtt_count": 344,
+      "under_target": false
+    },
+    {
+      "index": 5,
+      "cell": {
+        "protocol": "tcp",
+        "clients": 1,
+        "round": 1,
+        "role": "candidate",
+        "mode": "direct"
+      },
+      "run_id": "9f5d8c26-79d1-4569-873b-fd0c0691cfbd",
+      "sent_per_second": 8955.6,
+      "unique_echoes_per_second": 8955.470896140467,
+      "goodput_bytes_per_second": 36681608.79059135,
+      "goodput_bits_per_second": 293452870.3247308,
+      "delivery_ratio": 1.0,
+      "unconfirmed": 0,
+      "loss_ratio": 0.0,
+      "p50_ns": 76701,
+      "p95_ns": 246835,
+      "p99_ns": 316362,
+      "max_ns": 364250,
+      "product_cpu_percent": null,
+      "product_rss_bytes": null,
+      "product_fd": null,
+      "generator_cpu_percent": 50.5839961341351,
+      "generator_rss_bytes": 20971520,
+      "generator_fd": 7,
+      "backend_cpu_percent": 54.583718615576934,
+      "backend_rss_bytes": 14090240,
+      "backend_fd": 6,
+      "missed_slots": 0,
+      "loss": 0,
+      "duplicate": 0,
+      "late": 0,
+      "rtt_count": 448,
+      "under_target": false
+    },
+    {
+      "index": 6,
+      "cell": {
+        "protocol": "tcp",
+        "clients": 1,
+        "round": 1,
+        "role": "baseline",
+        "mode": "proxy"
+      },
+      "run_id": "aff986db-cadf-4e2a-b2ca-caff29da4bc2",
+      "sent_per_second": 3321.0,
+      "unique_echoes_per_second": 3320.8746011183616,
+      "goodput_bytes_per_second": 13602302.36618081,
+      "goodput_bits_per_second": 108818418.92944647,
+      "delivery_ratio": 1.0,
+      "unconfirmed": 0,
+      "loss_ratio": 0.0,
+      "p50_ns": 216201,
+      "p95_ns": 558181,
+      "p99_ns": 634740,
+      "max_ns": 685692,
+      "generator_cpu_percent": 31.391937696538818,
+      "generator_rss_bytes": 20971520,
+      "generator_fd": 9,
+      "backend_cpu_percent": 34.19124612466669,
+      "backend_rss_bytes": 13926400,
+      "backend_fd": 6,
+      "product_cpu_percent": 36.390720766502476,
+      "product_rss_bytes": 3440640,
+      "product_fd": 8,
+      "missed_slots": 0,
+      "loss": 0,
+      "duplicate": 0,
+      "late": 0,
+      "rtt_count": 167,
+      "under_target": false
+    },
+    {
+      "index": 7,
+      "cell": {
+        "protocol": "tcp",
+        "clients": 1,
+        "round": 1,
+        "role": "baseline",
+        "mode": "direct"
+      },
+      "run_id": "06c0112a-50d2-4cae-b6d4-c05cd0bd216e",
+      "sent_per_second": 7661.4,
+      "unique_echoes_per_second": 7661.0224050599045,
+      "goodput_bytes_per_second": 31379547.77112537,
+      "goodput_bits_per_second": 251036382.16900295,
+      "delivery_ratio": 1.0,
+      "unconfirmed": 0,
+      "loss_ratio": 0.0,
+      "p50_ns": 102147,
+      "p95_ns": 249661,
+      "p99_ns": 357594,
+      "max_ns": 386059,
+      "product_cpu_percent": null,
+      "product_rss_bytes": null,
+      "product_fd": null,
+      "generator_cpu_percent": 50.580392480506696,
+      "generator_rss_bytes": 20807680,
+      "generator_fd": 7,
+      "backend_cpu_percent": 54.57863877221133,
+      "backend_rss_bytes": 14254080,
+      "backend_fd": 6,
+      "missed_slots": 0,
+      "loss": 0,
+      "duplicate": 0,
+      "late": 0,
+      "rtt_count": 384,
+      "under_target": false
+    },
+    {
+      "index": 8,
+      "cell": {
+        "protocol": "tcp",
+        "clients": 1,
+        "round": 2,
+        "role": "baseline",
+        "mode": "direct"
+      },
+      "run_id": "02218c00-cec7-47c4-837f-1e7feb25bb81",
+      "sent_per_second": 9544.6,
+      "unique_echoes_per_second": 9544.166794086883,
+      "goodput_bytes_per_second": 39092907.18857987,
+      "goodput_bits_per_second": 312743257.508639,
+      "delivery_ratio": 1.0,
+      "unconfirmed": 0,
+      "loss_ratio": 0.0,
+      "p50_ns": 79436,
+      "p95_ns": 224333,
+      "p99_ns": 320352,
+      "max_ns": 1900816,
+      "product_cpu_percent": null,
+      "product_rss_bytes": null,
+      "product_fd": null,
+      "generator_cpu_percent": 49.38209828814475,
+      "generator_rss_bytes": 20971520,
+      "generator_fd": 7,
+      "backend_cpu_percent": 55.780358352471204,
+      "backend_rss_bytes": 14090240,
+      "backend_fd": 6,
+      "missed_slots": 0,
+      "loss": 0,
+      "duplicate": 0,
+      "late": 0,
+      "rtt_count": 478,
+      "under_target": false
+    },
+    {
+      "index": 9,
+      "cell": {
+        "protocol": "tcp",
+        "clients": 1,
+        "round": 2,
+        "role": "baseline",
+        "mode": "proxy"
+      },
+      "run_id": "5078c29f-6646-48a1-b59c-89718f59c62c",
+      "sent_per_second": 5855.8,
+      "unique_echoes_per_second": 5855.635239991252,
+      "goodput_bytes_per_second": 23984681.94300417,
+      "goodput_bits_per_second": 191877455.54403335,
+      "delivery_ratio": 1.0,
+      "unconfirmed": 0,
+      "loss_ratio": 0.0,
+      "p50_ns": 141288,
+      "p95_ns": 292182,
+      "p99_ns": 440393,
+      "max_ns": 519538,
+      "generator_cpu_percent": 29.393249434640495,
+      "generator_rss_bytes": 20643840,
+      "generator_fd": 9,
+      "backend_cpu_percent": 34.5921214160395,
+      "backend_rss_bytes": 14254080,
+      "backend_fd": 6,
+      "product_cpu_percent": 35.99179241006373,
+      "product_rss_bytes": 3440640,
+      "product_fd": 8,
+      "missed_slots": 0,
+      "loss": 0,
+      "duplicate": 0,
+      "late": 0,
+      "rtt_count": 293,
+      "under_target": false
+    },
+    {
+      "index": 10,
+      "cell": {
+        "protocol": "tcp",
+        "clients": 1,
+        "round": 2,
+        "role": "candidate",
+        "mode": "direct"
+      },
+      "run_id": "7c50c113-6c03-4531-89f8-65e50469a806",
+      "sent_per_second": 11699.8,
+      "unique_echoes_per_second": 11699.21058441139,
+      "goodput_bytes_per_second": 47919966.553749055,
+      "goodput_bits_per_second": 383359732.42999244,
+      "delivery_ratio": 1.0,
+      "unconfirmed": 0,
+      "loss_ratio": 0.0,
+      "p50_ns": 60616,
+      "p95_ns": 174410,
+      "p99_ns": 317055,
+      "max_ns": 563820,
+      "product_cpu_percent": null,
+      "product_rss_bytes": null,
+      "product_fd": null,
+      "generator_cpu_percent": 49.18224340022596,
+      "generator_rss_bytes": 20971520,
+      "generator_fd": 7,
+      "backend_cpu_percent": 55.17984979767387,
+      "backend_rss_bytes": 14090240,
+      "backend_fd": 6,
+      "missed_slots": 0,
+      "loss": 0,
+      "duplicate": 0,
+      "late": 0,
+      "rtt_count": 585,
+      "under_target": false
+    },
+    {
+      "index": 11,
+      "cell": {
+        "protocol": "tcp",
+        "clients": 1,
+        "round": 2,
+        "role": "candidate",
+        "mode": "proxy"
+      },
+      "run_id": "490e757a-6d93-40a3-aa37-5eb6cbb3e9d7",
+      "sent_per_second": 7775.4,
+      "unique_echoes_per_second": 7775.268444012981,
+      "goodput_bytes_per_second": 31847499.54667717,
+      "goodput_bits_per_second": 254779996.37341735,
+      "delivery_ratio": 1.0,
+      "unconfirmed": 0,
+      "loss_ratio": 0.0,
+      "p50_ns": 92015,
+      "p95_ns": 259834,
+      "p99_ns": 480976,
+      "max_ns": 672806,
+      "generator_cpu_percent": 30.191753478799956,
+      "generator_rss_bytes": 20971520,
+      "generator_fd": 9,
+      "backend_cpu_percent": 32.59114297883824,
+      "backend_rss_bytes": 14417920,
+      "backend_fd": 6,
+      "product_cpu_percent": 36.98998701765825,
+      "product_rss_bytes": 3604480,
+      "product_fd": 8,
+      "missed_slots": 0,
+      "loss": 0,
+      "duplicate": 0,
+      "late": 0,
+      "rtt_count": 389,
+      "under_target": false
+    },
+    {
+      "index": 12,
+      "cell": {
+        "protocol": "tcp",
+        "clients": 16,
+        "round": 0,
+        "role": "baseline",
+        "mode": "direct"
+      },
+      "run_id": "f697e076-3cbd-4452-8953-ef6ac75613d6",
+      "sent_per_second": 5026.2,
+      "unique_echoes_per_second": 5024.271179279712,
+      "goodput_bytes_per_second": 20579414.7503297,
+      "goodput_bits_per_second": 164635318.0026376,
+      "delivery_ratio": 1.0,
+      "unconfirmed": 0,
+      "loss_ratio": 0.0,
+      "p50_ns": 3008561,
+      "p95_ns": 5417590,
+      "p99_ns": 7693499,
+      "max_ns": 12058772,
+      "product_cpu_percent": null,
+      "product_rss_bytes": null,
+      "product_fd": null,
+      "generator_cpu_percent": 163.93982310714173,
+      "generator_rss_bytes": 20807680,
+      "generator_fd": 22,
+      "backend_cpu_percent": 21.366084980873744,
+      "backend_rss_bytes": 14254080,
+      "backend_fd": 21,
+      "missed_slots": 0,
+      "loss": 0,
+      "duplicate": 0,
+      "late": 0,
+      "rtt_count": 257,
+      "under_target": false
+    },
+    {
+      "index": 13,
+      "cell": {
+        "protocol": "tcp",
+        "clients": 16,
+        "round": 0,
+        "role": "baseline",
+        "mode": "proxy"
+      },
+      "run_id": "e1f4610e-1422-43f3-b0f1-36c06d916bfe",
+      "sent_per_second": 4897.0,
+      "unique_echoes_per_second": 4895.042189694902,
+      "goodput_bytes_per_second": 20050092.80899032,
+      "goodput_bits_per_second": 160400742.47192255,
+      "delivery_ratio": 1.0,
+      "unconfirmed": 0,
+      "loss_ratio": 0.0,
+      "p50_ns": 2933905,
+      "p95_ns": 4636441,
+      "p99_ns": 6108644,
+      "max_ns": 6875174,
+      "generator_cpu_percent": 160.98041881301293,
+      "generator_rss_bytes": 21135360,
+      "generator_fd": 24,
+      "backend_cpu_percent": 26.563868548537506,
+      "backend_rss_bytes": 14254080,
+      "backend_fd": 21,
+      "product_cpu_percent": 23.168453389031185,
+      "product_rss_bytes": 5406720,
+      "product_fd": 38,
+      "missed_slots": 0,
+      "loss": 0,
+      "duplicate": 0,
+      "late": 0,
+      "rtt_count": 255,
+      "under_target": false
+    },
+    {
+      "index": 14,
+      "cell": {
+        "protocol": "tcp",
+        "clients": 16,
+        "round": 0,
+        "role": "candidate",
+        "mode": "direct"
+      },
+      "run_id": "fdbdf828-1064-4dcb-9337-6067922b23e2",
+      "sent_per_second": 5165.2,
+      "unique_echoes_per_second": 5162.792105771179,
+      "goodput_bytes_per_second": 21146796.46523875,
+      "goodput_bits_per_second": 169174371.72191,
+      "delivery_ratio": 1.0,
+      "unconfirmed": 0,
+      "loss_ratio": 0.0,
+      "p50_ns": 2755804,
+      "p95_ns": 4776979,
+      "p99_ns": 6344463,
+      "max_ns": 7094169,
+      "product_cpu_percent": null,
+      "product_rss_bytes": null,
+      "product_fd": null,
+      "generator_cpu_percent": 163.3801921126282,
+      "generator_rss_bytes": 21135360,
+      "generator_fd": 22,
+      "backend_cpu_percent": 20.772063253307014,
+      "backend_rss_bytes": 13926400,
+      "backend_fd": 21,
+      "missed_slots": 0,
+      "loss": 0,
+      "duplicate": 0,
+      "late": 0,
+      "rtt_count": 269,
+      "under_target": false
+    },
+    {
+      "index": 15,
+      "cell": {
+        "protocol": "tcp",
+        "clients": 16,
+        "round": 0,
+        "role": "candidate",
+        "mode": "proxy"
+      },
+      "run_id": "2f382252-3841-484e-a9e4-f736ba0d6249",
+      "sent_per_second": 4761.6,
+      "unique_echoes_per_second": 4759.744193825855,
+      "goodput_bytes_per_second": 19495912.217910703,
+      "goodput_bits_per_second": 155967297.74328563,
+      "delivery_ratio": 1.0,
+      "unconfirmed": 0,
+      "loss_ratio": 0.0,
+      "p50_ns": 2802606,
+      "p95_ns": 5010489,
+      "p99_ns": 7157830,
+      "max_ns": 8376657,
+      "generator_cpu_percent": 162.3618271169775,
+      "generator_rss_bytes": 20971520,
+      "generator_fd": 24,
+      "backend_cpu_percent": 27.160010323256312,
+      "backend_rss_bytes": 14090240,
+      "backend_fd": 21,
+      "product_cpu_percent": 23.565217220947105,
+      "product_rss_bytes": 5570560,
+      "product_fd": 38,
+      "missed_slots": 0,
+      "loss": 0,
+      "duplicate": 0,
+      "late": 0,
+      "rtt_count": 243,
+      "under_target": false
+    },
+    {
+      "index": 16,
+      "cell": {
+        "protocol": "tcp",
+        "clients": 16,
+        "round": 1,
+        "role": "candidate",
+        "mode": "proxy"
+      },
+      "run_id": "42e39187-ef1a-47ef-b718-232fe2a51a53",
+      "sent_per_second": 4600.6,
+      "unique_echoes_per_second": 4598.838174058306,
+      "goodput_bytes_per_second": 18836841.160942823,
+      "goodput_bits_per_second": 150694729.28754258,
+      "delivery_ratio": 1.0,
+      "unconfirmed": 0,
+      "loss_ratio": 0.0,
+      "p50_ns": 2870853,
+      "p95_ns": 5234633,
+      "p99_ns": 6562737,
+      "max_ns": 9288857,
+      "generator_cpu_percent": 162.3736304078615,
+      "generator_rss_bytes": 20971520,
+      "generator_fd": 24,
+      "backend_cpu_percent": 27.960798418178225,
+      "backend_rss_bytes": 14254080,
+      "backend_fd": 21,
+      "product_cpu_percent": 23.966353889817434,
+      "product_rss_bytes": 5570560,
+      "product_fd": 38,
+      "missed_slots": 0,
+      "loss": 0,
+      "duplicate": 0,
+      "late": 0,
+      "rtt_count": 240,
+      "under_target": false
+    },
+    {
+      "index": 17,
+      "cell": {
+        "protocol": "tcp",
+        "clients": 16,
+        "round": 1,
+        "role": "candidate",
+        "mode": "direct"
+      },
+      "run_id": "6f8ac543-3d37-4f1b-ab1a-86f3d3e58a48",
+      "sent_per_second": 5061.4,
+      "unique_echoes_per_second": 5059.615521166071,
+      "goodput_bytes_per_second": 20724185.174696226,
+      "goodput_bits_per_second": 165793481.3975698,
+      "delivery_ratio": 1.0,
+      "unconfirmed": 0,
+      "loss_ratio": 0.0,
+      "p50_ns": 2881969,
+      "p95_ns": 4792577,
+      "p99_ns": 5652376,
+      "max_ns": 6530422,
+      "product_cpu_percent": null,
+      "product_rss_bytes": null,
+      "product_fd": null,
+      "generator_cpu_percent": 163.6113371493517,
+      "generator_rss_bytes": 21135360,
+      "generator_fd": 22,
+      "backend_cpu_percent": 22.3742766297729,
+      "backend_rss_bytes": 14090240,
+      "backend_fd": 21,
+      "missed_slots": 0,
+      "loss": 0,
+      "duplicate": 0,
+      "late": 0,
+      "rtt_count": 261,
+      "under_target": false
+    },
+    {
+      "index": 18,
+      "cell": {
+        "protocol": "tcp",
+        "clients": 16,
+        "round": 1,
+        "role": "baseline",
+        "mode": "proxy"
+      },
+      "run_id": "6970c17e-ddcf-4eda-8e3b-233490104b69",
+      "sent_per_second": 4469.2,
+      "unique_echoes_per_second": 4467.211561937089,
+      "goodput_bytes_per_second": 18297698.557694316,
+      "goodput_bits_per_second": 146381588.46155453,
+      "delivery_ratio": 1.0,
+      "unconfirmed": 0,
+      "loss_ratio": 0.0,
+      "p50_ns": 3133283,
+      "p95_ns": 5602435,
+      "p99_ns": 7070763,
+      "max_ns": 8760024,
+      "generator_cpu_percent": 164.14325103334306,
+      "generator_rss_bytes": 21135360,
+      "generator_fd": 24,
+      "backend_cpu_percent": 26.958027644942153,
+      "backend_rss_bytes": 13926400,
+      "backend_fd": 21,
+      "product_cpu_percent": 25.560280014984272,
+      "product_rss_bytes": 5570560,
+      "product_fd": 38,
+      "missed_slots": 0,
+      "loss": 0,
+      "duplicate": 0,
+      "late": 0,
+      "rtt_count": 229,
+      "under_target": false
+    },
+    {
+      "index": 19,
+      "cell": {
+        "protocol": "tcp",
+        "clients": 16,
+        "round": 1,
+        "role": "baseline",
+        "mode": "direct"
+      },
+      "run_id": "2599204f-04db-4325-b576-67673cdc118c",
+      "sent_per_second": 5026.8,
+      "unique_echoes_per_second": 5024.93202473422,
+      "goodput_bytes_per_second": 20582121.573311366,
+      "goodput_bits_per_second": 164656972.58649093,
+      "delivery_ratio": 1.0,
+      "unconfirmed": 0,
+      "loss_ratio": 0.0,
+      "p50_ns": 2955581,
+      "p95_ns": 5145657,
+      "p99_ns": 6542811,
+      "max_ns": 7452038,
+      "product_cpu_percent": null,
+      "product_rss_bytes": null,
+      "product_fd": null,
+      "generator_cpu_percent": 163.9560574225133,
+      "generator_rss_bytes": 21135360,
+      "generator_fd": 22,
+      "backend_cpu_percent": 22.167148489875775,
+      "backend_rss_bytes": 14090240,
+      "backend_fd": 21,
+      "missed_slots": 0,
+      "loss": 0,
+      "duplicate": 0,
+      "late": 0,
+      "rtt_count": 256,
+      "under_target": false
+    },
+    {
+      "index": 20,
+      "cell": {
+        "protocol": "tcp",
+        "clients": 16,
+        "round": 2,
+        "role": "baseline",
+        "mode": "direct"
+      },
+      "run_id": "81cd26d4-2085-4f5b-9b7c-e47e93b40256",
+      "sent_per_second": 4800.8,
+      "unique_echoes_per_second": 4799.070512888194,
+      "goodput_bytes_per_second": 19656992.82079004,
+      "goodput_bits_per_second": 157255942.56632033,
+      "delivery_ratio": 1.0,
+      "unconfirmed": 0,
+      "loss_ratio": 0.0,
+      "p50_ns": 3023290,
+      "p95_ns": 5479392,
+      "p99_ns": 7439016,
+      "max_ns": 7609613,
+      "product_cpu_percent": null,
+      "product_rss_bytes": null,
+      "product_fd": null,
+      "generator_cpu_percent": 165.52247545046066,
+      "generator_rss_bytes": 20971520,
+      "generator_fd": 22,
+      "backend_cpu_percent": 23.56190696079168,
+      "backend_rss_bytes": 14254080,
+      "backend_fd": 21,
+      "missed_slots": 0,
+      "loss": 0,
+      "duplicate": 0,
+      "late": 0,
+      "rtt_count": 248,
+      "under_target": false
+    },
+    {
+      "index": 21,
+      "cell": {
+        "protocol": "tcp",
+        "clients": 16,
+        "round": 2,
+        "role": "baseline",
+        "mode": "proxy"
+      },
+      "run_id": "1bd68b5a-90f4-48df-8e29-4ff4cdc64313",
+      "sent_per_second": 4858.4,
+      "unique_echoes_per_second": 4856.702842675758,
+      "goodput_bytes_per_second": 19893054.843599904,
+      "goodput_bits_per_second": 159144438.74879923,
+      "delivery_ratio": 1.0,
+      "unconfirmed": 0,
+      "loss_ratio": 0.0,
+      "p50_ns": 2716572,
+      "p95_ns": 4633733,
+      "p99_ns": 7016381,
+      "max_ns": 7791792,
+      "generator_cpu_percent": 161.3943936135465,
+      "generator_rss_bytes": 21135360,
+      "generator_fd": 24,
+      "backend_cpu_percent": 26.766018494597297,
+      "backend_rss_bytes": 14254080,
+      "backend_fd": 21,
+      "product_cpu_percent": 23.76990896389931,
+      "product_rss_bytes": 5570560,
+      "product_fd": 38,
+      "missed_slots": 0,
+      "loss": 0,
+      "duplicate": 0,
+      "late": 0,
+      "rtt_count": 253,
+      "under_target": false
+    },
+    {
+      "index": 22,
+      "cell": {
+        "protocol": "tcp",
+        "clients": 16,
+        "round": 2,
+        "role": "candidate",
+        "mode": "direct"
+      },
+      "run_id": "18578b19-7bd8-4be1-be28-b32844bae1cb",
+      "sent_per_second": 5302.0,
+      "unique_echoes_per_second": 5299.866011070589,
+      "goodput_bytes_per_second": 21708251.18134513,
+      "goodput_bits_per_second": 173666009.45076105,
+      "delivery_ratio": 1.0,
+      "unconfirmed": 0,
+      "loss_ratio": 0.0,
+      "p50_ns": 2799898,
+      "p95_ns": 4556981,
+      "p99_ns": 5626494,
+      "max_ns": 6182281,
+      "product_cpu_percent": null,
+      "product_rss_bytes": null,
+      "product_fd": null,
+      "generator_cpu_percent": 162.58304589937433,
+      "generator_rss_bytes": 20971520,
+      "generator_fd": 22,
+      "backend_cpu_percent": 20.57260056297908,
+      "backend_rss_bytes": 14254080,
+      "backend_fd": 21,
+      "missed_slots": 0,
+      "loss": 0,
+      "duplicate": 0,
+      "late": 0,
+      "rtt_count": 273,
+      "under_target": false
+    },
+    {
+      "index": 23,
+      "cell": {
+        "protocol": "tcp",
+        "clients": 16,
+        "round": 2,
+        "role": "candidate",
+        "mode": "proxy"
+      },
+      "run_id": "9dd22a03-3fda-4cdf-970f-ed19a1386b39",
+      "sent_per_second": 4704.2,
+      "unique_echoes_per_second": 4702.263948150061,
+      "goodput_bytes_per_second": 19260473.13162265,
+      "goodput_bits_per_second": 154083785.0529812,
+      "delivery_ratio": 1.0,
+      "unconfirmed": 0,
+      "loss_ratio": 0.0,
+      "p50_ns": 2902444,
+      "p95_ns": 5646173,
+      "p99_ns": 6826493,
+      "max_ns": 7146709,
+      "generator_cpu_percent": 162.5713372039975,
+      "generator_rss_bytes": 20971520,
+      "generator_fd": 24,
+      "backend_cpu_percent": 26.562816020743103,
+      "backend_rss_bytes": 14254080,
+      "backend_fd": 21,
+      "product_cpu_percent": 23.766818821015242,
+      "product_rss_bytes": 5570560,
+      "product_fd": 38,
+      "missed_slots": 0,
+      "loss": 0,
+      "duplicate": 0,
+      "late": 0,
+      "rtt_count": 241,
+      "under_target": false
+    },
+    {
+      "index": 24,
+      "cell": {
+        "protocol": "udp",
+        "clients": 1,
+        "round": 0,
+        "role": "baseline",
+        "mode": "direct"
+      },
+      "run_id": "f63a9a01-2ab9-4ebf-893c-dd2d6a08b0cd",
+      "sent_per_second": 9467.4,
+      "unique_echoes_per_second": 9467.32914840212,
+      "goodput_bytes_per_second": 2423636.2619909425,
+      "goodput_bits_per_second": 19389090.09592754,
+      "delivery_ratio": 1.0,
+      "unconfirmed": 0,
+      "loss_ratio": 0.0,
+      "p50_ns": 43414,
+      "p95_ns": 126324,
+      "p99_ns": 196373,
+      "max_ns": 394859,
+      "product_cpu_percent": null,
+      "product_rss_bytes": null,
+      "product_fd": null,
+      "generator_cpu_percent": 43.99383744003784,
+      "generator_rss_bytes": 20971520,
+      "generator_fd": 7,
+      "backend_cpu_percent": 25.596419531881608,
+      "backend_rss_bytes": 14090240,
+      "backend_fd": 5,
+      "missed_slots": 2663,
+      "loss": 0,
+      "duplicate": 0,
+      "late": 0,
+      "rtt_count": 477,
+      "under_target": true
+    },
+    {
+      "index": 25,
+      "cell": {
+        "protocol": "udp",
+        "clients": 1,
+        "round": 0,
+        "role": "baseline",
+        "mode": "proxy"
+      },
+      "run_id": "10c6bb8c-5fc8-4e57-8c06-8046a8ba2266",
+      "sent_per_second": 8829.0,
+      "unique_echoes_per_second": 8828.977678578634,
+      "goodput_bytes_per_second": 2260218.2857161304,
+      "goodput_bits_per_second": 18081746.285729043,
+      "delivery_ratio": 1.0,
+      "unconfirmed": 0,
+      "loss_ratio": 0.0,
+      "p50_ns": 93630,
+      "p95_ns": 234124,
+      "p99_ns": 429754,
+      "max_ns": 664545,
+      "generator_cpu_percent": 42.59456148379519,
+      "generator_rss_bytes": 20971520,
+      "generator_fd": 9,
+      "backend_cpu_percent": 25.996730859101007,
+      "backend_rss_bytes": 14254080,
+      "backend_fd": 5,
+      "product_cpu_percent": 33.595792953389086,
+      "product_rss_bytes": 3440640,
+      "product_fd": 7,
+      "missed_slots": 5855,
+      "loss": 0,
+      "duplicate": 0,
+      "late": 0,
+      "rtt_count": 446,
+      "under_target": true
+    },
+    {
+      "index": 26,
+      "cell": {
+        "protocol": "udp",
+        "clients": 1,
+        "round": 0,
+        "role": "candidate",
+        "mode": "direct"
+      },
+      "run_id": "f3dbc4cb-54ab-4c06-82a4-e0ee661f323f",
+      "sent_per_second": 9468.6,
+      "unique_echoes_per_second": 9468.433404807929,
+      "goodput_bytes_per_second": 2423918.95163083,
+      "goodput_bits_per_second": 19391351.61304664,
+      "delivery_ratio": 1.0,
+      "unconfirmed": 0,
+      "loss_ratio": 0.0,
+      "p50_ns": 45051,
+      "p95_ns": 134071,
+      "p99_ns": 192243,
+      "max_ns": 1369445,
+      "product_cpu_percent": null,
+      "product_rss_bytes": null,
+      "product_fd": null,
+      "generator_cpu_percent": 42.59295124990471,
+      "generator_rss_bytes": 20807680,
+      "generator_fd": 7,
+      "backend_cpu_percent": 27.995363542267874,
+      "backend_rss_bytes": 13926400,
+      "backend_fd": 5,
+      "missed_slots": 2657,
+      "loss": 0,
+      "duplicate": 0,
+      "late": 0,
+      "rtt_count": 473,
+      "under_target": true
+    },
+    {
+      "index": 27,
+      "cell": {
+        "protocol": "udp",
+        "clients": 1,
+        "round": 0,
+        "role": "candidate",
+        "mode": "proxy"
+      },
+      "run_id": "84988056-85e1-4168-8502-a94215965d75",
+      "sent_per_second": 9020.4,
+      "unique_echoes_per_second": 9020.110721441119,
+      "goodput_bytes_per_second": 2309148.3446889264,
+      "goodput_bits_per_second": 18473186.75751141,
+      "delivery_ratio": 1.0,
+      "unconfirmed": 0,
+      "loss_ratio": 0.0,
+      "p50_ns": 90878,
+      "p95_ns": 216829,
+      "p99_ns": 310620,
+      "max_ns": 473617,
+      "generator_cpu_percent": 41.992615590149946,
+      "generator_rss_bytes": 20971520,
+      "generator_fd": 9,
+      "backend_cpu_percent": 25.795398756065048,
+      "backend_rss_bytes": 14254080,
+      "backend_fd": 5,
+      "product_cpu_percent": 33.19403941273073,
+      "product_rss_bytes": 3440640,
+      "product_fd": 7,
+      "missed_slots": 4898,
+      "loss": 0,
+      "duplicate": 0,
+      "late": 0,
+      "rtt_count": 453,
+      "under_target": true
+    },
+    {
+      "index": 28,
+      "cell": {
+        "protocol": "udp",
+        "clients": 1,
+        "round": 1,
+        "role": "candidate",
+        "mode": "proxy"
+      },
+      "run_id": "7f6eb31e-a155-40cf-b48e-75c7d865e07b",
+      "sent_per_second": 9126.8,
+      "unique_echoes_per_second": 9126.699022202018,
+      "goodput_bytes_per_second": 2336434.9496837165,
+      "goodput_bits_per_second": 18691479.597469732,
+      "delivery_ratio": 1.0,
+      "unconfirmed": 0,
+      "loss_ratio": 0.0,
+      "p50_ns": 100643,
+      "p95_ns": 212442,
+      "p99_ns": 392798,
+      "max_ns": 1830614,
+      "generator_cpu_percent": 41.79375587913164,
+      "generator_rss_bytes": 20807680,
+      "generator_fd": 9,
+      "backend_cpu_percent": 28.795827542180795,
+      "backend_rss_bytes": 14090240,
+      "backend_fd": 5,
+      "product_cpu_percent": 32.995371468682045,
+      "product_rss_bytes": 3440640,
+      "product_fd": 7,
+      "missed_slots": 4366,
+      "loss": 0,
+      "duplicate": 0,
+      "late": 0,
+      "rtt_count": 460,
+      "under_target": true
+    },
+    {
+      "index": 29,
+      "cell": {
+        "protocol": "udp",
+        "clients": 1,
+        "round": 1,
+        "role": "candidate",
+        "mode": "direct"
+      },
+      "run_id": "59453704-d458-45aa-9b04-d90b99c1e9c6",
+      "sent_per_second": 9441.4,
+      "unique_echoes_per_second": 9441.336505123736,
+      "goodput_bytes_per_second": 2416982.1453116764,
+      "goodput_bits_per_second": 19335857.16249341,
+      "delivery_ratio": 1.0,
+      "unconfirmed": 0,
+      "loss_ratio": 0.0,
+      "p50_ns": 41538,
+      "p95_ns": 143201,
+      "p99_ns": 229782,
+      "max_ns": 271229,
+      "product_cpu_percent": null,
+      "product_rss_bytes": null,
+      "product_fd": null,
+      "generator_cpu_percent": 43.39423524942406,
+      "generator_rss_bytes": 20971520,
+      "generator_fd": 7,
+      "backend_cpu_percent": 25.396825701549215,
+      "backend_rss_bytes": 14090240,
+      "backend_fd": 5,
+      "missed_slots": 2793,
+      "loss": 0,
+      "duplicate": 0,
+      "late": 0,
+      "rtt_count": 468,
+      "under_target": true
+    },
+    {
+      "index": 30,
+      "cell": {
+        "protocol": "udp",
+        "clients": 1,
+        "round": 1,
+        "role": "baseline",
+        "mode": "proxy"
+      },
+      "run_id": "cabfb1a2-54af-4a68-904c-4842eb8e562d",
+      "sent_per_second": 9108.8,
+      "unique_echoes_per_second": 9108.649536040044,
+      "goodput_bytes_per_second": 2331814.2812262513,
+      "goodput_bits_per_second": 18654514.24981001,
+      "delivery_ratio": 1.0,
+      "unconfirmed": 0,
+      "loss_ratio": 0.0,
+      "p50_ns": 85586,
+      "p95_ns": 220619,
+      "p99_ns": 318305,
+      "max_ns": 546768,
+      "generator_cpu_percent": 40.99309413938891,
+      "generator_rss_bytes": 20807680,
+      "generator_fd": 9,
+      "backend_cpu_percent": 26.195588055233856,
+      "backend_rss_bytes": 14090240,
+      "backend_fd": 5,
+      "product_cpu_percent": 32.79445378229966,
+      "product_rss_bytes": 3440640,
+      "product_fd": 7,
+      "missed_slots": 4456,
+      "loss": 0,
+      "duplicate": 0,
+      "late": 0,
+      "rtt_count": 456,
+      "under_target": true
+    },
+    {
+      "index": 31,
+      "cell": {
+        "protocol": "udp",
+        "clients": 1,
+        "round": 1,
+        "role": "baseline",
+        "mode": "direct"
+      },
+      "run_id": "d80e38ca-9b8f-4a6b-b927-3bc4379276d3",
+      "sent_per_second": 9642.2,
+      "unique_echoes_per_second": 9642.143903935195,
+      "goodput_bytes_per_second": 2468388.83940741,
+      "goodput_bits_per_second": 19747110.71525928,
+      "delivery_ratio": 1.0,
+      "unconfirmed": 0,
+      "loss_ratio": 0.0,
+      "p50_ns": 41276,
+      "p95_ns": 123960,
+      "p99_ns": 218048,
+      "max_ns": 425521,
+      "product_cpu_percent": null,
+      "product_rss_bytes": null,
+      "product_fd": null,
+      "generator_cpu_percent": 40.1936771246128,
+      "generator_rss_bytes": 20971520,
+      "generator_fd": 7,
+      "backend_cpu_percent": 25.196074849636407,
+      "backend_rss_bytes": 13926400,
+      "backend_fd": 5,
+      "missed_slots": 1789,
+      "loss": 0,
+      "duplicate": 0,
+      "late": 0,
+      "rtt_count": 486,
+      "under_target": true
+    },
+    {
+      "index": 32,
+      "cell": {
+        "protocol": "udp",
+        "clients": 1,
+        "round": 2,
+        "role": "baseline",
+        "mode": "direct"
+      },
+      "run_id": "e9ff807d-6d92-485b-b70b-6542ef202140",
+      "sent_per_second": 9487.4,
+      "unique_echoes_per_second": 9487.255953095413,
+      "goodput_bytes_per_second": 2428737.5239924258,
+      "goodput_bits_per_second": 19429900.191939406,
+      "delivery_ratio": 1.0,
+      "unconfirmed": 0,
+      "loss_ratio": 0.0,
+      "p50_ns": 48018,
+      "p95_ns": 149566,
+      "p99_ns": 194182,
+      "max_ns": 329264,
+      "product_cpu_percent": null,
+      "product_rss_bytes": null,
+      "product_fd": null,
+      "generator_cpu_percent": 44.793782193011296,
+      "generator_rss_bytes": 20807680,
+      "generator_fd": 7,
+      "backend_cpu_percent": 26.99629806783633,
+      "backend_rss_bytes": 13926400,
+      "backend_fd": 5,
+      "missed_slots": 2563,
+      "loss": 0,
+      "duplicate": 0,
+      "late": 0,
+      "rtt_count": 478,
+      "under_target": true
+    },
+    {
+      "index": 33,
+      "cell": {
+        "protocol": "udp",
+        "clients": 1,
+        "round": 2,
+        "role": "baseline",
+        "mode": "proxy"
+      },
+      "run_id": "394a7209-36ac-45c8-b492-20f19e4d098e",
+      "sent_per_second": 9251.0,
+      "unique_echoes_per_second": 9250.98063399714,
+      "goodput_bytes_per_second": 2368251.042303268,
+      "goodput_bits_per_second": 18946008.338426143,
+      "delivery_ratio": 1.0,
+      "unconfirmed": 0,
+      "loss_ratio": 0.0,
+      "p50_ns": 94279,
+      "p95_ns": 219556,
+      "p99_ns": 334517,
+      "max_ns": 633044,
+      "generator_cpu_percent": 40.39458622868554,
+      "generator_rss_bytes": 20971520,
+      "generator_fd": 9,
+      "backend_cpu_percent": 26.79647481119339,
+      "backend_rss_bytes": 14254080,
+      "backend_fd": 5,
+      "product_cpu_percent": 33.995504108179894,
+      "product_rss_bytes": 3276800,
+      "product_fd": 7,
+      "missed_slots": 3745,
+      "loss": 0,
+      "duplicate": 0,
+      "late": 0,
+      "rtt_count": 460,
+      "under_target": true
+    },
+    {
+      "index": 34,
+      "cell": {
+        "protocol": "udp",
+        "clients": 1,
+        "round": 2,
+        "role": "candidate",
+        "mode": "direct"
+      },
+      "run_id": "e04e533d-7067-45d2-b525-8d1ef36f2648",
+      "sent_per_second": 9621.0,
+      "unique_echoes_per_second": 9620.951546963819,
+      "goodput_bytes_per_second": 2462963.5960227377,
+      "goodput_bits_per_second": 19703708.7681819,
+      "delivery_ratio": 1.0,
+      "unconfirmed": 0,
+      "loss_ratio": 0.0,
+      "p50_ns": 42563,
+      "p95_ns": 116358,
+      "p99_ns": 185856,
+      "max_ns": 908986,
+      "product_cpu_percent": null,
+      "product_rss_bytes": null,
+      "product_fd": null,
+      "generator_cpu_percent": 40.7940986767325,
+      "generator_rss_bytes": 20971520,
+      "generator_fd": 7,
+      "backend_cpu_percent": 24.996332178195633,
+      "backend_rss_bytes": 14254080,
+      "backend_fd": 5,
+      "missed_slots": 1895,
+      "loss": 0,
+      "duplicate": 0,
+      "late": 0,
+      "rtt_count": 484,
+      "under_target": true
+    },
+    {
+      "index": 35,
+      "cell": {
+        "protocol": "udp",
+        "clients": 1,
+        "round": 2,
+        "role": "candidate",
+        "mode": "proxy"
+      },
+      "run_id": "d751038f-f406-4e14-9dad-0d55c221ce11",
+      "sent_per_second": 8961.8,
+      "unique_echoes_per_second": 8961.763764004396,
+      "goodput_bytes_per_second": 2294211.5235851253,
+      "goodput_bits_per_second": 18353692.188681003,
+      "delivery_ratio": 1.0,
+      "unconfirmed": 0,
+      "loss_ratio": 0.0,
+      "p50_ns": 95156,
+      "p95_ns": 228407,
+      "p99_ns": 441129,
+      "max_ns": 501019,
+      "generator_cpu_percent": 42.591557407789196,
+      "generator_rss_bytes": 20807680,
+      "generator_fd": 9,
+      "backend_cpu_percent": 24.995060401178335,
+      "backend_rss_bytes": 14254080,
+      "backend_fd": 5,
+      "product_cpu_percent": 34.393335170088065,
+      "product_rss_bytes": 3440640,
+      "product_fd": 7,
+      "missed_slots": 5191,
+      "loss": 0,
+      "duplicate": 0,
+      "late": 0,
+      "rtt_count": 460,
+      "under_target": true
+    },
+    {
+      "index": 36,
+      "cell": {
+        "protocol": "udp",
+        "clients": 16,
+        "round": 0,
+        "role": "baseline",
+        "mode": "direct"
+      },
+      "run_id": "08cbde03-16a1-4ee0-96b5-abb20dae505d",
+      "sent_per_second": 9376.2,
+      "unique_echoes_per_second": 9376.049818184432,
+      "goodput_bytes_per_second": 2400268.7534552147,
+      "goodput_bits_per_second": 19202150.027641717,
+      "delivery_ratio": 1.0,
+      "unconfirmed": 0,
+      "loss_ratio": 0.0,
+      "p50_ns": 47925,
+      "p95_ns": 140451,
+      "p99_ns": 220744,
+      "max_ns": 336052,
+      "product_cpu_percent": null,
+      "product_rss_bytes": null,
+      "product_fd": null,
+      "generator_cpu_percent": 50.19279344921782,
+      "generator_rss_bytes": 20807680,
+      "generator_fd": 22,
+      "backend_cpu_percent": 25.196383749493677,
+      "backend_rss_bytes": 14254080,
+      "backend_fd": 5,
+      "missed_slots": 3119,
+      "loss": 0,
+      "duplicate": 0,
+      "late": 0,
+      "rtt_count": 470,
+      "under_target": true
+    },
+    {
+      "index": 37,
+      "cell": {
+        "protocol": "udp",
+        "clients": 16,
+        "round": 0,
+        "role": "baseline",
+        "mode": "proxy"
+      },
+      "run_id": "53d255be-5da0-4de5-9225-7a0414996bc8",
+      "sent_per_second": 9023.6,
+      "unique_echoes_per_second": 9023.442549950947,
+      "goodput_bytes_per_second": 2310001.2927874424,
+      "goodput_bits_per_second": 18480010.34229954,
+      "delivery_ratio": 1.0,
+      "unconfirmed": 0,
+      "loss_ratio": 0.0,
+      "p50_ns": 90870,
+      "p95_ns": 210010,
+      "p99_ns": 322080,
+      "max_ns": 585698,
+      "generator_cpu_percent": 44.58885146730317,
+      "generator_rss_bytes": 21135360,
+      "generator_fd": 24,
+      "backend_cpu_percent": 25.193652826997567,
+      "backend_rss_bytes": 13926400,
+      "backend_fd": 5,
+      "product_cpu_percent": 32.99059128131012,
+      "product_rss_bytes": 3276800,
+      "product_fd": 22,
+      "missed_slots": 4882,
+      "loss": 0,
+      "duplicate": 0,
+      "late": 0,
+      "rtt_count": 454,
+      "under_target": true
+    },
+    {
+      "index": 38,
+      "cell": {
+        "protocol": "udp",
+        "clients": 16,
+        "round": 0,
+        "role": "candidate",
+        "mode": "direct"
+      },
+      "run_id": "36d4643a-9734-4656-9808-7881038fc712",
+      "sent_per_second": 9381.4,
+      "unique_echoes_per_second": 9381.340938829984,
+      "goodput_bytes_per_second": 2401623.280340476,
+      "goodput_bits_per_second": 19212986.242723808,
+      "delivery_ratio": 1.0,
+      "unconfirmed": 0,
+      "loss_ratio": 0.0,
+      "p50_ns": 44765,
+      "p95_ns": 137443,
+      "p99_ns": 222105,
+      "max_ns": 561522,
+      "product_cpu_percent": null,
+      "product_rss_bytes": null,
+      "product_fd": null,
+      "generator_cpu_percent": 48.393567391520335,
+      "generator_rss_bytes": 20807680,
+      "generator_fd": 22,
+      "backend_cpu_percent": 25.396631695531482,
+      "backend_rss_bytes": 14090240,
+      "backend_fd": 5,
+      "missed_slots": 3093,
+      "loss": 0,
+      "duplicate": 0,
+      "late": 0,
+      "rtt_count": 474,
+      "under_target": true
+    },
+    {
+      "index": 39,
+      "cell": {
+        "protocol": "udp",
+        "clients": 16,
+        "round": 0,
+        "role": "candidate",
+        "mode": "proxy"
+      },
+      "run_id": "e40f55c0-0f19-45de-8d8e-f42963b66668",
+      "sent_per_second": 8815.6,
+      "unique_echoes_per_second": 8815.52995003591,
+      "goodput_bytes_per_second": 2256775.667209193,
+      "goodput_bits_per_second": 18054205.337673545,
+      "delivery_ratio": 1.0,
+      "unconfirmed": 0,
+      "loss_ratio": 0.0,
+      "p50_ns": 96241,
+      "p95_ns": 233961,
+      "p99_ns": 392145,
+      "max_ns": 794869,
+      "generator_cpu_percent": 46.38848557999709,
+      "generator_rss_bytes": 21135360,
+      "generator_fd": 24,
+      "backend_cpu_percent": 24.594770669698114,
+      "backend_rss_bytes": 14090240,
+      "backend_fd": 5,
+      "product_cpu_percent": 32.99337462683588,
+      "product_rss_bytes": 3440640,
+      "product_fd": 22,
+      "missed_slots": 5922,
+      "loss": 0,
+      "duplicate": 0,
+      "late": 0,
+      "rtt_count": 446,
+      "under_target": true
+    },
+    {
+      "index": 40,
+      "cell": {
+        "protocol": "udp",
+        "clients": 16,
+        "round": 1,
+        "role": "candidate",
+        "mode": "proxy"
+      },
+      "run_id": "95de51ab-1345-4fd0-8561-ec4c92f69d69",
+      "sent_per_second": 8697.0,
+      "unique_echoes_per_second": 8696.889841714508,
+      "goodput_bytes_per_second": 2226403.799478914,
+      "goodput_bits_per_second": 17811230.395831313,
+      "delivery_ratio": 1.0,
+      "unconfirmed": 0,
+      "loss_ratio": 0.0,
+      "p50_ns": 97203,
+      "p95_ns": 263013,
+      "p99_ns": 339787,
+      "max_ns": 582894,
+      "generator_cpu_percent": 46.59201323436498,
+      "generator_rss_bytes": 21135360,
+      "generator_fd": 24,
+      "backend_cpu_percent": 26.595400128741773,
+      "backend_rss_bytes": 14090240,
+      "backend_fd": 5,
+      "product_cpu_percent": 33.794143441147504,
+      "product_rss_bytes": 3440640,
+      "product_fd": 22,
+      "missed_slots": 6515,
+      "loss": 0,
+      "duplicate": 0,
+      "late": 0,
+      "rtt_count": 441,
+      "under_target": true
+    },
+    {
+      "index": 41,
+      "cell": {
+        "protocol": "udp",
+        "clients": 16,
+        "round": 1,
+        "role": "candidate",
+        "mode": "direct"
+      },
+      "run_id": "1045789a-7d59-430c-a0fd-1c58e7af6e4a",
+      "sent_per_second": 9199.6,
+      "unique_echoes_per_second": 9199.453629333195,
+      "goodput_bytes_per_second": 2355060.129109298,
+      "goodput_bits_per_second": 18840481.032874383,
+      "delivery_ratio": 1.0,
+      "unconfirmed": 0,
+      "loss_ratio": 0.0,
+      "p50_ns": 51437,
+      "p95_ns": 151373,
+      "p99_ns": 288404,
+      "max_ns": 331614,
+      "product_cpu_percent": null,
+      "product_rss_bytes": null,
+      "product_fd": null,
+      "generator_cpu_percent": 51.99314498459676,
+      "generator_rss_bytes": 20971520,
+      "generator_fd": 22,
+      "backend_cpu_percent": 26.596550852899185,
+      "backend_rss_bytes": 14090240,
+      "backend_fd": 5,
+      "missed_slots": 4002,
+      "loss": 0,
+      "duplicate": 0,
+      "late": 0,
+      "rtt_count": 455,
+      "under_target": true
+    },
+    {
+      "index": 42,
+      "cell": {
+        "protocol": "udp",
+        "clients": 16,
+        "round": 1,
+        "role": "baseline",
+        "mode": "proxy"
+      },
+      "run_id": "ceb1ba15-1448-45fc-8782-710f5f5c3f06",
+      "sent_per_second": 8769.6,
+      "unique_echoes_per_second": 8769.54108271519,
+      "goodput_bytes_per_second": 2245002.5171750886,
+      "goodput_bits_per_second": 17960020.13740071,
+      "delivery_ratio": 1.0,
+      "unconfirmed": 0,
+      "loss_ratio": 0.0,
+      "p50_ns": 94269,
+      "p95_ns": 235523,
+      "p99_ns": 397247,
+      "max_ns": 533269,
+      "generator_cpu_percent": 45.390623341202044,
+      "generator_rss_bytes": 21299200,
+      "generator_fd": 24,
+      "backend_cpu_percent": 25.994885984488455,
+      "backend_rss_bytes": 14254080,
+      "backend_fd": 5,
+      "product_cpu_percent": 32.99364506762861,
+      "product_rss_bytes": 3440640,
+      "product_fd": 22,
+      "missed_slots": 6152,
+      "loss": 0,
+      "duplicate": 0,
+      "late": 0,
+      "rtt_count": 438,
+      "under_target": true
+    },
+    {
+      "index": 43,
+      "cell": {
+        "protocol": "udp",
+        "clients": 16,
+        "round": 1,
+        "role": "baseline",
+        "mode": "direct"
+      },
+      "run_id": "4c2efcda-fb2e-4f00-969b-922c9e91e5cd",
+      "sent_per_second": 9374.6,
+      "unique_echoes_per_second": 9374.397533636948,
+      "goodput_bytes_per_second": 2399845.7686110586,
+      "goodput_bits_per_second": 19198766.14888847,
+      "delivery_ratio": 1.0,
+      "unconfirmed": 0,
+      "loss_ratio": 0.0,
+      "p50_ns": 48475,
+      "p95_ns": 136227,
+      "p99_ns": 267456,
+      "max_ns": 459606,
+      "product_cpu_percent": null,
+      "product_rss_bytes": null,
+      "product_fd": null,
+      "generator_cpu_percent": 49.59129823473528,
+      "generator_rss_bytes": 20971520,
+      "generator_fd": 22,
+      "backend_cpu_percent": 26.59522142380501,
+      "backend_rss_bytes": 13926400,
+      "backend_fd": 5,
+      "missed_slots": 3127,
+      "loss": 0,
+      "duplicate": 0,
+      "late": 0,
+      "rtt_count": 469,
+      "under_target": true
+    },
+    {
+      "index": 44,
+      "cell": {
+        "protocol": "udp",
+        "clients": 16,
+        "round": 2,
+        "role": "baseline",
+        "mode": "direct"
+      },
+      "run_id": "12569e5c-495d-42a4-a984-3ccba257b81b",
+      "sent_per_second": 9353.6,
+      "unique_echoes_per_second": 9353.561556862001,
+      "goodput_bytes_per_second": 2394511.7585566724,
+      "goodput_bits_per_second": 19156094.06845338,
+      "delivery_ratio": 1.0,
+      "unconfirmed": 0,
+      "loss_ratio": 0.0,
+      "p50_ns": 53270,
+      "p95_ns": 147479,
+      "p99_ns": 243778,
+      "max_ns": 457476,
+      "product_cpu_percent": null,
+      "product_rss_bytes": null,
+      "product_fd": null,
+      "generator_cpu_percent": 49.59353638513456,
+      "generator_rss_bytes": 20971520,
+      "generator_fd": 22,
+      "backend_cpu_percent": 29.596264241142425,
+      "backend_rss_bytes": 13926400,
+      "backend_fd": 5,
+      "missed_slots": 3232,
+      "loss": 0,
+      "duplicate": 0,
+      "late": 0,
+      "rtt_count": 480,
+      "under_target": true
+    },
+    {
+      "index": 45,
+      "cell": {
+        "protocol": "udp",
+        "clients": 16,
+        "round": 2,
+        "role": "baseline",
+        "mode": "proxy"
+      },
+      "run_id": "068451dd-65ab-467a-9830-5af9cb59da81",
+      "sent_per_second": 8899.0,
+      "unique_echoes_per_second": 8898.559133345721,
+      "goodput_bytes_per_second": 2278031.1381365047,
+      "goodput_bits_per_second": 18224249.105092037,
+      "delivery_ratio": 1.0,
+      "unconfirmed": 0,
+      "loss_ratio": 0.0,
+      "p50_ns": 94605,
+      "p95_ns": 234479,
+      "p99_ns": 351847,
+      "max_ns": 1032407,
+      "generator_cpu_percent": 44.78821267401902,
+      "generator_rss_bytes": 21135360,
+      "generator_fd": 24,
+      "backend_cpu_percent": 25.993418320918003,
+      "backend_rss_bytes": 14254080,
+      "backend_fd": 5,
+      "product_cpu_percent": 34.39148574802144,
+      "product_rss_bytes": 3276800,
+      "product_fd": 22,
+      "missed_slots": 5505,
+      "loss": 0,
+      "duplicate": 0,
+      "late": 0,
+      "rtt_count": 442,
+      "under_target": true
+    },
+    {
+      "index": 46,
+      "cell": {
+        "protocol": "udp",
+        "clients": 16,
+        "round": 2,
+        "role": "candidate",
+        "mode": "direct"
+      },
+      "run_id": "8042b9fa-6070-4f3f-84bb-ef83879ea383",
+      "sent_per_second": 9356.6,
+      "unique_echoes_per_second": 9356.539998380298,
+      "goodput_bytes_per_second": 2395274.2395853563,
+      "goodput_bits_per_second": 19162193.91668285,
+      "delivery_ratio": 1.0,
+      "unconfirmed": 0,
+      "loss_ratio": 0.0,
+      "p50_ns": 46808,
+      "p95_ns": 136530,
+      "p99_ns": 218495,
+      "max_ns": 1325608,
+      "product_cpu_percent": null,
+      "product_rss_bytes": null,
+      "product_fd": null,
+      "generator_cpu_percent": 49.789863829311486,
+      "generator_rss_bytes": 20643840,
+      "generator_fd": 22,
+      "backend_cpu_percent": 24.99603176997398,
+      "backend_rss_bytes": 14090240,
+      "backend_fd": 5,
+      "missed_slots": 3217,
+      "loss": 0,
+      "duplicate": 0,
+      "late": 0,
+      "rtt_count": 470,
+      "under_target": true
+    },
+    {
+      "index": 47,
+      "cell": {
+        "protocol": "udp",
+        "clients": 16,
+        "round": 2,
+        "role": "candidate",
+        "mode": "proxy"
+      },
+      "run_id": "09a03230-5828-4199-a800-1b4d32e7d2a2",
+      "sent_per_second": 8982.2,
+      "unique_echoes_per_second": 8982.15332513846,
+      "goodput_bytes_per_second": 2299431.251235446,
+      "goodput_bits_per_second": 18395450.009883568,
+      "delivery_ratio": 1.0,
+      "unconfirmed": 0,
+      "loss_ratio": 0.0,
+      "p50_ns": 100132,
+      "p95_ns": 223186,
+      "p99_ns": 307538,
+      "max_ns": 480725,
+      "generator_cpu_percent": 45.19252757825803,
+      "generator_rss_bytes": 21135360,
+      "generator_fd": 24,
+      "backend_cpu_percent": 26.395829596182118,
+      "backend_rss_bytes": 14254080,
+      "backend_fd": 5,
+      "product_cpu_percent": 32.79497398002671,
+      "product_rss_bytes": 3276800,
+      "product_fd": 22,
+      "missed_slots": 5089,
+      "loss": 0,
+      "duplicate": 0,
+      "late": 0,
+      "rtt_count": 457,
+      "under_target": true
+    }
+  ],
+  "groups": {
+    "baseline/tcp/1/direct": {
+      "sent_per_second": {
+        "values": [
+          12187.0,
+          7661.4,
+          9544.6
+        ],
+        "median": 9544.6,
+        "min": 7661.4,
+        "max": 12187.0
+      },
+      "unique_echoes_per_second": {
+        "values": [
+          12186.654501032903,
+          7661.0224050599045,
+          9544.166794086883
+        ],
+        "median": 9544.166794086883,
+        "min": 7661.0224050599045,
+        "max": 12186.654501032903
+      },
+      "goodput_bytes_per_second": {
+        "values": [
+          49916536.83623077,
+          31379547.77112537,
+          39092907.18857987
+        ],
+        "median": 39092907.18857987,
+        "min": 31379547.77112537,
+        "max": 49916536.83623077
+      },
+      "goodput_bits_per_second": {
+        "values": [
+          399332294.68984616,
+          251036382.16900295,
+          312743257.508639
+        ],
+        "median": 312743257.508639,
+        "min": 251036382.16900295,
+        "max": 399332294.68984616
+      },
+      "delivery_ratio": {
+        "values": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "median": 1.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "unconfirmed": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "loss_ratio": {
+        "values": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "median": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "p50_ns": {
+        "values": [
+          64816,
+          102147,
+          79436
+        ],
+        "median": 79436,
+        "min": 64816,
+        "max": 102147
+      },
+      "p95_ns": {
+        "values": [
+          145512,
+          249661,
+          224333
+        ],
+        "median": 224333,
+        "min": 145512,
+        "max": 249661
+      },
+      "p99_ns": {
+        "values": [
+          241552,
+          357594,
+          320352
+        ],
+        "median": 320352,
+        "min": 241552,
+        "max": 357594
+      },
+      "max_ns": {
+        "values": [
+          417307,
+          386059,
+          1900816
+        ],
+        "median": 417307,
+        "min": 386059,
+        "max": 1900816
+      },
+      "product_cpu_percent": {
+        "values": [
+          null,
+          null,
+          null
+        ],
+        "median": null,
+        "min": null,
+        "max": null
+      },
+      "product_rss_bytes": {
+        "values": [
+          null,
+          null,
+          null
+        ],
+        "median": null,
+        "min": null,
+        "max": null
+      },
+      "product_fd": {
+        "values": [
+          null,
+          null,
+          null
+        ],
+        "median": null,
+        "min": null,
+        "max": null
+      },
+      "generator_cpu_percent": {
+        "values": [
+          48.389940911998956,
+          50.580392480506696,
+          49.38209828814475
+        ],
+        "median": 49.38209828814475,
+        "min": 48.389940911998956,
+        "max": 50.580392480506696
+      },
+      "generator_rss_bytes": {
+        "values": [
+          21135360,
+          20807680,
+          20971520
+        ],
+        "median": 20971520,
+        "min": 20807680,
+        "max": 21135360
+      },
+      "generator_fd": {
+        "values": [
+          7,
+          7,
+          7
+        ],
+        "median": 7,
+        "min": 7,
+        "max": 7
+      },
+      "backend_cpu_percent": {
+        "values": [
+          55.98814960424291,
+          54.57863877221133,
+          55.780358352471204
+        ],
+        "median": 55.780358352471204,
+        "min": 54.57863877221133,
+        "max": 55.98814960424291
+      },
+      "backend_rss_bytes": {
+        "values": [
+          14254080,
+          14254080,
+          14090240
+        ],
+        "median": 14254080,
+        "min": 14090240,
+        "max": 14254080
+      },
+      "backend_fd": {
+        "values": [
+          6,
+          6,
+          6
+        ],
+        "median": 6,
+        "min": 6,
+        "max": 6
+      },
+      "missed_slots": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "loss": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "duplicate": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "late": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "rtt_count": {
+        "values": [
+          610,
+          384,
+          478
+        ],
+        "median": 478,
+        "min": 384,
+        "max": 610
+      },
+      "under_target": {
+        "values": [
+          false,
+          false,
+          false
+        ],
+        "median": false,
+        "min": false,
+        "max": false
+      }
+    },
+    "baseline/tcp/1/proxy": {
+      "sent_per_second": {
+        "values": [
+          6231.6,
+          3321.0,
+          5855.8
+        ],
+        "median": 5855.8,
+        "min": 3321.0,
+        "max": 6231.6
+      },
+      "unique_echoes_per_second": {
+        "values": [
+          6231.495657344115,
+          3320.8746011183616,
+          5855.635239991252
+        ],
+        "median": 5855.635239991252,
+        "min": 3320.8746011183616,
+        "max": 6231.495657344115
+      },
+      "goodput_bytes_per_second": {
+        "values": [
+          25524206.212481495,
+          13602302.36618081,
+          23984681.94300417
+        ],
+        "median": 23984681.94300417,
+        "min": 13602302.36618081,
+        "max": 25524206.212481495
+      },
+      "goodput_bits_per_second": {
+        "values": [
+          204193649.69985196,
+          108818418.92944647,
+          191877455.54403335
+        ],
+        "median": 191877455.54403335,
+        "min": 108818418.92944647,
+        "max": 204193649.69985196
+      },
+      "delivery_ratio": {
+        "values": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "median": 1.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "unconfirmed": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "loss_ratio": {
+        "values": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "median": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "p50_ns": {
+        "values": [
+          144062,
+          216201,
+          141288
+        ],
+        "median": 144062,
+        "min": 141288,
+        "max": 216201
+      },
+      "p95_ns": {
+        "values": [
+          250735,
+          558181,
+          292182
+        ],
+        "median": 292182,
+        "min": 250735,
+        "max": 558181
+      },
+      "p99_ns": {
+        "values": [
+          321017,
+          634740,
+          440393
+        ],
+        "median": 440393,
+        "min": 321017,
+        "max": 634740
+      },
+      "max_ns": {
+        "values": [
+          349993,
+          685692,
+          519538
+        ],
+        "median": 519538,
+        "min": 349993,
+        "max": 685692
+      },
+      "generator_cpu_percent": {
+        "values": [
+          31.591968146475942,
+          31.391937696538818,
+          29.393249434640495
+        ],
+        "median": 31.391937696538818,
+        "min": 29.393249434640495,
+        "max": 31.591968146475942
+      },
+      "generator_rss_bytes": {
+        "values": [
+          20971520,
+          20971520,
+          20643840
+        ],
+        "median": 20971520,
+        "min": 20643840,
+        "max": 20971520
+      },
+      "generator_fd": {
+        "values": [
+          9,
+          9,
+          9
+        ],
+        "median": 9,
+        "min": 9,
+        "max": 9
+      },
+      "backend_cpu_percent": {
+        "values": [
+          33.39187217121367,
+          34.19124612466669,
+          34.5921214160395
+        ],
+        "median": 34.19124612466669,
+        "min": 33.39187217121367,
+        "max": 34.5921214160395
+      },
+      "backend_rss_bytes": {
+        "values": [
+          14090240,
+          13926400,
+          14254080
+        ],
+        "median": 14090240,
+        "min": 13926400,
+        "max": 14254080
+      },
+      "backend_fd": {
+        "values": [
+          6,
+          6,
+          6
+        ],
+        "median": 6,
+        "min": 6,
+        "max": 6
+      },
+      "product_cpu_percent": {
+        "values": [
+          35.79140498042519,
+          36.390720766502476,
+          35.99179241006373
+        ],
+        "median": 35.99179241006373,
+        "min": 35.79140498042519,
+        "max": 36.390720766502476
+      },
+      "product_rss_bytes": {
+        "values": [
+          3604480,
+          3440640,
+          3440640
+        ],
+        "median": 3440640,
+        "min": 3440640,
+        "max": 3604480
+      },
+      "product_fd": {
+        "values": [
+          8,
+          8,
+          8
+        ],
+        "median": 8,
+        "min": 8,
+        "max": 8
+      },
+      "missed_slots": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "loss": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "duplicate": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "late": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "rtt_count": {
+        "values": [
+          312,
+          167,
+          293
+        ],
+        "median": 293,
+        "min": 167,
+        "max": 312
+      },
+      "under_target": {
+        "values": [
+          false,
+          false,
+          false
+        ],
+        "median": false,
+        "min": false,
+        "max": false
+      }
+    },
+    "candidate/tcp/1/direct": {
+      "sent_per_second": {
+        "values": [
+          11163.6,
+          8955.6,
+          11699.8
+        ],
+        "median": 11163.6,
+        "min": 8955.6,
+        "max": 11699.8
+      },
+      "unique_echoes_per_second": {
+        "values": [
+          11163.445004496869,
+          8955.470896140467,
+          11699.21058441139
+        ],
+        "median": 11163.445004496869,
+        "min": 8955.470896140467,
+        "max": 11699.21058441139
+      },
+      "goodput_bytes_per_second": {
+        "values": [
+          45725470.738419175,
+          36681608.79059135,
+          47919966.553749055
+        ],
+        "median": 45725470.738419175,
+        "min": 36681608.79059135,
+        "max": 47919966.553749055
+      },
+      "goodput_bits_per_second": {
+        "values": [
+          365803765.9073534,
+          293452870.3247308,
+          383359732.42999244
+        ],
+        "median": 365803765.9073534,
+        "min": 293452870.3247308,
+        "max": 383359732.42999244
+      },
+      "delivery_ratio": {
+        "values": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "median": 1.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "unconfirmed": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "loss_ratio": {
+        "values": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "median": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "p50_ns": {
+        "values": [
+          72912,
+          76701,
+          60616
+        ],
+        "median": 72912,
+        "min": 60616,
+        "max": 76701
+      },
+      "p95_ns": {
+        "values": [
+          145888,
+          246835,
+          174410
+        ],
+        "median": 174410,
+        "min": 145888,
+        "max": 246835
+      },
+      "p99_ns": {
+        "values": [
+          197648,
+          316362,
+          317055
+        ],
+        "median": 316362,
+        "min": 197648,
+        "max": 317055
+      },
+      "max_ns": {
+        "values": [
+          305757,
+          364250,
+          563820
+        ],
+        "median": 364250,
+        "min": 305757,
+        "max": 563820
+      },
+      "product_cpu_percent": {
+        "values": [
+          null,
+          null,
+          null
+        ],
+        "median": null,
+        "min": null,
+        "max": null
+      },
+      "product_rss_bytes": {
+        "values": [
+          null,
+          null,
+          null
+        ],
+        "median": null,
+        "min": null,
+        "max": null
+      },
+      "product_fd": {
+        "values": [
+          null,
+          null,
+          null
+        ],
+        "median": null,
+        "min": null,
+        "max": null
+      },
+      "generator_cpu_percent": {
+        "values": [
+          49.59046792853474,
+          50.5839961341351,
+          49.18224340022596
+        ],
+        "median": 49.59046792853474,
+        "min": 49.18224340022596,
+        "max": 50.5839961341351
+      },
+      "generator_rss_bytes": {
+        "values": [
+          20643840,
+          20971520,
+          20971520
+        ],
+        "median": 20971520,
+        "min": 20643840,
+        "max": 20971520
+      },
+      "generator_fd": {
+        "values": [
+          7,
+          7,
+          7
+        ],
+        "median": 7,
+        "min": 7,
+        "max": 7
+      },
+      "backend_cpu_percent": {
+        "values": [
+          55.58923601163843,
+          54.583718615576934,
+          55.17984979767387
+        ],
+        "median": 55.17984979767387,
+        "min": 54.583718615576934,
+        "max": 55.58923601163843
+      },
+      "backend_rss_bytes": {
+        "values": [
+          14417920,
+          14090240,
+          14090240
+        ],
+        "median": 14090240,
+        "min": 14090240,
+        "max": 14417920
+      },
+      "backend_fd": {
+        "values": [
+          6,
+          6,
+          6
+        ],
+        "median": 6,
+        "min": 6,
+        "max": 6
+      },
+      "missed_slots": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "loss": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "duplicate": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "late": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "rtt_count": {
+        "values": [
+          559,
+          448,
+          585
+        ],
+        "median": 559,
+        "min": 448,
+        "max": 585
+      },
+      "under_target": {
+        "values": [
+          false,
+          false,
+          false
+        ],
+        "median": false,
+        "min": false,
+        "max": false
+      }
+    },
+    "candidate/tcp/1/proxy": {
+      "sent_per_second": {
+        "values": [
+          5467.8,
+          6877.6,
+          7775.4
+        ],
+        "median": 6877.6,
+        "min": 5467.8,
+        "max": 7775.4
+      },
+      "unique_echoes_per_second": {
+        "values": [
+          5467.466859589792,
+          6877.2064243535415,
+          7775.268444012981
+        ],
+        "median": 6877.2064243535415,
+        "min": 5467.466859589792,
+        "max": 7775.268444012981
+      },
+      "goodput_bytes_per_second": {
+        "values": [
+          22394744.256879788,
+          28169037.514152106,
+          31847499.54667717
+        ],
+        "median": 28169037.514152106,
+        "min": 22394744.256879788,
+        "max": 31847499.54667717
+      },
+      "goodput_bits_per_second": {
+        "values": [
+          179157954.0550383,
+          225352300.11321685,
+          254779996.37341735
+        ],
+        "median": 225352300.11321685,
+        "min": 179157954.0550383,
+        "max": 254779996.37341735
+      },
+      "delivery_ratio": {
+        "values": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "median": 1.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "unconfirmed": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "loss_ratio": {
+        "values": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "median": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "p50_ns": {
+        "values": [
+          150268,
+          112623,
+          92015
+        ],
+        "median": 112623,
+        "min": 92015,
+        "max": 150268
+      },
+      "p95_ns": {
+        "values": [
+          312040,
+          286900,
+          259834
+        ],
+        "median": 286900,
+        "min": 259834,
+        "max": 312040
+      },
+      "p99_ns": {
+        "values": [
+          440023,
+          342329,
+          480976
+        ],
+        "median": 440023,
+        "min": 342329,
+        "max": 480976
+      },
+      "max_ns": {
+        "values": [
+          600894,
+          472182,
+          672806
+        ],
+        "median": 600894,
+        "min": 472182,
+        "max": 672806
+      },
+      "generator_cpu_percent": {
+        "values": [
+          31.59201221876498,
+          31.790248048940704,
+          30.191753478799956
+        ],
+        "median": 31.59201221876498,
+        "min": 30.191753478799956,
+        "max": 31.790248048940704
+      },
+      "generator_rss_bytes": {
+        "values": [
+          20807680,
+          20971520,
+          20971520
+        ],
+        "median": 20971520,
+        "min": 20807680,
+        "max": 20971520
+      },
+      "generator_fd": {
+        "values": [
+          9,
+          9,
+          9
+        ],
+        "median": 9,
+        "min": 9,
+        "max": 9
+      },
+      "backend_cpu_percent": {
+        "values": [
+          33.791479552772024,
+          32.58992599761517,
+          32.59114297883824
+        ],
+        "median": 32.59114297883824,
+        "min": 32.58992599761517,
+        "max": 33.791479552772024
+      },
+      "backend_rss_bytes": {
+        "values": [
+          14417920,
+          14090240,
+          14417920
+        ],
+        "median": 14417920,
+        "min": 14090240,
+        "max": 14417920
+      },
+      "backend_fd": {
+        "values": [
+          6,
+          6,
+          6
+        ],
+        "median": 6,
+        "min": 6,
+        "max": 6
+      },
+      "product_cpu_percent": {
+        "values": [
+          35.39110862807537,
+          35.588967839919434,
+          36.98998701765825
+        ],
+        "median": 35.588967839919434,
+        "min": 35.39110862807537,
+        "max": 36.98998701765825
+      },
+      "product_rss_bytes": {
+        "values": [
+          3604480,
+          3604480,
+          3604480
+        ],
+        "median": 3604480,
+        "min": 3604480,
+        "max": 3604480
+      },
+      "product_fd": {
+        "values": [
+          8,
+          8,
+          8
+        ],
+        "median": 8,
+        "min": 8,
+        "max": 8
+      },
+      "missed_slots": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "loss": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "duplicate": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "late": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "rtt_count": {
+        "values": [
+          274,
+          344,
+          389
+        ],
+        "median": 344,
+        "min": 274,
+        "max": 389
+      },
+      "under_target": {
+        "values": [
+          false,
+          false,
+          false
+        ],
+        "median": false,
+        "min": false,
+        "max": false
+      }
+    },
+    "baseline/tcp/16/direct": {
+      "sent_per_second": {
+        "values": [
+          5026.2,
+          5026.8,
+          4800.8
+        ],
+        "median": 5026.2,
+        "min": 4800.8,
+        "max": 5026.8
+      },
+      "unique_echoes_per_second": {
+        "values": [
+          5024.271179279712,
+          5024.93202473422,
+          4799.070512888194
+        ],
+        "median": 5024.271179279712,
+        "min": 4799.070512888194,
+        "max": 5024.93202473422
+      },
+      "goodput_bytes_per_second": {
+        "values": [
+          20579414.7503297,
+          20582121.573311366,
+          19656992.82079004
+        ],
+        "median": 20579414.7503297,
+        "min": 19656992.82079004,
+        "max": 20582121.573311366
+      },
+      "goodput_bits_per_second": {
+        "values": [
+          164635318.0026376,
+          164656972.58649093,
+          157255942.56632033
+        ],
+        "median": 164635318.0026376,
+        "min": 157255942.56632033,
+        "max": 164656972.58649093
+      },
+      "delivery_ratio": {
+        "values": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "median": 1.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "unconfirmed": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "loss_ratio": {
+        "values": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "median": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "p50_ns": {
+        "values": [
+          3008561,
+          2955581,
+          3023290
+        ],
+        "median": 3008561,
+        "min": 2955581,
+        "max": 3023290
+      },
+      "p95_ns": {
+        "values": [
+          5417590,
+          5145657,
+          5479392
+        ],
+        "median": 5417590,
+        "min": 5145657,
+        "max": 5479392
+      },
+      "p99_ns": {
+        "values": [
+          7693499,
+          6542811,
+          7439016
+        ],
+        "median": 7439016,
+        "min": 6542811,
+        "max": 7693499
+      },
+      "max_ns": {
+        "values": [
+          12058772,
+          7452038,
+          7609613
+        ],
+        "median": 7609613,
+        "min": 7452038,
+        "max": 12058772
+      },
+      "product_cpu_percent": {
+        "values": [
+          null,
+          null,
+          null
+        ],
+        "median": null,
+        "min": null,
+        "max": null
+      },
+      "product_rss_bytes": {
+        "values": [
+          null,
+          null,
+          null
+        ],
+        "median": null,
+        "min": null,
+        "max": null
+      },
+      "product_fd": {
+        "values": [
+          null,
+          null,
+          null
+        ],
+        "median": null,
+        "min": null,
+        "max": null
+      },
+      "generator_cpu_percent": {
+        "values": [
+          163.93982310714173,
+          163.9560574225133,
+          165.52247545046066
+        ],
+        "median": 163.9560574225133,
+        "min": 163.93982310714173,
+        "max": 165.52247545046066
+      },
+      "generator_rss_bytes": {
+        "values": [
+          20807680,
+          21135360,
+          20971520
+        ],
+        "median": 20971520,
+        "min": 20807680,
+        "max": 21135360
+      },
+      "generator_fd": {
+        "values": [
+          22,
+          22,
+          22
+        ],
+        "median": 22,
+        "min": 22,
+        "max": 22
+      },
+      "backend_cpu_percent": {
+        "values": [
+          21.366084980873744,
+          22.167148489875775,
+          23.56190696079168
+        ],
+        "median": 22.167148489875775,
+        "min": 21.366084980873744,
+        "max": 23.56190696079168
+      },
+      "backend_rss_bytes": {
+        "values": [
+          14254080,
+          14090240,
+          14254080
+        ],
+        "median": 14254080,
+        "min": 14090240,
+        "max": 14254080
+      },
+      "backend_fd": {
+        "values": [
+          21,
+          21,
+          21
+        ],
+        "median": 21,
+        "min": 21,
+        "max": 21
+      },
+      "missed_slots": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "loss": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "duplicate": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "late": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "rtt_count": {
+        "values": [
+          257,
+          256,
+          248
+        ],
+        "median": 256,
+        "min": 248,
+        "max": 257
+      },
+      "under_target": {
+        "values": [
+          false,
+          false,
+          false
+        ],
+        "median": false,
+        "min": false,
+        "max": false
+      }
+    },
+    "baseline/tcp/16/proxy": {
+      "sent_per_second": {
+        "values": [
+          4897.0,
+          4469.2,
+          4858.4
+        ],
+        "median": 4858.4,
+        "min": 4469.2,
+        "max": 4897.0
+      },
+      "unique_echoes_per_second": {
+        "values": [
+          4895.042189694902,
+          4467.211561937089,
+          4856.702842675758
+        ],
+        "median": 4856.702842675758,
+        "min": 4467.211561937089,
+        "max": 4895.042189694902
+      },
+      "goodput_bytes_per_second": {
+        "values": [
+          20050092.80899032,
+          18297698.557694316,
+          19893054.843599904
+        ],
+        "median": 19893054.843599904,
+        "min": 18297698.557694316,
+        "max": 20050092.80899032
+      },
+      "goodput_bits_per_second": {
+        "values": [
+          160400742.47192255,
+          146381588.46155453,
+          159144438.74879923
+        ],
+        "median": 159144438.74879923,
+        "min": 146381588.46155453,
+        "max": 160400742.47192255
+      },
+      "delivery_ratio": {
+        "values": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "median": 1.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "unconfirmed": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "loss_ratio": {
+        "values": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "median": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "p50_ns": {
+        "values": [
+          2933905,
+          3133283,
+          2716572
+        ],
+        "median": 2933905,
+        "min": 2716572,
+        "max": 3133283
+      },
+      "p95_ns": {
+        "values": [
+          4636441,
+          5602435,
+          4633733
+        ],
+        "median": 4636441,
+        "min": 4633733,
+        "max": 5602435
+      },
+      "p99_ns": {
+        "values": [
+          6108644,
+          7070763,
+          7016381
+        ],
+        "median": 7016381,
+        "min": 6108644,
+        "max": 7070763
+      },
+      "max_ns": {
+        "values": [
+          6875174,
+          8760024,
+          7791792
+        ],
+        "median": 7791792,
+        "min": 6875174,
+        "max": 8760024
+      },
+      "generator_cpu_percent": {
+        "values": [
+          160.98041881301293,
+          164.14325103334306,
+          161.3943936135465
+        ],
+        "median": 161.3943936135465,
+        "min": 160.98041881301293,
+        "max": 164.14325103334306
+      },
+      "generator_rss_bytes": {
+        "values": [
+          21135360,
+          21135360,
+          21135360
+        ],
+        "median": 21135360,
+        "min": 21135360,
+        "max": 21135360
+      },
+      "generator_fd": {
+        "values": [
+          24,
+          24,
+          24
+        ],
+        "median": 24,
+        "min": 24,
+        "max": 24
+      },
+      "backend_cpu_percent": {
+        "values": [
+          26.563868548537506,
+          26.958027644942153,
+          26.766018494597297
+        ],
+        "median": 26.766018494597297,
+        "min": 26.563868548537506,
+        "max": 26.958027644942153
+      },
+      "backend_rss_bytes": {
+        "values": [
+          14254080,
+          13926400,
+          14254080
+        ],
+        "median": 14254080,
+        "min": 13926400,
+        "max": 14254080
+      },
+      "backend_fd": {
+        "values": [
+          21,
+          21,
+          21
+        ],
+        "median": 21,
+        "min": 21,
+        "max": 21
+      },
+      "product_cpu_percent": {
+        "values": [
+          23.168453389031185,
+          25.560280014984272,
+          23.76990896389931
+        ],
+        "median": 23.76990896389931,
+        "min": 23.168453389031185,
+        "max": 25.560280014984272
+      },
+      "product_rss_bytes": {
+        "values": [
+          5406720,
+          5570560,
+          5570560
+        ],
+        "median": 5570560,
+        "min": 5406720,
+        "max": 5570560
+      },
+      "product_fd": {
+        "values": [
+          38,
+          38,
+          38
+        ],
+        "median": 38,
+        "min": 38,
+        "max": 38
+      },
+      "missed_slots": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "loss": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "duplicate": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "late": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "rtt_count": {
+        "values": [
+          255,
+          229,
+          253
+        ],
+        "median": 253,
+        "min": 229,
+        "max": 255
+      },
+      "under_target": {
+        "values": [
+          false,
+          false,
+          false
+        ],
+        "median": false,
+        "min": false,
+        "max": false
+      }
+    },
+    "candidate/tcp/16/direct": {
+      "sent_per_second": {
+        "values": [
+          5165.2,
+          5061.4,
+          5302.0
+        ],
+        "median": 5165.2,
+        "min": 5061.4,
+        "max": 5302.0
+      },
+      "unique_echoes_per_second": {
+        "values": [
+          5162.792105771179,
+          5059.615521166071,
+          5299.866011070589
+        ],
+        "median": 5162.792105771179,
+        "min": 5059.615521166071,
+        "max": 5299.866011070589
+      },
+      "goodput_bytes_per_second": {
+        "values": [
+          21146796.46523875,
+          20724185.174696226,
+          21708251.18134513
+        ],
+        "median": 21146796.46523875,
+        "min": 20724185.174696226,
+        "max": 21708251.18134513
+      },
+      "goodput_bits_per_second": {
+        "values": [
+          169174371.72191,
+          165793481.3975698,
+          173666009.45076105
+        ],
+        "median": 169174371.72191,
+        "min": 165793481.3975698,
+        "max": 173666009.45076105
+      },
+      "delivery_ratio": {
+        "values": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "median": 1.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "unconfirmed": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "loss_ratio": {
+        "values": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "median": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "p50_ns": {
+        "values": [
+          2755804,
+          2881969,
+          2799898
+        ],
+        "median": 2799898,
+        "min": 2755804,
+        "max": 2881969
+      },
+      "p95_ns": {
+        "values": [
+          4776979,
+          4792577,
+          4556981
+        ],
+        "median": 4776979,
+        "min": 4556981,
+        "max": 4792577
+      },
+      "p99_ns": {
+        "values": [
+          6344463,
+          5652376,
+          5626494
+        ],
+        "median": 5652376,
+        "min": 5626494,
+        "max": 6344463
+      },
+      "max_ns": {
+        "values": [
+          7094169,
+          6530422,
+          6182281
+        ],
+        "median": 6530422,
+        "min": 6182281,
+        "max": 7094169
+      },
+      "product_cpu_percent": {
+        "values": [
+          null,
+          null,
+          null
+        ],
+        "median": null,
+        "min": null,
+        "max": null
+      },
+      "product_rss_bytes": {
+        "values": [
+          null,
+          null,
+          null
+        ],
+        "median": null,
+        "min": null,
+        "max": null
+      },
+      "product_fd": {
+        "values": [
+          null,
+          null,
+          null
+        ],
+        "median": null,
+        "min": null,
+        "max": null
+      },
+      "generator_cpu_percent": {
+        "values": [
+          163.3801921126282,
+          163.6113371493517,
+          162.58304589937433
+        ],
+        "median": 163.3801921126282,
+        "min": 162.58304589937433,
+        "max": 163.6113371493517
+      },
+      "generator_rss_bytes": {
+        "values": [
+          21135360,
+          21135360,
+          20971520
+        ],
+        "median": 21135360,
+        "min": 20971520,
+        "max": 21135360
+      },
+      "generator_fd": {
+        "values": [
+          22,
+          22,
+          22
+        ],
+        "median": 22,
+        "min": 22,
+        "max": 22
+      },
+      "backend_cpu_percent": {
+        "values": [
+          20.772063253307014,
+          22.3742766297729,
+          20.57260056297908
+        ],
+        "median": 20.772063253307014,
+        "min": 20.57260056297908,
+        "max": 22.3742766297729
+      },
+      "backend_rss_bytes": {
+        "values": [
+          13926400,
+          14090240,
+          14254080
+        ],
+        "median": 14090240,
+        "min": 13926400,
+        "max": 14254080
+      },
+      "backend_fd": {
+        "values": [
+          21,
+          21,
+          21
+        ],
+        "median": 21,
+        "min": 21,
+        "max": 21
+      },
+      "missed_slots": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "loss": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "duplicate": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "late": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "rtt_count": {
+        "values": [
+          269,
+          261,
+          273
+        ],
+        "median": 269,
+        "min": 261,
+        "max": 273
+      },
+      "under_target": {
+        "values": [
+          false,
+          false,
+          false
+        ],
+        "median": false,
+        "min": false,
+        "max": false
+      }
+    },
+    "candidate/tcp/16/proxy": {
+      "sent_per_second": {
+        "values": [
+          4761.6,
+          4600.6,
+          4704.2
+        ],
+        "median": 4704.2,
+        "min": 4600.6,
+        "max": 4761.6
+      },
+      "unique_echoes_per_second": {
+        "values": [
+          4759.744193825855,
+          4598.838174058306,
+          4702.263948150061
+        ],
+        "median": 4702.263948150061,
+        "min": 4598.838174058306,
+        "max": 4759.744193825855
+      },
+      "goodput_bytes_per_second": {
+        "values": [
+          19495912.217910703,
+          18836841.160942823,
+          19260473.13162265
+        ],
+        "median": 19260473.13162265,
+        "min": 18836841.160942823,
+        "max": 19495912.217910703
+      },
+      "goodput_bits_per_second": {
+        "values": [
+          155967297.74328563,
+          150694729.28754258,
+          154083785.0529812
+        ],
+        "median": 154083785.0529812,
+        "min": 150694729.28754258,
+        "max": 155967297.74328563
+      },
+      "delivery_ratio": {
+        "values": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "median": 1.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "unconfirmed": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "loss_ratio": {
+        "values": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "median": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "p50_ns": {
+        "values": [
+          2802606,
+          2870853,
+          2902444
+        ],
+        "median": 2870853,
+        "min": 2802606,
+        "max": 2902444
+      },
+      "p95_ns": {
+        "values": [
+          5010489,
+          5234633,
+          5646173
+        ],
+        "median": 5234633,
+        "min": 5010489,
+        "max": 5646173
+      },
+      "p99_ns": {
+        "values": [
+          7157830,
+          6562737,
+          6826493
+        ],
+        "median": 6826493,
+        "min": 6562737,
+        "max": 7157830
+      },
+      "max_ns": {
+        "values": [
+          8376657,
+          9288857,
+          7146709
+        ],
+        "median": 8376657,
+        "min": 7146709,
+        "max": 9288857
+      },
+      "generator_cpu_percent": {
+        "values": [
+          162.3618271169775,
+          162.3736304078615,
+          162.5713372039975
+        ],
+        "median": 162.3736304078615,
+        "min": 162.3618271169775,
+        "max": 162.5713372039975
+      },
+      "generator_rss_bytes": {
+        "values": [
+          20971520,
+          20971520,
+          20971520
+        ],
+        "median": 20971520,
+        "min": 20971520,
+        "max": 20971520
+      },
+      "generator_fd": {
+        "values": [
+          24,
+          24,
+          24
+        ],
+        "median": 24,
+        "min": 24,
+        "max": 24
+      },
+      "backend_cpu_percent": {
+        "values": [
+          27.160010323256312,
+          27.960798418178225,
+          26.562816020743103
+        ],
+        "median": 27.160010323256312,
+        "min": 26.562816020743103,
+        "max": 27.960798418178225
+      },
+      "backend_rss_bytes": {
+        "values": [
+          14090240,
+          14254080,
+          14254080
+        ],
+        "median": 14254080,
+        "min": 14090240,
+        "max": 14254080
+      },
+      "backend_fd": {
+        "values": [
+          21,
+          21,
+          21
+        ],
+        "median": 21,
+        "min": 21,
+        "max": 21
+      },
+      "product_cpu_percent": {
+        "values": [
+          23.565217220947105,
+          23.966353889817434,
+          23.766818821015242
+        ],
+        "median": 23.766818821015242,
+        "min": 23.565217220947105,
+        "max": 23.966353889817434
+      },
+      "product_rss_bytes": {
+        "values": [
+          5570560,
+          5570560,
+          5570560
+        ],
+        "median": 5570560,
+        "min": 5570560,
+        "max": 5570560
+      },
+      "product_fd": {
+        "values": [
+          38,
+          38,
+          38
+        ],
+        "median": 38,
+        "min": 38,
+        "max": 38
+      },
+      "missed_slots": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "loss": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "duplicate": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "late": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "rtt_count": {
+        "values": [
+          243,
+          240,
+          241
+        ],
+        "median": 241,
+        "min": 240,
+        "max": 243
+      },
+      "under_target": {
+        "values": [
+          false,
+          false,
+          false
+        ],
+        "median": false,
+        "min": false,
+        "max": false
+      }
+    },
+    "baseline/udp/1/direct": {
+      "sent_per_second": {
+        "values": [
+          9467.4,
+          9642.2,
+          9487.4
+        ],
+        "median": 9487.4,
+        "min": 9467.4,
+        "max": 9642.2
+      },
+      "unique_echoes_per_second": {
+        "values": [
+          9467.32914840212,
+          9642.143903935195,
+          9487.255953095413
+        ],
+        "median": 9487.255953095413,
+        "min": 9467.32914840212,
+        "max": 9642.143903935195
+      },
+      "goodput_bytes_per_second": {
+        "values": [
+          2423636.2619909425,
+          2468388.83940741,
+          2428737.5239924258
+        ],
+        "median": 2428737.5239924258,
+        "min": 2423636.2619909425,
+        "max": 2468388.83940741
+      },
+      "goodput_bits_per_second": {
+        "values": [
+          19389090.09592754,
+          19747110.71525928,
+          19429900.191939406
+        ],
+        "median": 19429900.191939406,
+        "min": 19389090.09592754,
+        "max": 19747110.71525928
+      },
+      "delivery_ratio": {
+        "values": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "median": 1.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "unconfirmed": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "loss_ratio": {
+        "values": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "median": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "p50_ns": {
+        "values": [
+          43414,
+          41276,
+          48018
+        ],
+        "median": 43414,
+        "min": 41276,
+        "max": 48018
+      },
+      "p95_ns": {
+        "values": [
+          126324,
+          123960,
+          149566
+        ],
+        "median": 126324,
+        "min": 123960,
+        "max": 149566
+      },
+      "p99_ns": {
+        "values": [
+          196373,
+          218048,
+          194182
+        ],
+        "median": 196373,
+        "min": 194182,
+        "max": 218048
+      },
+      "max_ns": {
+        "values": [
+          394859,
+          425521,
+          329264
+        ],
+        "median": 394859,
+        "min": 329264,
+        "max": 425521
+      },
+      "product_cpu_percent": {
+        "values": [
+          null,
+          null,
+          null
+        ],
+        "median": null,
+        "min": null,
+        "max": null
+      },
+      "product_rss_bytes": {
+        "values": [
+          null,
+          null,
+          null
+        ],
+        "median": null,
+        "min": null,
+        "max": null
+      },
+      "product_fd": {
+        "values": [
+          null,
+          null,
+          null
+        ],
+        "median": null,
+        "min": null,
+        "max": null
+      },
+      "generator_cpu_percent": {
+        "values": [
+          43.99383744003784,
+          40.1936771246128,
+          44.793782193011296
+        ],
+        "median": 43.99383744003784,
+        "min": 40.1936771246128,
+        "max": 44.793782193011296
+      },
+      "generator_rss_bytes": {
+        "values": [
+          20971520,
+          20971520,
+          20807680
+        ],
+        "median": 20971520,
+        "min": 20807680,
+        "max": 20971520
+      },
+      "generator_fd": {
+        "values": [
+          7,
+          7,
+          7
+        ],
+        "median": 7,
+        "min": 7,
+        "max": 7
+      },
+      "backend_cpu_percent": {
+        "values": [
+          25.596419531881608,
+          25.196074849636407,
+          26.99629806783633
+        ],
+        "median": 25.596419531881608,
+        "min": 25.196074849636407,
+        "max": 26.99629806783633
+      },
+      "backend_rss_bytes": {
+        "values": [
+          14090240,
+          13926400,
+          13926400
+        ],
+        "median": 13926400,
+        "min": 13926400,
+        "max": 14090240
+      },
+      "backend_fd": {
+        "values": [
+          5,
+          5,
+          5
+        ],
+        "median": 5,
+        "min": 5,
+        "max": 5
+      },
+      "missed_slots": {
+        "values": [
+          2663,
+          1789,
+          2563
+        ],
+        "median": 2563,
+        "min": 1789,
+        "max": 2663
+      },
+      "loss": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "duplicate": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "late": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "rtt_count": {
+        "values": [
+          477,
+          486,
+          478
+        ],
+        "median": 478,
+        "min": 477,
+        "max": 486
+      },
+      "under_target": {
+        "values": [
+          true,
+          true,
+          true
+        ],
+        "median": true,
+        "min": true,
+        "max": true
+      }
+    },
+    "baseline/udp/1/proxy": {
+      "sent_per_second": {
+        "values": [
+          8829.0,
+          9108.8,
+          9251.0
+        ],
+        "median": 9108.8,
+        "min": 8829.0,
+        "max": 9251.0
+      },
+      "unique_echoes_per_second": {
+        "values": [
+          8828.977678578634,
+          9108.649536040044,
+          9250.98063399714
+        ],
+        "median": 9108.649536040044,
+        "min": 8828.977678578634,
+        "max": 9250.98063399714
+      },
+      "goodput_bytes_per_second": {
+        "values": [
+          2260218.2857161304,
+          2331814.2812262513,
+          2368251.042303268
+        ],
+        "median": 2331814.2812262513,
+        "min": 2260218.2857161304,
+        "max": 2368251.042303268
+      },
+      "goodput_bits_per_second": {
+        "values": [
+          18081746.285729043,
+          18654514.24981001,
+          18946008.338426143
+        ],
+        "median": 18654514.24981001,
+        "min": 18081746.285729043,
+        "max": 18946008.338426143
+      },
+      "delivery_ratio": {
+        "values": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "median": 1.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "unconfirmed": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "loss_ratio": {
+        "values": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "median": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "p50_ns": {
+        "values": [
+          93630,
+          85586,
+          94279
+        ],
+        "median": 93630,
+        "min": 85586,
+        "max": 94279
+      },
+      "p95_ns": {
+        "values": [
+          234124,
+          220619,
+          219556
+        ],
+        "median": 220619,
+        "min": 219556,
+        "max": 234124
+      },
+      "p99_ns": {
+        "values": [
+          429754,
+          318305,
+          334517
+        ],
+        "median": 334517,
+        "min": 318305,
+        "max": 429754
+      },
+      "max_ns": {
+        "values": [
+          664545,
+          546768,
+          633044
+        ],
+        "median": 633044,
+        "min": 546768,
+        "max": 664545
+      },
+      "generator_cpu_percent": {
+        "values": [
+          42.59456148379519,
+          40.99309413938891,
+          40.39458622868554
+        ],
+        "median": 40.99309413938891,
+        "min": 40.39458622868554,
+        "max": 42.59456148379519
+      },
+      "generator_rss_bytes": {
+        "values": [
+          20971520,
+          20807680,
+          20971520
+        ],
+        "median": 20971520,
+        "min": 20807680,
+        "max": 20971520
+      },
+      "generator_fd": {
+        "values": [
+          9,
+          9,
+          9
+        ],
+        "median": 9,
+        "min": 9,
+        "max": 9
+      },
+      "backend_cpu_percent": {
+        "values": [
+          25.996730859101007,
+          26.195588055233856,
+          26.79647481119339
+        ],
+        "median": 26.195588055233856,
+        "min": 25.996730859101007,
+        "max": 26.79647481119339
+      },
+      "backend_rss_bytes": {
+        "values": [
+          14254080,
+          14090240,
+          14254080
+        ],
+        "median": 14254080,
+        "min": 14090240,
+        "max": 14254080
+      },
+      "backend_fd": {
+        "values": [
+          5,
+          5,
+          5
+        ],
+        "median": 5,
+        "min": 5,
+        "max": 5
+      },
+      "product_cpu_percent": {
+        "values": [
+          33.595792953389086,
+          32.79445378229966,
+          33.995504108179894
+        ],
+        "median": 33.595792953389086,
+        "min": 32.79445378229966,
+        "max": 33.995504108179894
+      },
+      "product_rss_bytes": {
+        "values": [
+          3440640,
+          3440640,
+          3276800
+        ],
+        "median": 3440640,
+        "min": 3276800,
+        "max": 3440640
+      },
+      "product_fd": {
+        "values": [
+          7,
+          7,
+          7
+        ],
+        "median": 7,
+        "min": 7,
+        "max": 7
+      },
+      "missed_slots": {
+        "values": [
+          5855,
+          4456,
+          3745
+        ],
+        "median": 4456,
+        "min": 3745,
+        "max": 5855
+      },
+      "loss": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "duplicate": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "late": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "rtt_count": {
+        "values": [
+          446,
+          456,
+          460
+        ],
+        "median": 456,
+        "min": 446,
+        "max": 460
+      },
+      "under_target": {
+        "values": [
+          true,
+          true,
+          true
+        ],
+        "median": true,
+        "min": true,
+        "max": true
+      }
+    },
+    "candidate/udp/1/direct": {
+      "sent_per_second": {
+        "values": [
+          9468.6,
+          9441.4,
+          9621.0
+        ],
+        "median": 9468.6,
+        "min": 9441.4,
+        "max": 9621.0
+      },
+      "unique_echoes_per_second": {
+        "values": [
+          9468.433404807929,
+          9441.336505123736,
+          9620.951546963819
+        ],
+        "median": 9468.433404807929,
+        "min": 9441.336505123736,
+        "max": 9620.951546963819
+      },
+      "goodput_bytes_per_second": {
+        "values": [
+          2423918.95163083,
+          2416982.1453116764,
+          2462963.5960227377
+        ],
+        "median": 2423918.95163083,
+        "min": 2416982.1453116764,
+        "max": 2462963.5960227377
+      },
+      "goodput_bits_per_second": {
+        "values": [
+          19391351.61304664,
+          19335857.16249341,
+          19703708.7681819
+        ],
+        "median": 19391351.61304664,
+        "min": 19335857.16249341,
+        "max": 19703708.7681819
+      },
+      "delivery_ratio": {
+        "values": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "median": 1.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "unconfirmed": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "loss_ratio": {
+        "values": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "median": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "p50_ns": {
+        "values": [
+          45051,
+          41538,
+          42563
+        ],
+        "median": 42563,
+        "min": 41538,
+        "max": 45051
+      },
+      "p95_ns": {
+        "values": [
+          134071,
+          143201,
+          116358
+        ],
+        "median": 134071,
+        "min": 116358,
+        "max": 143201
+      },
+      "p99_ns": {
+        "values": [
+          192243,
+          229782,
+          185856
+        ],
+        "median": 192243,
+        "min": 185856,
+        "max": 229782
+      },
+      "max_ns": {
+        "values": [
+          1369445,
+          271229,
+          908986
+        ],
+        "median": 908986,
+        "min": 271229,
+        "max": 1369445
+      },
+      "product_cpu_percent": {
+        "values": [
+          null,
+          null,
+          null
+        ],
+        "median": null,
+        "min": null,
+        "max": null
+      },
+      "product_rss_bytes": {
+        "values": [
+          null,
+          null,
+          null
+        ],
+        "median": null,
+        "min": null,
+        "max": null
+      },
+      "product_fd": {
+        "values": [
+          null,
+          null,
+          null
+        ],
+        "median": null,
+        "min": null,
+        "max": null
+      },
+      "generator_cpu_percent": {
+        "values": [
+          42.59295124990471,
+          43.39423524942406,
+          40.7940986767325
+        ],
+        "median": 42.59295124990471,
+        "min": 40.7940986767325,
+        "max": 43.39423524942406
+      },
+      "generator_rss_bytes": {
+        "values": [
+          20807680,
+          20971520,
+          20971520
+        ],
+        "median": 20971520,
+        "min": 20807680,
+        "max": 20971520
+      },
+      "generator_fd": {
+        "values": [
+          7,
+          7,
+          7
+        ],
+        "median": 7,
+        "min": 7,
+        "max": 7
+      },
+      "backend_cpu_percent": {
+        "values": [
+          27.995363542267874,
+          25.396825701549215,
+          24.996332178195633
+        ],
+        "median": 25.396825701549215,
+        "min": 24.996332178195633,
+        "max": 27.995363542267874
+      },
+      "backend_rss_bytes": {
+        "values": [
+          13926400,
+          14090240,
+          14254080
+        ],
+        "median": 14090240,
+        "min": 13926400,
+        "max": 14254080
+      },
+      "backend_fd": {
+        "values": [
+          5,
+          5,
+          5
+        ],
+        "median": 5,
+        "min": 5,
+        "max": 5
+      },
+      "missed_slots": {
+        "values": [
+          2657,
+          2793,
+          1895
+        ],
+        "median": 2657,
+        "min": 1895,
+        "max": 2793
+      },
+      "loss": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "duplicate": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "late": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "rtt_count": {
+        "values": [
+          473,
+          468,
+          484
+        ],
+        "median": 473,
+        "min": 468,
+        "max": 484
+      },
+      "under_target": {
+        "values": [
+          true,
+          true,
+          true
+        ],
+        "median": true,
+        "min": true,
+        "max": true
+      }
+    },
+    "candidate/udp/1/proxy": {
+      "sent_per_second": {
+        "values": [
+          9020.4,
+          9126.8,
+          8961.8
+        ],
+        "median": 9020.4,
+        "min": 8961.8,
+        "max": 9126.8
+      },
+      "unique_echoes_per_second": {
+        "values": [
+          9020.110721441119,
+          9126.699022202018,
+          8961.763764004396
+        ],
+        "median": 9020.110721441119,
+        "min": 8961.763764004396,
+        "max": 9126.699022202018
+      },
+      "goodput_bytes_per_second": {
+        "values": [
+          2309148.3446889264,
+          2336434.9496837165,
+          2294211.5235851253
+        ],
+        "median": 2309148.3446889264,
+        "min": 2294211.5235851253,
+        "max": 2336434.9496837165
+      },
+      "goodput_bits_per_second": {
+        "values": [
+          18473186.75751141,
+          18691479.597469732,
+          18353692.188681003
+        ],
+        "median": 18473186.75751141,
+        "min": 18353692.188681003,
+        "max": 18691479.597469732
+      },
+      "delivery_ratio": {
+        "values": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "median": 1.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "unconfirmed": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "loss_ratio": {
+        "values": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "median": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "p50_ns": {
+        "values": [
+          90878,
+          100643,
+          95156
+        ],
+        "median": 95156,
+        "min": 90878,
+        "max": 100643
+      },
+      "p95_ns": {
+        "values": [
+          216829,
+          212442,
+          228407
+        ],
+        "median": 216829,
+        "min": 212442,
+        "max": 228407
+      },
+      "p99_ns": {
+        "values": [
+          310620,
+          392798,
+          441129
+        ],
+        "median": 392798,
+        "min": 310620,
+        "max": 441129
+      },
+      "max_ns": {
+        "values": [
+          473617,
+          1830614,
+          501019
+        ],
+        "median": 501019,
+        "min": 473617,
+        "max": 1830614
+      },
+      "generator_cpu_percent": {
+        "values": [
+          41.992615590149946,
+          41.79375587913164,
+          42.591557407789196
+        ],
+        "median": 41.992615590149946,
+        "min": 41.79375587913164,
+        "max": 42.591557407789196
+      },
+      "generator_rss_bytes": {
+        "values": [
+          20971520,
+          20807680,
+          20807680
+        ],
+        "median": 20807680,
+        "min": 20807680,
+        "max": 20971520
+      },
+      "generator_fd": {
+        "values": [
+          9,
+          9,
+          9
+        ],
+        "median": 9,
+        "min": 9,
+        "max": 9
+      },
+      "backend_cpu_percent": {
+        "values": [
+          25.795398756065048,
+          28.795827542180795,
+          24.995060401178335
+        ],
+        "median": 25.795398756065048,
+        "min": 24.995060401178335,
+        "max": 28.795827542180795
+      },
+      "backend_rss_bytes": {
+        "values": [
+          14254080,
+          14090240,
+          14254080
+        ],
+        "median": 14254080,
+        "min": 14090240,
+        "max": 14254080
+      },
+      "backend_fd": {
+        "values": [
+          5,
+          5,
+          5
+        ],
+        "median": 5,
+        "min": 5,
+        "max": 5
+      },
+      "product_cpu_percent": {
+        "values": [
+          33.19403941273073,
+          32.995371468682045,
+          34.393335170088065
+        ],
+        "median": 33.19403941273073,
+        "min": 32.995371468682045,
+        "max": 34.393335170088065
+      },
+      "product_rss_bytes": {
+        "values": [
+          3440640,
+          3440640,
+          3440640
+        ],
+        "median": 3440640,
+        "min": 3440640,
+        "max": 3440640
+      },
+      "product_fd": {
+        "values": [
+          7,
+          7,
+          7
+        ],
+        "median": 7,
+        "min": 7,
+        "max": 7
+      },
+      "missed_slots": {
+        "values": [
+          4898,
+          4366,
+          5191
+        ],
+        "median": 4898,
+        "min": 4366,
+        "max": 5191
+      },
+      "loss": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "duplicate": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "late": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "rtt_count": {
+        "values": [
+          453,
+          460,
+          460
+        ],
+        "median": 460,
+        "min": 453,
+        "max": 460
+      },
+      "under_target": {
+        "values": [
+          true,
+          true,
+          true
+        ],
+        "median": true,
+        "min": true,
+        "max": true
+      }
+    },
+    "baseline/udp/16/direct": {
+      "sent_per_second": {
+        "values": [
+          9376.2,
+          9374.6,
+          9353.6
+        ],
+        "median": 9374.6,
+        "min": 9353.6,
+        "max": 9376.2
+      },
+      "unique_echoes_per_second": {
+        "values": [
+          9376.049818184432,
+          9374.397533636948,
+          9353.561556862001
+        ],
+        "median": 9374.397533636948,
+        "min": 9353.561556862001,
+        "max": 9376.049818184432
+      },
+      "goodput_bytes_per_second": {
+        "values": [
+          2400268.7534552147,
+          2399845.7686110586,
+          2394511.7585566724
+        ],
+        "median": 2399845.7686110586,
+        "min": 2394511.7585566724,
+        "max": 2400268.7534552147
+      },
+      "goodput_bits_per_second": {
+        "values": [
+          19202150.027641717,
+          19198766.14888847,
+          19156094.06845338
+        ],
+        "median": 19198766.14888847,
+        "min": 19156094.06845338,
+        "max": 19202150.027641717
+      },
+      "delivery_ratio": {
+        "values": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "median": 1.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "unconfirmed": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "loss_ratio": {
+        "values": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "median": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "p50_ns": {
+        "values": [
+          47925,
+          48475,
+          53270
+        ],
+        "median": 48475,
+        "min": 47925,
+        "max": 53270
+      },
+      "p95_ns": {
+        "values": [
+          140451,
+          136227,
+          147479
+        ],
+        "median": 140451,
+        "min": 136227,
+        "max": 147479
+      },
+      "p99_ns": {
+        "values": [
+          220744,
+          267456,
+          243778
+        ],
+        "median": 243778,
+        "min": 220744,
+        "max": 267456
+      },
+      "max_ns": {
+        "values": [
+          336052,
+          459606,
+          457476
+        ],
+        "median": 457476,
+        "min": 336052,
+        "max": 459606
+      },
+      "product_cpu_percent": {
+        "values": [
+          null,
+          null,
+          null
+        ],
+        "median": null,
+        "min": null,
+        "max": null
+      },
+      "product_rss_bytes": {
+        "values": [
+          null,
+          null,
+          null
+        ],
+        "median": null,
+        "min": null,
+        "max": null
+      },
+      "product_fd": {
+        "values": [
+          null,
+          null,
+          null
+        ],
+        "median": null,
+        "min": null,
+        "max": null
+      },
+      "generator_cpu_percent": {
+        "values": [
+          50.19279344921782,
+          49.59129823473528,
+          49.59353638513456
+        ],
+        "median": 49.59353638513456,
+        "min": 49.59129823473528,
+        "max": 50.19279344921782
+      },
+      "generator_rss_bytes": {
+        "values": [
+          20807680,
+          20971520,
+          20971520
+        ],
+        "median": 20971520,
+        "min": 20807680,
+        "max": 20971520
+      },
+      "generator_fd": {
+        "values": [
+          22,
+          22,
+          22
+        ],
+        "median": 22,
+        "min": 22,
+        "max": 22
+      },
+      "backend_cpu_percent": {
+        "values": [
+          25.196383749493677,
+          26.59522142380501,
+          29.596264241142425
+        ],
+        "median": 26.59522142380501,
+        "min": 25.196383749493677,
+        "max": 29.596264241142425
+      },
+      "backend_rss_bytes": {
+        "values": [
+          14254080,
+          13926400,
+          13926400
+        ],
+        "median": 13926400,
+        "min": 13926400,
+        "max": 14254080
+      },
+      "backend_fd": {
+        "values": [
+          5,
+          5,
+          5
+        ],
+        "median": 5,
+        "min": 5,
+        "max": 5
+      },
+      "missed_slots": {
+        "values": [
+          3119,
+          3127,
+          3232
+        ],
+        "median": 3127,
+        "min": 3119,
+        "max": 3232
+      },
+      "loss": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "duplicate": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "late": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "rtt_count": {
+        "values": [
+          470,
+          469,
+          480
+        ],
+        "median": 470,
+        "min": 469,
+        "max": 480
+      },
+      "under_target": {
+        "values": [
+          true,
+          true,
+          true
+        ],
+        "median": true,
+        "min": true,
+        "max": true
+      }
+    },
+    "baseline/udp/16/proxy": {
+      "sent_per_second": {
+        "values": [
+          9023.6,
+          8769.6,
+          8899.0
+        ],
+        "median": 8899.0,
+        "min": 8769.6,
+        "max": 9023.6
+      },
+      "unique_echoes_per_second": {
+        "values": [
+          9023.442549950947,
+          8769.54108271519,
+          8898.559133345721
+        ],
+        "median": 8898.559133345721,
+        "min": 8769.54108271519,
+        "max": 9023.442549950947
+      },
+      "goodput_bytes_per_second": {
+        "values": [
+          2310001.2927874424,
+          2245002.5171750886,
+          2278031.1381365047
+        ],
+        "median": 2278031.1381365047,
+        "min": 2245002.5171750886,
+        "max": 2310001.2927874424
+      },
+      "goodput_bits_per_second": {
+        "values": [
+          18480010.34229954,
+          17960020.13740071,
+          18224249.105092037
+        ],
+        "median": 18224249.105092037,
+        "min": 17960020.13740071,
+        "max": 18480010.34229954
+      },
+      "delivery_ratio": {
+        "values": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "median": 1.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "unconfirmed": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "loss_ratio": {
+        "values": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "median": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "p50_ns": {
+        "values": [
+          90870,
+          94269,
+          94605
+        ],
+        "median": 94269,
+        "min": 90870,
+        "max": 94605
+      },
+      "p95_ns": {
+        "values": [
+          210010,
+          235523,
+          234479
+        ],
+        "median": 234479,
+        "min": 210010,
+        "max": 235523
+      },
+      "p99_ns": {
+        "values": [
+          322080,
+          397247,
+          351847
+        ],
+        "median": 351847,
+        "min": 322080,
+        "max": 397247
+      },
+      "max_ns": {
+        "values": [
+          585698,
+          533269,
+          1032407
+        ],
+        "median": 585698,
+        "min": 533269,
+        "max": 1032407
+      },
+      "generator_cpu_percent": {
+        "values": [
+          44.58885146730317,
+          45.390623341202044,
+          44.78821267401902
+        ],
+        "median": 44.78821267401902,
+        "min": 44.58885146730317,
+        "max": 45.390623341202044
+      },
+      "generator_rss_bytes": {
+        "values": [
+          21135360,
+          21299200,
+          21135360
+        ],
+        "median": 21135360,
+        "min": 21135360,
+        "max": 21299200
+      },
+      "generator_fd": {
+        "values": [
+          24,
+          24,
+          24
+        ],
+        "median": 24,
+        "min": 24,
+        "max": 24
+      },
+      "backend_cpu_percent": {
+        "values": [
+          25.193652826997567,
+          25.994885984488455,
+          25.993418320918003
+        ],
+        "median": 25.993418320918003,
+        "min": 25.193652826997567,
+        "max": 25.994885984488455
+      },
+      "backend_rss_bytes": {
+        "values": [
+          13926400,
+          14254080,
+          14254080
+        ],
+        "median": 14254080,
+        "min": 13926400,
+        "max": 14254080
+      },
+      "backend_fd": {
+        "values": [
+          5,
+          5,
+          5
+        ],
+        "median": 5,
+        "min": 5,
+        "max": 5
+      },
+      "product_cpu_percent": {
+        "values": [
+          32.99059128131012,
+          32.99364506762861,
+          34.39148574802144
+        ],
+        "median": 32.99364506762861,
+        "min": 32.99059128131012,
+        "max": 34.39148574802144
+      },
+      "product_rss_bytes": {
+        "values": [
+          3276800,
+          3440640,
+          3276800
+        ],
+        "median": 3276800,
+        "min": 3276800,
+        "max": 3440640
+      },
+      "product_fd": {
+        "values": [
+          22,
+          22,
+          22
+        ],
+        "median": 22,
+        "min": 22,
+        "max": 22
+      },
+      "missed_slots": {
+        "values": [
+          4882,
+          6152,
+          5505
+        ],
+        "median": 5505,
+        "min": 4882,
+        "max": 6152
+      },
+      "loss": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "duplicate": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "late": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "rtt_count": {
+        "values": [
+          454,
+          438,
+          442
+        ],
+        "median": 442,
+        "min": 438,
+        "max": 454
+      },
+      "under_target": {
+        "values": [
+          true,
+          true,
+          true
+        ],
+        "median": true,
+        "min": true,
+        "max": true
+      }
+    },
+    "candidate/udp/16/direct": {
+      "sent_per_second": {
+        "values": [
+          9381.4,
+          9199.6,
+          9356.6
+        ],
+        "median": 9356.6,
+        "min": 9199.6,
+        "max": 9381.4
+      },
+      "unique_echoes_per_second": {
+        "values": [
+          9381.340938829984,
+          9199.453629333195,
+          9356.539998380298
+        ],
+        "median": 9356.539998380298,
+        "min": 9199.453629333195,
+        "max": 9381.340938829984
+      },
+      "goodput_bytes_per_second": {
+        "values": [
+          2401623.280340476,
+          2355060.129109298,
+          2395274.2395853563
+        ],
+        "median": 2395274.2395853563,
+        "min": 2355060.129109298,
+        "max": 2401623.280340476
+      },
+      "goodput_bits_per_second": {
+        "values": [
+          19212986.242723808,
+          18840481.032874383,
+          19162193.91668285
+        ],
+        "median": 19162193.91668285,
+        "min": 18840481.032874383,
+        "max": 19212986.242723808
+      },
+      "delivery_ratio": {
+        "values": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "median": 1.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "unconfirmed": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "loss_ratio": {
+        "values": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "median": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "p50_ns": {
+        "values": [
+          44765,
+          51437,
+          46808
+        ],
+        "median": 46808,
+        "min": 44765,
+        "max": 51437
+      },
+      "p95_ns": {
+        "values": [
+          137443,
+          151373,
+          136530
+        ],
+        "median": 137443,
+        "min": 136530,
+        "max": 151373
+      },
+      "p99_ns": {
+        "values": [
+          222105,
+          288404,
+          218495
+        ],
+        "median": 222105,
+        "min": 218495,
+        "max": 288404
+      },
+      "max_ns": {
+        "values": [
+          561522,
+          331614,
+          1325608
+        ],
+        "median": 561522,
+        "min": 331614,
+        "max": 1325608
+      },
+      "product_cpu_percent": {
+        "values": [
+          null,
+          null,
+          null
+        ],
+        "median": null,
+        "min": null,
+        "max": null
+      },
+      "product_rss_bytes": {
+        "values": [
+          null,
+          null,
+          null
+        ],
+        "median": null,
+        "min": null,
+        "max": null
+      },
+      "product_fd": {
+        "values": [
+          null,
+          null,
+          null
+        ],
+        "median": null,
+        "min": null,
+        "max": null
+      },
+      "generator_cpu_percent": {
+        "values": [
+          48.393567391520335,
+          51.99314498459676,
+          49.789863829311486
+        ],
+        "median": 49.789863829311486,
+        "min": 48.393567391520335,
+        "max": 51.99314498459676
+      },
+      "generator_rss_bytes": {
+        "values": [
+          20807680,
+          20971520,
+          20643840
+        ],
+        "median": 20807680,
+        "min": 20643840,
+        "max": 20971520
+      },
+      "generator_fd": {
+        "values": [
+          22,
+          22,
+          22
+        ],
+        "median": 22,
+        "min": 22,
+        "max": 22
+      },
+      "backend_cpu_percent": {
+        "values": [
+          25.396631695531482,
+          26.596550852899185,
+          24.99603176997398
+        ],
+        "median": 25.396631695531482,
+        "min": 24.99603176997398,
+        "max": 26.596550852899185
+      },
+      "backend_rss_bytes": {
+        "values": [
+          14090240,
+          14090240,
+          14090240
+        ],
+        "median": 14090240,
+        "min": 14090240,
+        "max": 14090240
+      },
+      "backend_fd": {
+        "values": [
+          5,
+          5,
+          5
+        ],
+        "median": 5,
+        "min": 5,
+        "max": 5
+      },
+      "missed_slots": {
+        "values": [
+          3093,
+          4002,
+          3217
+        ],
+        "median": 3217,
+        "min": 3093,
+        "max": 4002
+      },
+      "loss": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "duplicate": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "late": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "rtt_count": {
+        "values": [
+          474,
+          455,
+          470
+        ],
+        "median": 470,
+        "min": 455,
+        "max": 474
+      },
+      "under_target": {
+        "values": [
+          true,
+          true,
+          true
+        ],
+        "median": true,
+        "min": true,
+        "max": true
+      }
+    },
+    "candidate/udp/16/proxy": {
+      "sent_per_second": {
+        "values": [
+          8815.6,
+          8697.0,
+          8982.2
+        ],
+        "median": 8815.6,
+        "min": 8697.0,
+        "max": 8982.2
+      },
+      "unique_echoes_per_second": {
+        "values": [
+          8815.52995003591,
+          8696.889841714508,
+          8982.15332513846
+        ],
+        "median": 8815.52995003591,
+        "min": 8696.889841714508,
+        "max": 8982.15332513846
+      },
+      "goodput_bytes_per_second": {
+        "values": [
+          2256775.667209193,
+          2226403.799478914,
+          2299431.251235446
+        ],
+        "median": 2256775.667209193,
+        "min": 2226403.799478914,
+        "max": 2299431.251235446
+      },
+      "goodput_bits_per_second": {
+        "values": [
+          18054205.337673545,
+          17811230.395831313,
+          18395450.009883568
+        ],
+        "median": 18054205.337673545,
+        "min": 17811230.395831313,
+        "max": 18395450.009883568
+      },
+      "delivery_ratio": {
+        "values": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "median": 1.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "unconfirmed": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "loss_ratio": {
+        "values": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "median": 0.0,
+        "min": 0.0,
+        "max": 0.0
+      },
+      "p50_ns": {
+        "values": [
+          96241,
+          97203,
+          100132
+        ],
+        "median": 97203,
+        "min": 96241,
+        "max": 100132
+      },
+      "p95_ns": {
+        "values": [
+          233961,
+          263013,
+          223186
+        ],
+        "median": 233961,
+        "min": 223186,
+        "max": 263013
+      },
+      "p99_ns": {
+        "values": [
+          392145,
+          339787,
+          307538
+        ],
+        "median": 339787,
+        "min": 307538,
+        "max": 392145
+      },
+      "max_ns": {
+        "values": [
+          794869,
+          582894,
+          480725
+        ],
+        "median": 582894,
+        "min": 480725,
+        "max": 794869
+      },
+      "generator_cpu_percent": {
+        "values": [
+          46.38848557999709,
+          46.59201323436498,
+          45.19252757825803
+        ],
+        "median": 46.38848557999709,
+        "min": 45.19252757825803,
+        "max": 46.59201323436498
+      },
+      "generator_rss_bytes": {
+        "values": [
+          21135360,
+          21135360,
+          21135360
+        ],
+        "median": 21135360,
+        "min": 21135360,
+        "max": 21135360
+      },
+      "generator_fd": {
+        "values": [
+          24,
+          24,
+          24
+        ],
+        "median": 24,
+        "min": 24,
+        "max": 24
+      },
+      "backend_cpu_percent": {
+        "values": [
+          24.594770669698114,
+          26.595400128741773,
+          26.395829596182118
+        ],
+        "median": 26.395829596182118,
+        "min": 24.594770669698114,
+        "max": 26.595400128741773
+      },
+      "backend_rss_bytes": {
+        "values": [
+          14090240,
+          14090240,
+          14254080
+        ],
+        "median": 14090240,
+        "min": 14090240,
+        "max": 14254080
+      },
+      "backend_fd": {
+        "values": [
+          5,
+          5,
+          5
+        ],
+        "median": 5,
+        "min": 5,
+        "max": 5
+      },
+      "product_cpu_percent": {
+        "values": [
+          32.99337462683588,
+          33.794143441147504,
+          32.79497398002671
+        ],
+        "median": 32.99337462683588,
+        "min": 32.79497398002671,
+        "max": 33.794143441147504
+      },
+      "product_rss_bytes": {
+        "values": [
+          3440640,
+          3440640,
+          3276800
+        ],
+        "median": 3440640,
+        "min": 3276800,
+        "max": 3440640
+      },
+      "product_fd": {
+        "values": [
+          22,
+          22,
+          22
+        ],
+        "median": 22,
+        "min": 22,
+        "max": 22
+      },
+      "missed_slots": {
+        "values": [
+          5922,
+          6515,
+          5089
+        ],
+        "median": 5922,
+        "min": 5089,
+        "max": 6515
+      },
+      "loss": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "duplicate": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "late": {
+        "values": [
+          0,
+          0,
+          0
+        ],
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "rtt_count": {
+        "values": [
+          446,
+          441,
+          457
+        ],
+        "median": 446,
+        "min": 441,
+        "max": 457
+      },
+      "under_target": {
+        "values": [
+          true,
+          true,
+          true
+        ],
+        "median": true,
+        "min": true,
+        "max": true
+      }
+    }
+  },
+  "comparisons": [
+    {
+      "cell": {
+        "protocol": "tcp",
+        "clients": 1,
+        "round": 0,
+        "role": "candidate",
+        "mode": "proxy"
+      },
+      "metrics": {
+        "goodput_bytes_per_second": {
+          "absolute": -3129461.955601707,
+          "relative_percent": -12.260761136114708,
+          "reason": null
+        },
+        "p50_ns": {
+          "absolute": 6206,
+          "relative_percent": 4.307867445960767,
+          "reason": null
+        },
+        "p95_ns": {
+          "absolute": 61305,
+          "relative_percent": 24.450116657028335,
+          "reason": null
+        },
+        "p99_ns": {
+          "absolute": 119006,
+          "relative_percent": 37.07155695804272,
+          "reason": null
+        },
+        "product_cpu_percent": {
+          "absolute": -0.40029635234981953,
+          "relative_percent": -1.1184147494873338,
+          "reason": null
+        },
+        "product_rss_bytes": {
+          "absolute": 0,
+          "relative_percent": 0.0,
+          "reason": null
+        }
+      }
+    },
+    {
+      "cell": {
+        "protocol": "tcp",
+        "clients": 1,
+        "round": 1,
+        "role": "candidate",
+        "mode": "proxy"
+      },
+      "metrics": {
+        "goodput_bytes_per_second": {
+          "absolute": 14566735.147971297,
+          "relative_percent": 107.09021719873203,
+          "reason": null
+        },
+        "p50_ns": {
+          "absolute": -103578,
+          "relative_percent": -47.908196539331456,
+          "reason": null
+        },
+        "p95_ns": {
+          "absolute": -271281,
+          "relative_percent": -48.60090185799947,
+          "reason": null
+        },
+        "p99_ns": {
+          "absolute": -292411,
+          "relative_percent": -46.06783880013864,
+          "reason": null
+        },
+        "product_cpu_percent": {
+          "absolute": -0.8017529265830419,
+          "relative_percent": -2.2031795735165884,
+          "reason": null
+        },
+        "product_rss_bytes": {
+          "absolute": 163840,
+          "relative_percent": 4.761904761904762,
+          "reason": null
+        }
+      }
+    },
+    {
+      "cell": {
+        "protocol": "tcp",
+        "clients": 1,
+        "round": 2,
+        "role": "candidate",
+        "mode": "proxy"
+      },
+      "metrics": {
+        "goodput_bytes_per_second": {
+          "absolute": 7862817.603673,
+          "relative_percent": 32.78266362821801,
+          "reason": null
+        },
+        "p50_ns": {
+          "absolute": -49273,
+          "relative_percent": -34.87415774871185,
+          "reason": null
+        },
+        "p95_ns": {
+          "absolute": -32348,
+          "relative_percent": -11.0711816607457,
+          "reason": null
+        },
+        "p99_ns": {
+          "absolute": 40583,
+          "relative_percent": 9.215178261234852,
+          "reason": null
+        },
+        "product_cpu_percent": {
+          "absolute": 0.9981946075945203,
+          "relative_percent": 2.7733951013659803,
+          "reason": null
+        },
+        "product_rss_bytes": {
+          "absolute": 163840,
+          "relative_percent": 4.761904761904762,
+          "reason": null
+        }
+      }
+    },
+    {
+      "cell": {
+        "protocol": "tcp",
+        "clients": 16,
+        "round": 0,
+        "role": "candidate",
+        "mode": "proxy"
+      },
+      "metrics": {
+        "goodput_bytes_per_second": {
+          "absolute": -554180.591079615,
+          "relative_percent": -2.763980178840491,
+          "reason": null
+        },
+        "p50_ns": {
+          "absolute": -131299,
+          "relative_percent": -4.475230111404425,
+          "reason": null
+        },
+        "p95_ns": {
+          "absolute": 374048,
+          "relative_percent": 8.067567343141,
+          "reason": null
+        },
+        "p99_ns": {
+          "absolute": 1049186,
+          "relative_percent": 17.175432059881047,
+          "reason": null
+        },
+        "product_cpu_percent": {
+          "absolute": 0.39676383191591924,
+          "relative_percent": 1.7125175567556965,
+          "reason": null
+        },
+        "product_rss_bytes": {
+          "absolute": 163840,
+          "relative_percent": 3.0303030303030303,
+          "reason": null
+        }
+      }
+    },
+    {
+      "cell": {
+        "protocol": "tcp",
+        "clients": 16,
+        "round": 1,
+        "role": "candidate",
+        "mode": "proxy"
+      },
+      "metrics": {
+        "goodput_bytes_per_second": {
+          "absolute": 539142.6032485068,
+          "relative_percent": 2.9465050019735592,
+          "reason": null
+        },
+        "p50_ns": {
+          "absolute": -262430,
+          "relative_percent": -8.37556007548632,
+          "reason": null
+        },
+        "p95_ns": {
+          "absolute": -367802,
+          "relative_percent": -6.565038237837655,
+          "reason": null
+        },
+        "p99_ns": {
+          "absolute": -508026,
+          "relative_percent": -7.184882310438067,
+          "reason": null
+        },
+        "product_cpu_percent": {
+          "absolute": -1.5939261251668384,
+          "relative_percent": -6.235949388005244,
+          "reason": null
+        },
+        "product_rss_bytes": {
+          "absolute": 0,
+          "relative_percent": 0.0,
+          "reason": null
+        }
+      }
+    },
+    {
+      "cell": {
+        "protocol": "tcp",
+        "clients": 16,
+        "round": 2,
+        "role": "candidate",
+        "mode": "proxy"
+      },
+      "metrics": {
+        "goodput_bytes_per_second": {
+          "absolute": -632581.7119772546,
+          "relative_percent": -3.179912371179995,
+          "reason": null
+        },
+        "p50_ns": {
+          "absolute": 185872,
+          "relative_percent": 6.842152536358322,
+          "reason": null
+        },
+        "p95_ns": {
+          "absolute": 1012440,
+          "relative_percent": 21.849338319665808,
+          "reason": null
+        },
+        "p99_ns": {
+          "absolute": -189888,
+          "relative_percent": -2.706352462900746,
+          "reason": null
+        },
+        "product_cpu_percent": {
+          "absolute": -0.00309014288406928,
+          "relative_percent": -0.01300023020181715,
+          "reason": null
+        },
+        "product_rss_bytes": {
+          "absolute": 0,
+          "relative_percent": 0.0,
+          "reason": null
+        }
+      }
+    },
+    {
+      "cell": {
+        "protocol": "udp",
+        "clients": 1,
+        "round": 0,
+        "role": "candidate",
+        "mode": "proxy"
+      },
+      "metrics": {
+        "goodput_bytes_per_second": {
+          "absolute": 48930.05897279596,
+          "relative_percent": 2.1648377628841677,
+          "reason": null
+        },
+        "p50_ns": {
+          "absolute": -2752,
+          "relative_percent": -2.9392288796325965,
+          "reason": null
+        },
+        "p95_ns": {
+          "absolute": -17295,
+          "relative_percent": -7.387111103517794,
+          "reason": null
+        },
+        "p99_ns": {
+          "absolute": -119134,
+          "relative_percent": -27.721440638132513,
+          "reason": null
+        },
+        "product_cpu_percent": {
+          "absolute": -0.4017535406583548,
+          "relative_percent": -1.1958447928755513,
+          "reason": null
+        },
+        "product_rss_bytes": {
+          "absolute": 0,
+          "relative_percent": 0.0,
+          "reason": null
+        }
+      }
+    },
+    {
+      "cell": {
+        "protocol": "udp",
+        "clients": 1,
+        "round": 1,
+        "role": "candidate",
+        "mode": "proxy"
+      },
+      "metrics": {
+        "goodput_bytes_per_second": {
+          "absolute": 4620.668457465246,
+          "relative_percent": 0.19815765323451642,
+          "reason": null
+        },
+        "p50_ns": {
+          "absolute": 15057,
+          "relative_percent": 17.592830603136026,
+          "reason": null
+        },
+        "p95_ns": {
+          "absolute": -8177,
+          "relative_percent": -3.706389748843028,
+          "reason": null
+        },
+        "p99_ns": {
+          "absolute": 74493,
+          "relative_percent": 23.403025400166506,
+          "reason": null
+        },
+        "product_cpu_percent": {
+          "absolute": 0.2009176863823825,
+          "relative_percent": 0.6126575173843113,
+          "reason": null
+        },
+        "product_rss_bytes": {
+          "absolute": 0,
+          "relative_percent": 0.0,
+          "reason": null
+        }
+      }
+    },
+    {
+      "cell": {
+        "protocol": "udp",
+        "clients": 1,
+        "round": 2,
+        "role": "candidate",
+        "mode": "proxy"
+      },
+      "metrics": {
+        "goodput_bytes_per_second": {
+          "absolute": -74039.51871814253,
+          "relative_percent": -3.1263374277304066,
+          "reason": null
+        },
+        "p50_ns": {
+          "absolute": 877,
+          "relative_percent": 0.9302177579312466,
+          "reason": null
+        },
+        "p95_ns": {
+          "absolute": 8851,
+          "relative_percent": 4.031317750368927,
+          "reason": null
+        },
+        "p99_ns": {
+          "absolute": 106612,
+          "relative_percent": 31.870428109782164,
+          "reason": null
+        },
+        "product_cpu_percent": {
+          "absolute": 0.3978310619081711,
+          "relative_percent": 1.1702461026675766,
+          "reason": null
+        },
+        "product_rss_bytes": {
+          "absolute": 163840,
+          "relative_percent": 5.0,
+          "reason": null
+        }
+      }
+    },
+    {
+      "cell": {
+        "protocol": "udp",
+        "clients": 16,
+        "round": 0,
+        "role": "candidate",
+        "mode": "proxy"
+      },
+      "metrics": {
+        "goodput_bytes_per_second": {
+          "absolute": -53225.62557824934,
+          "relative_percent": -2.3041383459150713,
+          "reason": null
+        },
+        "p50_ns": {
+          "absolute": 5371,
+          "relative_percent": 5.910641575877627,
+          "reason": null
+        },
+        "p95_ns": {
+          "absolute": 23951,
+          "relative_percent": 11.404695014523117,
+          "reason": null
+        },
+        "p99_ns": {
+          "absolute": 70065,
+          "relative_percent": 21.753912071535023,
+          "reason": null
+        },
+        "product_cpu_percent": {
+          "absolute": 0.0027833455257635364,
+          "relative_percent": 0.008436785815780034,
+          "reason": null
+        },
+        "product_rss_bytes": {
+          "absolute": 163840,
+          "relative_percent": 5.0,
+          "reason": null
+        }
+      }
+    },
+    {
+      "cell": {
+        "protocol": "udp",
+        "clients": 16,
+        "round": 1,
+        "role": "candidate",
+        "mode": "proxy"
+      },
+      "metrics": {
+        "goodput_bytes_per_second": {
+          "absolute": -18598.717696174514,
+          "relative_percent": -0.8284497480019526,
+          "reason": null
+        },
+        "p50_ns": {
+          "absolute": 2934,
+          "relative_percent": 3.1123699201222035,
+          "reason": null
+        },
+        "p95_ns": {
+          "absolute": 27490,
+          "relative_percent": 11.671896163007435,
+          "reason": null
+        },
+        "p99_ns": {
+          "absolute": -57460,
+          "relative_percent": -14.464552281074495,
+          "reason": null
+        },
+        "product_cpu_percent": {
+          "absolute": 0.8004983735188915,
+          "relative_percent": 2.42621987318489,
+          "reason": null
+        },
+        "product_rss_bytes": {
+          "absolute": 0,
+          "relative_percent": 0.0,
+          "reason": null
+        }
+      }
+    },
+    {
+      "cell": {
+        "protocol": "udp",
+        "clients": 16,
+        "round": 2,
+        "role": "candidate",
+        "mode": "proxy"
+      },
+      "metrics": {
+        "goodput_bytes_per_second": {
+          "absolute": 21400.113098941278,
+          "relative_percent": 0.9394126682766588,
+          "reason": null
+        },
+        "p50_ns": {
+          "absolute": 5527,
+          "relative_percent": 5.842185930976164,
+          "reason": null
+        },
+        "p95_ns": {
+          "absolute": -11293,
+          "relative_percent": -4.816209553947262,
+          "reason": null
+        },
+        "p99_ns": {
+          "absolute": -44309,
+          "relative_percent": -12.593257864924242,
+          "reason": null
+        },
+        "product_cpu_percent": {
+          "absolute": -1.596511767994727,
+          "relative_percent": -4.642171552843061,
+          "reason": null
+        },
+        "product_rss_bytes": {
+          "absolute": 0,
+          "relative_percent": 0.0,
+          "reason": null
+        }
+      }
+    }
+  ],
+  "tool_sha256": {
+    "benchmark_acceptance.py": "7a66f800d6ab4392ffbeb3272249a499115e76e75471c22e35fc60e243add49f",
+    "benchmark_environment.py": "d3b52ed8c096b00d3bd65c156d87582d2f3978649945627d944a6dc4067fd79a",
+    "benchmark_fixture.py": "1a55928280e6ce3b6e09a446910c1a86e887af2b632847c212629596c7e34f54",
+    "benchmark_runner.py": "7d3b9a6a6a7be6c8427689b72dd9ac1cb10fa8203b94753610dbbd67f11f6f04",
+    "benchmark_stats.py": "de29d3591b7f8e65a448c05f56ca67cbaa892f0eb45185b75276a198b272cd2a",
+    "benchmark_tool_test.py": "6772f89f8e33b62cb96c1b1e597a7b88db4c7479b5cf8c0f4091d22e102a7920",
+    "benchmark_traffic.py": "72f51800624cdc28e271179da523800a994908a9567024cc1009d6b6465ed16e",
+    "v04_benchmark_compare.py": "b217fb6027d742c18c0c604f8a12b64b7f16b17e62e09daf33f8998cac5027a3",
+    "v04_benchmark_compare_test.py": "7372d88991714d635dd8a32cc589069512752384cc2b6d98baaa64a71245ce0c",
+    "v04_benchmark_data.py": "b7724a76ceb4981432508c7c0d1931bcfd1ff72c50ba188021eb06d6286f6963",
+    "v04_benchmark_identity.py": "087a17c7228f56f6e10ac1e70ba2596d8a0d7ec242b27dd40006055e3804f3ec"
+  },
+  "product_manifests": {
+    "baseline": "4e889c4b3050c14bfb058ecee9f90fd4682e7d3d817e4fda3401d8374a09aa10",
+    "candidate": "9bab40d81174a0297b301dcdf2c52311c95286814f7167690210ee52950edc09"
+  }
+}

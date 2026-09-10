@@ -156,3 +156,8 @@ if(BUILD_TESTING)
     --program "$<TARGET_FILE:l4lb>" --output "${CMAKE_BINARY_DIR}/v04-shutdown")
   set_tests_properties(v04_shutdown_product PROPERTIES LABELS v04_lifecycle TIMEOUT 60)
 endif()
+
+if(BUILD_TESTING)
+  add_test(NAME v04_compare_validation COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/tests/v04_benchmark_compare_test.py")
+  set_tests_properties(v04_compare_validation PROPERTIES LABELS v04_compare TIMEOUT 30)
+endif()

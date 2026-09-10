@@ -1,11 +1,14 @@
 #pragma once
 #include <algorithm>
+
 namespace l4lb::health {
 enum class Status { Unknown, Healthy, Unhealthy };
+
 /** 连续结果状态机；不依赖时钟、socket 或业务流量。 */
 struct State {
   Status status = Status::Unknown;
   unsigned successes = 0, failures = 0;
+
   bool complete(bool success) {
     auto before = status;
     if (success) {
@@ -20,6 +23,7 @@ struct State {
     return before != status;
   }
 };
+
 inline const char* name(Status s) {
   switch (s) {
     case Status::Unknown:

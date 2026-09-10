@@ -673,3 +673,7 @@ XDP/eBPF 状态：
 ## V0.4/S2资源与停止边界
 
 Buffer保留初始化的固定64KiB数组，用head/size和连续读写span代替memmove压缩；net I/O同时受span/容量/budget限制。TCP用Running/Draining/Stopped逻辑状态，首次消费信号固定1s deadline并使listener失效，内层pump只标记停止、在安全调度边界移除session，避免悬空引用。Draining冻结新recv/连接和maintenance，仅发送已有pending；control通过StopEvent输出一次生命周期队列/截止摘要，不新增metrics schema或配置。TCP/UDP从索引中移出owner、DEL/close后才独立通知，显式清理传播首异常、noexcept析构清理所有owner。新增2项有限CTest及公开runbook，原26项保持；S1方法和样本身份不重写，兼容验证不作S3性能结论。
+
+## V0.4/S3 对照工具边界
+
+`v04_benchmark_identity.py` 从固定Git对象导出与构建产品并核验manifest，`v04_benchmark_compare.py` 串行编排同一最终runner，`v04_benchmark_data.py` 独立重算原始统计/完整格点并生成可移植数据包。product_identity与工具工作树environment分开；产品src/configs保持S2，正式矩阵不进入CTest。公开报告与版本标准入口分别在 `docs/benchmarks/reports/v0.4-user-space.md`、`docs/specs/v0.4-acceptance.md`，阶段完成仍需独立Reviewer和Leader收尾。
