@@ -1,5 +1,33 @@
 # Changelog
 
+### 2026-09-10 V0.4/S3及V0.4开发范围完成
+
+- D1保持Approved，Builder001、Reviewer001独立PASS及Leader003收尾齐备，S3六AC与V0.4六标准全部完成。正式S1/S2报告、公开原始包和离线重算入口交付，数据保持Builder最终48run，Reviewer独立48run不混入报告。
+- 独立Debug28/28、Release29/29、Production/uid38/F-001/11短调用通过；两套48run分别独立原始数学审计，公开全部表格一致，PID/fd回收完整。
+- 同步阶段/版本矩阵/报告验收及TD-004正式用户态报告义务，XDP义务保留；无新增发现、返工或债。历史工具元数据修复批次保留，无普遍性能提升承诺；本阶段尚未提交、合并或发布，由父按授权本地提交。
+
+### 2026-09-10 V0.4/S3独立验收PASS
+
+- Reviewer (Athena) 独立导出并构建固定S1/S2，完成串行48run、最终Debug28/28、Release29/29、Production、普通uid38例、短重复/并行/空格/故障回收和F-001；没有生产代码修改。
+- 不调用被测聚合函数，分别从公开Builder包和独立Reviewer包重算48run原始统计、16组全指标及12组差值，公开Markdown全部表格一致；每批48runner/72owned PID回收，18短run的18runner/27owned PID回收。
+- Reviewer001 PASS，无新增发现或技术债，当前Closing；交Leader同步六标准和最终状态，尚未提交、推送或发布。两套数据分别保留，未宣称普遍性能提升或提前完成XDP/V1.0。
+
+### 2026-09-10 V0.4/S3实现与自测完成
+
+- 交付固定S1/S2构建manifest及同工具串行48run对照、独立原始重算、公开紧凑数据包/报告/六标准矩阵。来源/binary/工具身份分列，失败run启动前身份和主因/cleanup独立保留。
+- Debug28/28、Release29/29（原expiry一次）、Production/普通uid38、短重复/并行/空格及真实失败/数据负向通过；最终48run与全部分组重算、PID/fd回收一致。保留首个完整批次及证据补丁过程，最终发布新整批，不拼接。
+- Builder001 Ready for Review，待独立Reviewer和Leader收尾；生产src/configs零diff，无性能提升门槛，未提交/推送或发布，未提前完成V0.4或关闭XDP义务。
+
+### 2026-09-10 V0.4/S3批准登记
+
+- PM批准V0.4-S3-D1决策包，设计和审查方案Approved / Ready for Builder，新增Leader002。统一工具与产品身份、48run串行矩阵、公开可重算数据和六标准验收范围不变。
+- 授权实现、测量、自测、独立审查和Leader收尾，完成后本地提交；尚未实施或验收，不含push或发布，不提前完成V0.4。
+
+### 2026-09-10 V0.4/S2标签核验与S3准备
+
+- 远端main与v0.4-s2注释标签peeled核验48a1283，S2已合并PR11并发布；同步本地main，创建codex/v0.4-s3。
+- 形成V0.4-S3-D1 Draft、审查方案及准备报告，定义固定版本身份、48run公平比较、原始数据重算与六条验收要求。未实现、未测量、未提交；历史阶段及发布记录保持原时点事实。
+
 ### 2026-09-10 V0.4/S2完成
 
 - D1保持Approved，Builder001、Reviewer001独立PASS和Leader003收尾齐备，S2 Completed；固定环形缓冲、有界TCP待发队列停止和异常安全清理已交付。

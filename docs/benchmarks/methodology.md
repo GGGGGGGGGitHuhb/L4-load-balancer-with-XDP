@@ -68,3 +68,29 @@ python3 tests/benchmark_acceptance.py --program "$B/Production/bin/l4lb" --suite
 负向工具使用隐藏 `--fault` 测试接口，实际走正式接收、子进程监测、资源、写入与清理路径；属于工具注入，不伪称真实产品故障。`failure`另用7字节TCP回显碎片和UDP确定性乱序/重复/延迟fixture验证解析。`udp-check`单独运行UDP损坏、跨client身份改写并交换目的socket的真实proxy负向，以及合法乱序/重复/迟到正向；这些检查也包含在failure组。跨client必须明确返回client ownership mismatch、非0且完整回收，不能把错误回显计成功。isolation的两组并行与带空格路径只验证隔离，不作性能比较。不可写测试在流量已发生后改变本run目录权限，并在finally恢复可写以保存主因和回收证据。
 
 失败先看 summary主因，再看子目录failure/result、进程stderr与资源记录。不要改生产配置、关闭宿主服务、反复覆盖失败目录或用外层timeout124代替检出。报告使用[模板](report-template.md)，样本见[工具验证样本](tool-validation-sample.md)。
+
+## V0.4/S3 固定跨版本比较
+
+S1 单次 runner 入口兼容。跨版本正式报告使用 `tests/v04_benchmark_compare.py`，其 `product_identity.json` 关联经校验构建 manifest；旧 environment 的 git_commit / production_source_sha256 始终是**工具工作树上下文**，不得据此标注旧产品来源。固定 baseline 为 `v0.4-s1` / `8a1b9393e8a1710152274be525c015bb2623625f`，candidate 为 `v0.4-s2` / `48a12831b2d0a767fd5d4bb1b2899d2f078be2ac`。来源从只读 Git blob 导出，不切换工作树；两方以相同 clang++、Release、BUILD_TESTING=OFF、Ninja 与 flags 构建，manifest 记录 Git tree/tag 对象、源码 SHA、argv/退出码、工具版本、实际缓存 flags 和 binary SHA；测量前逐项核验。
+
+在仓库根执行，B 必须是新的输出位置。无网络下载；构建普通 uid 执行，测量在临时 user/net namespace 只启用 lo（当前环境需要升级权限时使用窄命令批准）。不修改宿主网络或亲和性。
+
+```sh
+B="$PWD/.stage-tmp/local-compare"
+mkdir -p "$B/tmp" "$B/cache" "$B/pycache"
+export TMPDIR="$B/tmp" TMP="$B/tmp" TEMP="$B/tmp"
+export XDG_CACHE_HOME="$B/cache" PYTHONPYCACHEPREFIX="$B/pycache"
+python3 tests/v04_benchmark_compare.py build --output "$B/products"
+unshare --user --map-root-user --net sh -c 'ip link set lo up && exec python3 tests/v04_benchmark_compare.py run --builds "$1/products" --output "$1/formal"' sh "$B"
+python3 tests/v04_benchmark_compare.py recompute --package "$B/formal/raw.json.gz" --output "$B/recomputed"
+# 普通 clone 从已跟踪公开包离线重算，无需本机产品/build/角色目录
+python3 tests/v04_benchmark_compare.py recompute --package docs/benchmarks/reports/v0.4-user-space.raw.json.gz --output "$B/published-recomputed"
+```
+
+固定矩阵 TCP4096/UDP256，clients1/16，warmup1s、duration5s、timeout1s、stride100，UDP 总目标10000pps；每组合三轮、每轮两版本各 direct/proxy 共48run，全部串行。第0/2轮 baseline→candidate、direct→proxy；第1轮相反。禁止测量期间构建/回归/另一批压测。每run新 nonce、子进程和目录；direct 关联版本但产品CPU为 null。`--smoke` 仅四个1秒TCP run，不可形成正式报告。
+
+公开包为 gzip JSON，单次读取上限128 MiB，无解包路径写入。保存完整计数、RTT与资源行、参数、manifest、工具SHA、环境、顺序和清理结果；包内整体与逐run SHA 检测损坏。路径前缀仅替换为 `$REPO`，manifest摘要随相对化重算；不改变任何数值。原始进程日志/缓存保留在本地证据根，不入Git。离线汇总核验完整矩阵及身份，再从原始行重算 nearest-rank RTT、单核CPU、sampled peak RSS/fd、goodput/loss；不能用改包SHA掩盖语义错配。
+
+汇总保存16组各三次值及中位/最小/最大，以及同轮 proxy candidate-baseline 差和百分比；0分母百分比null并说明。三次数据不做显著性推断，不混池RTT，不机械扣direct后称纯代理开销。丢失、未达目标、missed slots和p99样本不足均保留。S1→S2多项变化不能全部归因给ring。
+
+短自测：`python3 tests/v04_benchmark_compare_test.py`；CTest标签 `v04_compare`，正式48run不注册默认测试。可在同一隔离网络命名空间执行 `python3 tests/v04_benchmark_compare_test.py acceptance --builds "$B/products" --output "$B/validation" --package "$B/formal/raw.json.gz"`：短并行两组、空格路径、错binary拒绝、真实启动后失败及计数/RTT/格点/身份负向。输出必须新建，失败目录保留；并行数据不进入正式报告。

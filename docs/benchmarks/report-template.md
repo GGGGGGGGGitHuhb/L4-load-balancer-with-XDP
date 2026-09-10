@@ -30,3 +30,11 @@
 - 瓶颈候选及支持证据（产品CPU、生成器CPU、后端CPU、missed slots等）：
 - WSL/loopback/共享CPU/Python生成器、确定性采样偏差、RSS漏峰局限：
 - 结论、未解决问题、下一步；不预填性能数字或宣称V0.4/S2/S3完成。
+
+## 跨版本正式报告补充
+
+- 固定 ref/commit/tree、tag 对象、产品 build manifest SHA 与 binary SHA；相同工具SHA。environment 的工具工作树身份与 product_identity 的被测身份分列。
+- 同设置/编译器构建命令及实际flags、明确串行schedule和48格点逐run索引；失败尝试另列，不拼接批次。
+- 每版本/协议/clients/mode三值+中位/最小/最大；同轮proxy绝对/相对差，0分母null原因；丢包与RTT并列，RTT样本<100的p99标不足。
+- 可跟踪公开原始包及SHA、无本机依赖的重算命令；CPU/RSS/goodput均可从原始数据复核。Builder正式批次与Reviewer独立复测分开。
+- 将事实、瓶颈候选、未验证解释分开；允许本矩阵未确定瓶颈或收益，不能用结构变化单因解释全部差值。
