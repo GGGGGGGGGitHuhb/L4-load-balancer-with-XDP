@@ -40,7 +40,7 @@ rejected与drop可以描述同一个UDP包，不互斥。健康不eligible不禁
 
 原ready stdout先输出，随后ready快照全零，不等待探活；通常健康是Unknown。首次periodic在ready完成后1000ms；maintenance先维护健康、再检查指标，每次到期最多一条，完成后now+1000ms，不追赶积压；选择函数额外health tick不触发输出。
 
-正常run返回时reactor已销毁，final恰好一条，active=0，closed包括停止清理。异常也先清理，再error恰好一条，传播原服务异常。SIGKILL/崩溃或进程级信号终止不保证尾快照。原ready/check/退出文本保持。
+正常run返回时reactor已销毁，final恰好一条，active=0，closed包括停止清理。异常也先清理，再error恰好一条，传播原服务异常。SIGKILL/崩溃或进程级信号终止不保证尾快照。ready/check保持；V0.4/S2的TCP停止文本改为仅尝试有界排空用户态pending，UDP文本不变。
 
 Collector固定大小、无更新分配或异常；Snapshot按值复制，backend固定数组256；格式化单条上限32768字节，完整缓冲后单次write提交。没有每I/O输出、每client map、无限队列或写线程。
 
@@ -71,3 +71,7 @@ with open("service.stderr", encoding="utf-8") as source:
 - 原15项保留，总20项，Debug快速19、Release完整20含一次原60s expiry；Production不构建测试。三类Release负向、PID/fd审计、日志和源码指纹见Builder/Reviewer报告。没有S3完整故障矩阵、速率/延迟、Prometheus或XDP。
 
 V0.3/S3双backend故障与指标联合验证见 [本机运行手册](../runbooks/local-v0.3-validation.md) 和 [版本验收矩阵](v0.3-acceptance.md)；不改变本规格的生产语义。
+
+## V0.4/S2停止与清理时序
+
+TCP首次消费停止信号后暂停maintenance，因此不发起新健康probe或periodic；只对已在用户态pending的成功send累计字节。service-stop-drained/deadline/forced/connecting取消均只计Closed，不虚增Timeout/Error，不计UDP Dropped。真正SO_ERROR/recv/send失败按原分类计Error。final仍在全部reactor owner清理后输出active=0；异常清理后沿原路径生成error尾快照。Closed先后与日志相互独立，通知异常不能阻止资源释放和其他必要通知尝试；故意statistics抛出仅证明异常边界，不伪称该计数已执行。schema无变化。

@@ -9,6 +9,10 @@ V0.1/S1 工程骨架与配置入口已完成（Completed，2026-09-07），Revie
 
 ## 阶段状态
 
+### V0.4 / S2 用户态资源与生命周期优化
+
+Completed（2026-09-10），V0.4-S2-D1保持Approved，批准登记Leader002；Builder001、Reviewer001独立PASS、Leader003收尾齐备。七条AC满足，独立最终源码Debug27/27、Release28/28、Sanitizer5/5、Production/普通uid38/专项重复/并行空格/目标负向通过；43产品run的43PID及4兼容run的6PID回收，fd前后一致。交付固定环形缓冲、TCP用户态pending最多1秒尽力停止及TCP/UDP异常安全清理；UDP立即停止保持，无吞吐提升承诺。无未解决发现、返工、新增技术债或PM决策；Builder首次工具日志屏障失败及修复历史保留。TD-003与TD-004的S3正式报告/XDP义务保持，S2生命周期公开手册及相关规格更新已交付验收。完成报告 `docs/leader/reports/V0.4/S2-report-003.md`，父随后按授权本地提交，尚未合并或发布。
+
 ### V0.4 / S1 Benchmark 方法与工具
 
 Completed（2026-09-09），V0.4-S1-D1保持Approved，批准见Leader002；Builder002、Reviewer002独立PASS、Leader003收尾齐备。六条AC满足；首轮F-001（P2）已在D1范围内修复并复审Closed，历史FAIL保留，无带债验收。独立Debug25/25、Release26/26、Production及首轮未变路径证据与复审UDP八run/正式负向/短组重复/隔离共同构成验收；复审19run独立重算无不一致、30个owned PID回收。TD-004 benchmark方法与报告格式义务已交付并验收，正式性能报告留S3，XDP义务保持；无新增技术债、阻塞或PM决策。完成报告 `docs/leader/reports/V0.4/S1-report-003.md`；当前仅授权父本地提交，尚未合并或发布。

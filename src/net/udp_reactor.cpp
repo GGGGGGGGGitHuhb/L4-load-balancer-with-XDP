@@ -103,14 +103,23 @@ class UdpReactor {
     registration(signals_.get(), 2);
   }
 
-  ~UdpReactor() {
-    // 析构必须始终释放所有 owner；控制观察函数异常不能中断资源清理。
+  ~UdpReactor() noexcept {
+    try {
+      clear();
+    } catch (...) {
+    }
+  }
+
+  void clear() {
+    std::exception_ptr failure;
     while (!flows_.empty()) {
       try {
         erase(flows_.begin()->first, "service-stop");
       } catch (...) {
+        if (!failure) failure = std::current_exception();
       }
     }
+    if (failure) std::rethrow_exception(failure);
   }
 
   int loop() {
@@ -181,13 +190,33 @@ class UdpReactor {
     if (it == flows_.end()) return;
     auto flow = std::move(it->second);
     keys_.erase(flow->key);
-    statistic(StatKind::Closed);
-    flows_.erase(it);  // 身份先失效，然后 DEL/close；旧批次永远查不到新 owner。
-    epoll_ctl(epoll_.get(), EPOLL_CTL_DEL, flow->fd.get(), nullptr);
+    flows_.erase(it);
+    int del_error = 0;
+    if (epoll_ctl(epoll_.get(), EPOLL_CTL_DEL, flow->fd.get(), nullptr) < 0 &&
+        errno != ENOENT && errno != EBADF)
+      del_error = errno;
     int fd = flow->fd.get();
     flow->fd.reset();
-    observe(reason, token, fd);
-    if (cb_.flow) cb_.flow({token, flow->backend, reason, error});
+    std::exception_ptr failure;
+    auto attempt = [&](auto action) {
+      try {
+        action();
+      } catch (...) {
+        if (!failure) failure = std::current_exception();
+      }
+    };
+    if (del_error) {
+      attempt([&] { statistic(StatKind::Error); });
+      attempt([&] {
+        if (cb_.diagnostic) cb_.diagnostic("UDP epoll DEL", del_error);
+      });
+    }
+    attempt([&] { statistic(StatKind::Closed); });
+    attempt([&] { observe(reason, token, fd); });
+    attempt([&] {
+      if (cb_.flow) cb_.flow({token, flow->backend, reason, error});
+    });
+    if (failure) std::rethrow_exception(failure);
   }
 
   void expire() {
@@ -553,6 +582,9 @@ int run_udp(const Endpoint& endpoint, const UdpCallbacks& callbacks,
       !options.receive_size || options.receive_size > kUdpPayloadLimit ||
       !callbacks.select_backend)
     throw std::invalid_argument("invalid UDP options/callbacks");
-  return UdpReactor(endpoint, callbacks, options).loop();
+  UdpReactor reactor(endpoint, callbacks, options);
+  auto result = reactor.loop();
+  reactor.clear();
+  return result;
 }
 }  // namespace l4lb::net

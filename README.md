@@ -8,10 +8,11 @@
 
 ## 当前状态
 
-- 最近已核验阶段标签：`v0.3-s3`，合并提交 `281db01`（2026-09-09 本地/远端注释对象及 peeled commit 核验一致）；v0.1/S1 至 v0.3/S3 共9个阶段标签齐全。
-- V0.1、V0.2、V0.3 开发范围均 Completed；V0.3/S3 Builder001、Reviewer001 PASS、Leader003 齐备且已合并并标记。
-- 当前分支 `codex/v0.4-s1`，基于最新 main；V0.4/S1 Benchmark 方法与工具已批准（V0.4-S1-D1 Approved），Reviewer002独立复审PASS，F-001（P2）已关闭，当前S1 Completed，Leader003收尾完成；保留[首轮FAIL](docs/reviewer/reports/V0.4/S1-report-001.md)，最新结论见[Reviewer002](docs/reviewer/reports/V0.4/S1-report-002.md)。
-- 准备文档：[阶段设计](docs/leader/designs/V0.4/S1-design.md)、[审查方案](docs/reviewer/reviews/V0.4/S1-review.md)、[Leader准备报告](docs/leader/reports/V0.4/S1-report-001.md)、[批准登记](docs/leader/reports/V0.4/S1-report-002.md)、[完成报告](docs/leader/reports/V0.4/S1-report-003.md)。
+- 最近已核验阶段标签：`v0.4-s1`，合并提交 `8a1b939`（2026-09-09 本地/远端注释对象及 peeled commit 一致）。
+- V0.1、V0.2、V0.3 开发范围均 Completed；V0.4/S1 已完成并合并/标记，Builder002、Reviewer002 PASS、Leader003 齐备，F-001 Closed。
+- 当前分支 `codex/v0.4-s2`，基于 main / `v0.4-s1`；S2 环形缓冲、有界 TCP 停止和异常安全清理已通过 [Reviewer001 独立验收](docs/reviewer/reports/V0.4/S2-report-001.md)：最终源码 Debug 27/27、Release 28/28、Production/ASan/UBSan/普通 uid/并行负向通过；V0.4-S2-D1 Approved，当前 S2 Completed，Leader003已收尾，S3及V0.4整体尚未完成。
+- S2准备：[阶段设计](docs/leader/designs/V0.4/S2-design.md)、[审查方案](docs/reviewer/reviews/V0.4/S2-review.md)、[Leader准备报告](docs/leader/reports/V0.4/S2-report-001.md)、[批准登记](docs/leader/reports/V0.4/S2-report-002.md)、[完成报告](docs/leader/reports/V0.4/S2-report-003.md)。
+- S1记录：[批准设计](docs/leader/designs/V0.4/S1-design.md)、[首轮FAIL](docs/reviewer/reports/V0.4/S1-report-001.md)、[复审PASS](docs/reviewer/reports/V0.4/S1-report-002.md)、[完成报告](docs/leader/reports/V0.4/S1-report-003.md)。
 - 主要能力：
   - 明确项目方向：C++ 用户态 L4 负载均衡器 + XDP/eBPF fast path
   - 明确基础技术栈：LLVM、CMake、Ninja、C++20、Linux socket、epoll
@@ -162,7 +163,7 @@ ctest --test-dir build-release --output-on-failure
 
 ## 测试与验证
 
-当前注册26项；Debug快速执行 `ctest --test-dir build -LE udp_long`（25项），Release完整26项含一次约61秒原生产过期测试。原23项保留，新增统计及TCP/UDP短benchmark工具smoke共3项（`v04_bench_smoke`）；长性能矩阵不加入CTest。`udp_fast`两项可重复/并行，`udp_long`不加入快速组；容量1024只作静态默认值确认，未做1024满载产品验收。
+当前注册28项；Debug快速执行 `ctest --test-dir build -LE udp_long`（27项），Release完整28项含一次约61秒原生产过期测试。原26项保留（含统计及TCP/UDP短benchmark工具smoke），V0.4/S2新增ring/生命周期与真实停机2项（`v04_lifecycle`）；长性能矩阵不加入CTest。`udp_fast`两项可重复/并行，`udp_long`不加入快速组；容量1024只作静态默认值确认，未做1024满载产品验收。
 
 CTest 包含配置单元测试和 CLI 进程集成测试，覆盖合法输入、拒绝规则、端点顺序、64 KiB 边界、精确退出码与输出、FIFO 超时、普通文件符号链接及配置内容不变。
 
@@ -325,7 +326,7 @@ Reviewer独立验收 PASS：Debug快速14/14、Release完整15/15，Production�
 
 ## V0.3/S3 故障场景验证
 
-新增双backend TCP/UDP部分摘除、全不可选、分步恢复和真实TCP连接拒绝场景，以独立nonce和指标账本验证旧绑定、轮询及最终清理。使用 `bash tests/v03_validate.sh build-release/bin/l4lb validation-v03`；网络隔离、构建、工具负向及证据说明见 [公开运行手册](docs/runbooks/local-v0.3-validation.md)，逐条版本标准见 [验收矩阵](docs/specs/v0.3-acceptance.md)。Builder与 [Reviewer001 PASS](docs/reviewer/reports/V0.3/S3-report-001.md) 齐备：独立Debug22/22、Release23/23及公开重复/并行/工具负向通过。Leader003最终同步完成，S3及V0.3开发范围Completed；现已合并并标记v0.3-s3（281db01），当前V0.4/S1 Completed，Reviewer002复审PASS，F-001 Closed，Leader003收尾完成；V0.4/S2、S3仍未实现。
+新增双backend TCP/UDP部分摘除、全不可选、分步恢复和真实TCP连接拒绝场景，以独立nonce和指标账本验证旧绑定、轮询及最终清理。使用 `bash tests/v03_validate.sh build-release/bin/l4lb validation-v03`；网络隔离、构建、工具负向及证据说明见 [公开运行手册](docs/runbooks/local-v0.3-validation.md)，逐条版本标准见 [验收矩阵](docs/specs/v0.3-acceptance.md)。Builder与 [Reviewer001 PASS](docs/reviewer/reports/V0.3/S3-report-001.md) 齐备：独立Debug22/22、Release23/23及公开重复/并行/工具负向通过。Leader003最终同步完成，S3及V0.3开发范围Completed；现已合并并标记v0.3-s3（281db01），当前V0.4/S1 Completed，Reviewer002复审PASS，F-001 Closed，Leader003收尾完成；V0.4/S2 Completed，Reviewer001 PASS、Leader003收尾，S3尚未开始。
 
 ## V0.4/S1 Benchmark 工具
 
@@ -342,3 +343,16 @@ python3 tests/benchmark_runner.py --program "$B/Production/bin/l4lb" --protocol 
 ```
 
 默认256-byte payload、1 client、预热1秒/测量5秒/timeout1秒、UDP总目标1000pps、3次重复，direct/proxy顺序交替。每run保存身份、环境、配置、原始sampled RTT、独立进程资源、计数、valid与清理证据；goodput只计成功回显payload一次并包含有界drain。低RTT须并列丢失率，valid不表示速度达标。WSL/loopback共享CPU和Python工具限制使这些数据不能当作硬件极限、S2优化成果或S3正式性能报告。
+
+## V0.4/S2 资源与有界停止
+
+TCP两向各64KiB改为固定容量ring，保持32KiB低水位、64KiB预算和字节顺序。第一次消费INT/TERM关闭listener、停止新recv/连接/健康maintenance，仅尝试发送已在用户态pending的队列，固定1s截止；第二次消费信号立即强制关闭。空队列不等EOF；截止/force不伪称全部在途数据送达。TCP/UDP关闭都先移除身份并释放fd，再独立通知；析构不因通知异常中断清理。UDP仍立即停止、无排空/重传。
+
+公开[生命周期运行手册](docs/runbooks/local-v0.4-lifecycle-validation.md)包含三构建、ASan/UBSan、Production真实信号/健康指标、并行/空格路径、目标负向及S1工具兼容命令。短入口：
+
+```bash
+ctest --test-dir build-release -L v04_lifecycle --output-on-failure
+python3 tests/v04_shutdown_product.py --program "$PWD/build-release/bin/l4lb" --output "$PWD/.stage-tmp/shutdown-example"
+```
+
+新增TCP生命周期日志给出首次消费信号时的双向pending及steady-clock截止；最终摘要明确“已尝试有界排空用户态待发队列，不保证在途数据送达”。同步stderr阻塞、回调不返回及OS调度不受1s逻辑时限保证，无新配置字段。本阶段不承诺性能提升，S3正式报告尚未开始。

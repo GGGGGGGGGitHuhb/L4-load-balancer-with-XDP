@@ -1,4 +1,4 @@
-# TCP 转发语义（V0.1/S2）
+# TCP 转发语义（更新至V0.4/S2）
 
 本规格描述 S2-D1 转发与 V0.3-S1-D1 健康资格。仅支持数字 IPv4、TCP 用户态单线程代理，不解析应用协议，不保留客户端源地址，不提供 TLS 或失败重试；UDP 有独立规格。
 
@@ -12,27 +12,31 @@
 ## 字节、缓冲与事件
 
 - 单线程 LT epoll；accept 每批至多 64 个，单方向 recv/send 每次处理各至多 64 KiB，截止和信号处理位于事件前后。
-- 两个方向各自保存至多 64 KiB 未发送字节；send 成功多少就消费多少，短写尾部保留。消费空间在后续 recv 前回收。
+- 两个方向各自保存至多 64 KiB 未发送字节；send 成功多少就消费多少，短写尾部保留。使用固定容量环形存储回收消费空间，不压缩搬移；size/room是总量，实际send/recv只使用readable_size/writable_size连续span并受本轮budget限制，append仅提交该写span内成功长度。
 - 达到 64 KiB 暂停源 IN/RDHUP；降至 32 KiB 或以下恢复并主动尝试读取。反向队列及读写独立，源暂停不禁止向该端写入响应。
 - 只有队列非空才订阅目标 OUT，Connecting 订阅 OUT 为独立需求。空且无需读的 endpoint 暂不注册，避免 EOF/HUP 的持续就绪。
 - HUP/RDHUP 不直接代表可丢弃队列；recv=0 才确认正常 EOF。无进展 HUP 暂挂 endpoint，100ms 后主动尝试两个方向并重算订阅；不会永久丢弃反向写入机会。
 - EINTR 重试并检查停止，EAGAIN/EWOULDBLOCK 不视为断开。send 使用 MSG_NOSIGNAL；ERR 查询 SO_ERROR；致命 I/O 错误关闭一整对连接。
-- endpoint 以单调 token 标识；关闭先使 token 失效，再 DEL 和释放 fd。同一批中过期事件不能命中新复用的 fd。
+- endpoint以单调token标识。关闭先从sessions移出owner、清除token，再完成两个端点DEL/fd释放，最后独立尝试diagnostic/session/Closed/observe通知并保留首异常。同批旧token不能命中新复用fd，重复close为no-op。
 
 ## 关闭和超时
 
 - 单向 recv=0 后停止该向读，排空对应队列再向目标 SHUT_WR。目标收到 EOF 后仍能返回完整响应，反向先 EOF 也适用。
 - 两端均 EOF、队列已空且必要 SHUT_WR 完成才以 `drained` 正常结束。RST、SO_ERROR、致命 recv/send/shutdown 记异常原因，可丢弃待发送队列，绝不记正常排空。
 - Connecting 截止 5 秒；Established 连续 60 秒没有正字节 recv/send 则关闭。使用 steady_clock，EAGAIN 或纯就绪不能续命；epoll 等待上限 100ms，容许调度误差。
-- SIGINT/SIGTERM 停止接入并立即清理会话，退出 0，stderr 输出停止摘要；不保证在途数据排空。不恢复已经失败的会话或等待后端完成业务。
+- 第一次消费SIGINT/SIGTERM进入Draining，steady_clock固定截止为当前时间+1000ms；关闭并移除listener，不再accept、选择/连接后端或读取任一方向新字节，取消Connecting会话（service-stop-connecting）。只尝试发送此时已在两条用户态pending队列中的数据。
+- Draining只对有pending的方向订阅OUT，保留MSG_NOSIGNAL/短写/EAGAIN/64KiB公平预算和HUP有限重试；不恢复IN/RDHUP、不执行常规idle/connect截止、listener退避恢复或control maintenance。已有健康checker资源在control服务退出后RAII释放。
+- 双向队列空即可service-stop-drained关闭，不等EOF、后端业务或内核在途输入；到固定截止仍有队列则service-stop-deadline释放，发送进展不延长期限。已进入Draining后消费第二次INT/TERM立即service-stop-forced，标准信号可能合并。
+- 三种正常信号停止均退出0；真实不可恢复服务错误仍清理后退出1。1s仅限reactor逻辑，不保证同步stderr阻塞、SIGPIPE、回调不返回或OS调度下的硬实时退出。
+- stderr先输出一次停止屏障`TCP draining pending_c2b=<总队列> pending_b2c=<总队列> deadline_ns=<steady_clock绝对纳秒>`，最终文案为`TCP 服务已停止：已尝试有界排空用户态待发队列，不保证在途数据送达`。client send成功不证明已进入用户态队列。
 
 ## 资源与日志
 
 - 最大 1024 个存活会话（含 Connecting），每个两个 fd 和两条有界队列。应用待发数据上限为 128 MiB；内核 socket 缓冲及对象/容器开销另外计算，不代表进程内存上限。
 - 监听 backlog 128、SO_REUSEADDR；accept4 使用 NONBLOCK/CLOEXEC。容量满时 accept 后立即关闭。accept 的 fd/内存资源错误暂挂监听 100ms，连续错误只给一次诊断；其他不可恢复监听/事件循环错误清理后退出 1。
-- fd 使用不可复制、可移动 owner；服务退出恢复调用线程原始信号 mask。
+- fd使用不可复制、可移动owner，close EINTR不重试；服务退出恢复原始信号mask。显式清理完成全部资源/必要通知后传播首异常，noexcept析构逐个清理所有owner并抑制通知异常，不覆盖原服务异常。回调不允许重入reactor，内部观察仅只读。
 - stderr 每会话最多一次 `accepted` 和一次终止摘要：session ID、backend、reason、双向成功 send 字节，错误附 errno。没有载荷或逐 recv/send 日志，不是指标服务。
-- 观测回调与故障注入只在内部 C++ 测试驱动使用，产品无测试 CLI、环境开关或额外日志。
+- 观测回调与故障注入只在内部 C++ 测试驱动使用，产品无测试CLI或环境开关；只有上述停止生命周期屏障，仍无逐I/O日志。
 
 ## 验证入口与证据解释
 
@@ -51,3 +55,7 @@
 ## V0.3/S2 可选指标
 
 metrics默认off；stderr模式将真实创建/关闭、成功send提交量、拒绝/drop/error/timeout累计为固定schema快照。TCP计入connecting会话，send每次正返回即时计字节，不等关闭；UDP完整成功一包计一次，零长包计包不计字节，recv失败无虚构drop。旧健康不eligible的flow仍可贡献提交量。错误在日志限频前计，关闭不重复计原错误；成功提交不保证对端收到。同步stderr风险、尾快照和全部字段见 [metrics规格](metrics.md)。
+
+## V0.4/S2验证
+
+[生命周期运行手册](../runbooks/local-v0.4-lifecycle-validation.md)提供ring参考模型、异常通知矩阵、真实双向pending/1s截止/第二信号、健康指标组合、ASan/UBSan及目标负向。内部Options仅提供正数且不超过int毫秒表示范围的drain_timeout，生产固定1s且不新增配置。S3正式性能报告不在本阶段。

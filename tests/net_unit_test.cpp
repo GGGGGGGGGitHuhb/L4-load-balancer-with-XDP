@@ -31,14 +31,16 @@ int main() {
     Buffer buffer;
     for (int cycle = 0; cycle < 1000; ++cycle) {
       auto* out = buffer.writable();
-      for (std::size_t i = 0; i < buffer.room(); ++i) out[i] = char(i % 251);
-      buffer.append(buffer.room());
+      const auto contiguous = buffer.writable_size();
+      for (std::size_t i = 0; i < contiguous; ++i) out[i] = char(i % 251);
+      buffer.append(contiguous);
       check(buffer.size() == kBufferLimit, "high water");
       buffer.consume(7);  // 确定性短写消费保留原始尾部。
       check(buffer.data()[0] == char(7), "short write tail");
       const auto left = buffer.size();
       buffer.writable();
-      check(buffer.size() == left && buffer.data()[0] == char(7), "compaction");
+      check(buffer.size() == left && buffer.data()[0] == char(7),
+            "writable preserves unread tail");
       buffer.consume(buffer.size());
       check(buffer.room() == kBufferLimit, "reusable capacity");
     }
