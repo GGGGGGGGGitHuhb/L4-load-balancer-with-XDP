@@ -1,6 +1,6 @@
 # 本地 TCP 验证
 
-此手册只依赖仓库内源码、配置和测试，不需要本地角色报告。环境为 Linux（可用 WSL2）、C++20 编译器、CMake ≥ 3.20 和 Ninja；不下载第三方测试框架。运行需要允许本机回环 socket 和子进程。
+此手册只依赖仓库内源码、配置和测试，不需要本地角色报告。环境为 Linux（可用 WSL2）、C++20 编译器、CMake ≥ 3.20、Ninja及Python3标准库；不下载第三方测试框架。运行需要允许本机回环 socket 和子进程。
 
 ## 构建与自动验收
 
@@ -19,7 +19,7 @@ ctest --test-dir build-release --output-on-failure
 ctest --test-dir build-release -L s3 --repeat until-fail:3 --output-on-failure
 ```
 
-预期：当前注册15项，Debug快速14/14（排除udp_long），Release全套15/15（包含一次约61秒的原生产UDP过期测试），退出0。S2历史为9项；S3新增 `v02_udp_system` 与 `v02_udp_expiry`。长项只需Release一次，详见 [UDP手册](local-udp-validation.md)；s3 标签恰有一个产品用例，重复 3 次均通过。直接入口最后输出中文 `PASS` 与原子唯一的 `run-XXXXXX` 目录，退出 0。该目录保留配置、各子进程 `.out`/`.err` 和 `result.txt`；后者记录 PID、动态端口、场景结果和重绑结果。测试失败退出 1，用法错误退出 2。不要把外部超时 124 当作断言成功。
+预期：当前注册31项，Debug快速30/30（排除udp_long），Release全套31/31（包含一次约61秒的原生产UDP过期测试），退出0。V0.2/S2历史为9项；V0.2/S3新增 `v02_udp_system` 与 `v02_udp_expiry`。长项只需Release一次，详见 [UDP手册](local-udp-validation.md)；s3 标签恰有一个产品用例，重复 3 次均通过。直接入口最后输出中文 `PASS` 与原子唯一的 `run-XXXXXX` 目录，退出 0。该目录保留配置、各子进程 `.out`/`.err` 和 `result.txt`；后者记录 PID、动态端口、场景结果和重绑结果。测试失败退出 1，用法错误退出 2。不要把外部超时 124 当作断言成功。
 
 若当前执行环境把 127/8 经代理接口转发，可能出现 send 成功但大 UDP 包被丢弃。可在临时用户/网络命名空间验证真实回环，不修改宿主路由：`unshare --user --map-root-user --net sh -c 'ip link set lo up && ctest --test-dir build'`。此时命名空间内 uid=0，文件读取权限用例会跳过；另在原普通用户环境运行 `ctest --test-dir build -R cli_integration` 补齐。只有在独立回环完整通过后才能将测试记为通过，不能缩小 65507 字节边界。
 
@@ -56,7 +56,7 @@ printf 'A=%s B=%s\n' "$result_a" "$result_b"
 
 ## 手动演示
 
-[README 的四终端示例](../../README.md#tcp-最短运行示例)使用 8080/9001/9002，运行前保证端口空闲；需要默认 `BUILD_TESTING=ON` 提供 echo 程序。依次启动两个后端和代理，等各自 ready，再运行 Bash 客户端。预期回显 `hello S2`。各服务终端 Ctrl+C 结束；代理 SIGINT/SIGTERM 立即关闭会话，不承诺在途字节排空。
+[README 的四终端示例](../../README.md#tcp-最短运行路径)使用 8080/9001/9002，运行前保证端口空闲；需要默认 `BUILD_TESTING=ON` 提供 echo 程序。依次启动两个后端和代理，等各自 ready，再运行 Bash 客户端。预期回显 `hello S2`。各服务终端 Ctrl+C 结束；代理消费SIGINT/SIGTERM后仅在固定1秒截止内尝试发送已有用户态pending，不承诺在途字节送达；同步输出阻塞不保证进程按时退出。
 
 动态后端也可手动运行 `./build/bin/tcp_echo_backend 0`；读取 `echo ready 127.0.0.1:<实际端口>` 后，把该端口写入自己的配置。0 只适用于测试 fixture，产品配置端口仍为 1..65535。
 

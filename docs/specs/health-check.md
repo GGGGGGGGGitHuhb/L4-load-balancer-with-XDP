@@ -43,7 +43,7 @@ control 持有 checker 和原 Scheduler，两个 reactor 在每轮唤醒、处�
 - `v03_health_unit`：纯状态机 4096 个 12步序列/资格过滤/配置；受控 pending 与时间验证 exact deadline、晚成功、重复事件、真实 fd 复用的旧 token、256 上界/取消、资源/注册错误。受控 timeout 不是自然网络超时。
 - `v03_health_checker`：真实 TCP 接受和拒绝、probe 无 payload、清理；仅内部测试缩短间隔，生产参数固定。
 - `v03_health_tcp_product` / `v03_health_udp_product`：标准库 Python fixture 启动原产品，默认 1s/3fail/2success，nonce 数据与空 probe 分别计数；Unknown、摘除/恢复、无 fallback、旧 TCP/UDP 绑定、热业务下维护与停止。
-- 原 11 项回归保留；总 15 项，Debug 排除 udp_long 后 14，Release 15 含真实 60s expiry。Python3 仅测试依赖，Production `BUILD_TESTING=OFF` 不需要 Python。
+- V0.3/S1历史验收：原11项回归保留，当时总15项，Debug排除udp_long后14，Release15 含真实 60s expiry。Python3 仅测试依赖，Production `BUILD_TESTING=OFF` 不需要 Python。
 - 原始日志、源码指纹及 Release 负向验证见 Builder/Reviewer 报告。未实现指标快照、应用层/UDP 主动探测、重试、迁移、热加载或 XDP。
 
 V0.3/S3双backend故障与指标联合验证见 [本机运行手册](../runbooks/local-v0.3-validation.md) 和 [版本验收矩阵](v0.3-acceptance.md)；不改变本规格的生产语义。

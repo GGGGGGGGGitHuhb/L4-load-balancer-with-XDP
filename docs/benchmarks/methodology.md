@@ -1,6 +1,6 @@
 # 用户态 TCP/UDP Benchmark 方法（V0.4/S1）
 
-本工具验证测量方法与证据可靠性，不代表 V0.4 优化完成。仅使用 Python3 标准库，产品独立构建不依赖 Python。默认在 Linux/WSL loopback 执行，无外网、root、第三方服务或调参要求。WSL、共享 CPU、Python 生成器与 echo 后端均可能成为瓶颈，结果不能推断物理网卡、云服务器或 native XDP 上限。
+本节保留V0.4/S1建立的测量口径；V0.4正式比较已完成，当前二进制短smoke不替代固定历史矩阵。仅使用 Python3 标准库，产品独立构建不依赖 Python。默认在 Linux/WSL loopback 执行，无外网、root、第三方服务或调参要求。WSL、共享 CPU、Python 生成器与 echo 后端均可能成为瓶颈，结果不能推断物理网卡、云服务器或 native XDP 上限。
 
 ## 可复制构建与测量
 
@@ -94,3 +94,7 @@ python3 tests/v04_benchmark_compare.py recompute --package docs/benchmarks/repor
 汇总保存16组各三次值及中位/最小/最大，以及同轮 proxy candidate-baseline 差和百分比；0分母百分比null并说明。三次数据不做显著性推断，不混池RTT，不机械扣direct后称纯代理开销。丢失、未达目标、missed slots和p99样本不足均保留。S1→S2多项变化不能全部归因给ring。
 
 短自测：`python3 tests/v04_benchmark_compare_test.py`；CTest标签 `v04_compare`，正式48run不注册默认测试。可在同一隔离网络命名空间执行 `python3 tests/v04_benchmark_compare_test.py acceptance --builds "$B/products" --output "$B/validation" --package "$B/formal/raw.json.gz"`：短并行两组、空格路径、错binary拒绝、真实启动后失败及计数/RTT/格点/身份负向。输出必须新建，失败目录保留；并行数据不进入正式报告。
+
+## 当前入口与Git来源
+
+当前V1.0二进制的短TCP/UDP命令见[README](../../README.md#benchmark当前smoke与历史报告)。离线recompute只需已跟踪工具和公开raw包，不需产品构建、角色目录或网络；重新build固定v0.4-s1/v0.4-s2产品需要完整clone中的对应Git标签及提交对象。受限环境使用跟踪文件导出时应明确它不是完整clone；若另从本地只读Git源提供历史对象，记录该来源及快照manifest。不要覆盖原正式报告、JSON或raw包，recompute输出必须是新目录。

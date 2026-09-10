@@ -1,5 +1,7 @@
 # 项目技术概览
 
+本文角色报告/设计路径为本地治理记录（或未来计划位置），不随普通clone分发；公开复核使用README和规格/运行手册。
+
 本项目是一个面向高性能网络方向的四层负载均衡器。系统以 C++20 用户态实现为基础，使用 Linux socket 与 `epoll` 构建 TCP/UDP 转发能力；在用户态语义稳定后，引入 XDP/eBPF fast path 作为可选数据面，用于探索 Linux 网络栈中的高性能包处理。
 
 主要技术栈：
@@ -9,7 +11,7 @@
 - 编译器：LLVM/Clang++
 - 用户态网络能力：Linux socket、non-blocking I/O、`epoll`
 - 后续 XDP/eBPF 能力：受限 C、Clang BPF target、eBPF maps、libbpf 或等价加载接口
-- 测试方式：S1 已采用 CTest + 独立 C++ 显式检查程序及 CMake CLI 集成脚本，无第三方测试依赖
+- 测试方式：CTest、独立 C++ 检查程序、CMake CLI 集成脚本和 Python3 标准库真实产品fixture；生产关闭BUILD_TESTING不依赖Python。当前31项，快速30项，历史章节数字只描述当时版本。
 
 依赖原则：
 
@@ -119,7 +121,7 @@ XDP/eBPF 数据面层是后续用于包级 fast path 的可选数据路径。它
 
 ## 模块职责
 
-当前 S1/S2 已实现 CLI、配置、固定轮询 core、control 服务组装和 net 单线程 TCP reactor，并通过独立验收。配置检查调用链仍为 argv → CLI 参数验证 → 有界只读配置加载 → 纯解析与完整校验 → 摘要或错误；--run 在校验后进入 control → net 完成监听、后端连接与双向转发。当前 UDP 实现边界见末尾 V0.2/S2；健康检查当前边界见末尾 V0.3/S1；指标边界见末尾V0.3/S2；XDP仍为长期架构，职责边界保持稳定。
+当前已实现CLI、配置、轮询、control装配、单线程TCP/UDP reactor及可选health/metrics，用户态行为已在V1.0/S1冻结。配置检查调用链仍为 argv → CLI 参数验证 → 有界只读配置加载 → 纯解析与完整校验 → 摘要或错误；--run 在校验后进入 control → net 完成监听、后端连接与双向转发。当前 UDP 实现边界见末尾 V0.2/S2；健康检查当前边界见末尾 V0.3/S1；指标边界见末尾V0.3/S2；XDP仍为长期架构，职责边界保持稳定。
 
 ### `src/cli/`
 
@@ -137,7 +139,7 @@ XDP/eBPF 数据面层是后续用于包级 fast path 的可选数据路径。它
 
 重要输入与输出：
 
-- 输入：命令行参数、环境变量、配置文件路径。
+- 输入：命令行参数、配置文件路径；不读取环境覆盖配置。
 - 输出：进程退出码、用户可见错误信息、启动日志。
 
 ### `src/config/`
@@ -248,7 +250,7 @@ XDP/eBPF 数据面层是后续用于包级 fast path 的可选数据路径。它
 重要输入与输出：
 
 - 输入：核心模块和数据面产生的统计事件。
-- 输出：指标快照、日志或后续可扩展的 metrics endpoint 数据。
+- 输出：stderr的`metrics `前缀schema=1快照；当前无metrics网络endpoint。
 
 ### `src/xdp/`
 
@@ -284,18 +286,16 @@ XDP/eBPF 数据面层是后续用于包级 fast path 的可选数据路径。它
 
 ### 启动流程
 
-一次典型启动流程如下：
+当前用户态启动链（V1.0冻结行为）：
 
-1. 用户通过命令行启动进程，并传入配置文件路径。
-2. `src/cli/` 解析命令行参数。
-3. `src/config/` 读取配置文件并生成配置对象。
-4. `src/control/` 根据配置初始化控制面状态。
-5. `src/net/` 创建监听 socket，设置 non-blocking 模式并注册到 `epoll`。
-6. `src/health/` 启动后端健康检查。
-7. `src/metrics/` 初始化运行统计。
-8. 用户态数据面开始处理 TCP/UDP 流量。
+1. `cli`首先处理互斥help/check-config/run；help直接返回，不读配置。其余入口交`config`只读加载校验。
+2. check-config静态成功输出后退出，不构造网络、健康或指标资源；run交`control/service`按协议分派。
+3. control持有Scheduler与HealthSelection、MetricsService。仅`health_check=tcp_connect`构造checker；仅`metrics=stderr`构造collector/output。两者off时相应采集、probe及周期均不启用。
+4. control向net传选择和生命周期回调，metrics启用才安装statistics；health或metrics任一启用才安装maintenance，维护先health后metrics。
+5. net创建监听socket、epoll及停止信号资源；ready回调先输出并刷新stdout的监听地址，再调用metrics.ready（off为空操作）。ready不等待Healthy，初态Unknown仍拒绝新业务。
+6. 单线程reactor处理业务；TCP停止冻结新recv/maintenance，仅在固定1秒截止内尝试已有pending，UDP关闭flows。reactor资源清理后，control输出停止说明和metrics.final；异常清理后metrics.error再沿原异常到CLI输出服务错误、退出1。
 
-启动失败时，错误应沿调用链返回到用户入口层，由入口层输出明确错误并设置非零退出码。
+metrics off不会产生快照；同步输出可能阻塞，截止不等于绝对进程退出保证。详见[稳定契约](docs/specs/v1.0-user-visible-contract.md)。
 
 ### TCP 转发数据流
 
@@ -303,12 +303,12 @@ XDP/eBPF 数据面层是后续用于包级 fast path 的可选数据路径。它
 
 1. 客户端连接监听 socket。
 2. 用户态数据面接收连接并创建前端连接对象。
-3. 控制面或核心调度逻辑选择一个健康后端。
+3. control按轮询选择后端；health启用时仅Healthy可选，off时不探活；无资格拒绝新连接，连接失败不重试其他后端。
 4. 数据面向后端建立连接。
 5. 前端连接和后端连接形成一组转发会话。
 6. `epoll` 驱动双向读写，数据面负责缓冲、半关闭和错误处理。
 7. 连接关闭后释放 socket、缓冲区和会话状态。
-8. 指标模块记录连接数、字节数、错误和后端统计。
+8. metrics启用时记录全局业务计数和backend健康资格快照，不提供每backend流量账本。
 
 ### UDP 转发数据流
 
@@ -338,6 +338,8 @@ XDP fast path 只处理适合包级表达的逻辑。典型流程：
 
 ## 依赖方向
 
+当前control装配core/net/health/metrics；以下涉及xdp的依赖仅为后续约束，src/xdp尚未实现。
+
 允许的依赖方向：
 
 - `cli` 可以调用 `config` 和 `control`。
@@ -360,7 +362,7 @@ XDP fast path 只处理适合包级表达的逻辑。典型流程：
 
 - 只有配置模块可以读取配置文件。
 - 只有用户入口层负责用户可见启动错误。
-- 只有日志和指标模块负责统一输出运行状态。
+- control输出生命周期/健康/业务诊断，metrics模块格式化schema=1快照，CLI呈现顶层错误；没有独立公共日志框架。
 - 任何外部系统调用应封装在边界模块中，避免散落在核心逻辑里。
 
 ## 数据模型与持久化
@@ -437,11 +439,11 @@ XDP fast path 只处理适合包级表达的逻辑。典型流程：
 
 ### 文件输入输出
 
-文件输入主要是配置文件。后续测试和报告可能产生日志、benchmark 结果或临时文件。
+文件输入是静态配置文件；当前测试/benchmark已在指定目录产生日志、JSON及临时文件。
 
 原则：
 
-- 配置读取应只发生在配置模块或受控的 reload 流程中。
+- 配置读取只在config模块启动加载时发生；当前无reload。
 - 自动生成文件必须进入明确的构建、日志或报告目录。
 - 不得自动覆盖手写设计文档、报告和源码。
 
@@ -496,7 +498,7 @@ XDP/eBPF 集成通过用户态加载器和 eBPF maps 完成。
 
 并发原则：
 
-- 初始用户态数据面优先使用单 reactor 或少量清晰分工的线程模型。
+- 当前用户态产品是单线程reactor，health及metrics在同一线程维护；下列跨线程约束仅为未来扩展规则。
 - 如果引入多线程 reactor，应明确每个连接、flow 和后端状态由哪个线程拥有。
 - 跨线程状态更新必须通过明确同步机制或消息传递完成。
 - 不允许多个线程无约束地直接修改同一个连接表、flow table 或后端状态。
@@ -512,7 +514,7 @@ XDP/eBPF 集成通过用户态加载器和 eBPF maps 完成。
 
 - UDP flow table 是运行时缓存，应有超时和容量控制。
 - 后端健康状态由健康检查模块产生，由控制面统一消费。
-- 指标计数可以按线程或模块局部维护，但对外应提供一致快照。
+- 当前每次run只有一个可选collector，固定大小快照；不做跨线程或跨进程聚合。
 
 XDP/eBPF 状态：
 
@@ -640,12 +642,12 @@ XDP/eBPF 状态：
 
 ## V0.2/S3 历史测试边界
 
-状态：Completed（2026-09-09），Reviewer001独立PASS、Leader003收尾；V0.2开发范围完成，生产数据面未改，未发布S3。
+历史收尾时状态：Completed（2026-09-09），Reviewer001独立PASS、Leader003收尾；V0.2开发范围完成，生产数据面未改，当时未发布S3。
 
 - 生产src/与原TCP示例保持S2合并版本。扩展 `tests/udp_product_test.cpp` 的system/expiry模式，复用独立argv、原子证据目录与有界进程管理，新增CTest两项，不链接生产control/net或注入Options。
 - P1/P2验证原产品wildcard/实际源地址/流隔离/伪造过滤和后端停机后显式新flow恢复；P3用同一socket真实静默≥60.5秒验证原60秒默认值，不调整产品常量或时钟。
-- 手动工具 `tests/udp_manual.py` 仅用Python3标准库，客户端持续持有同一socket；`tests/udp_manual_demo.sh`提供可复制完整流程和自有子进程/端口清理。Python不成为生产运行或CTest依赖。
-- 容量1024静态确认，内部capacity2动态继承；无1024满载/性能结论。当前11项注册、Debug快速10项、Release11项含长项一次；完整边界见UDP运行手册和V0.2完成矩阵。
+- 手动工具 `tests/udp_manual.py` 仅用Python3标准库，客户端持续持有同一socket；`tests/udp_manual_demo.sh`提供可复制完整流程和自有子进程/端口清理。当时Python不成为生产运行或CTest依赖；V0.3起测试构建使用Python，生产仍不依赖。
+- 容量1024静态确认，内部capacity2动态继承；无1024满载/性能结论。当时11项注册、Debug快速10项、Release11项含长项一次；完整边界见UDP运行手册和V0.2完成矩阵。
 
 ## V0.3/S1 历史落地边界
 
@@ -664,7 +666,7 @@ XDP/eBPF 状态：
 
 ## V0.3/S3 测试边界
 
-新增Python标准库双backend fixture、三项真实产品CTest及独立工具负向。fixture区分健康空连接与业务nonce，以backend观测建立期望账本，再比较产品指标；测试线程/PID/socket由单run拥有。原metrics产品模块仅加main入口保护供schema解析复用，默认执行和既有断言保持。生产src、配置和模块边界不变，当前23项注册；执行见 `docs/runbooks/local-v0.3-validation.md`。
+新增Python标准库双backend fixture、三项真实产品CTest及独立工具负向。fixture区分健康空连接与业务nonce，以backend观测建立期望账本，再比较产品指标；测试线程/PID/socket由单run拥有。原metrics产品模块仅加main入口保护供schema解析复用，默认执行和既有断言保持。当时生产src、配置和模块边界不变，共23项注册；执行见 `docs/runbooks/local-v0.3-validation.md`。
 
 ## V0.4/S1 Benchmark 工具边界
 

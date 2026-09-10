@@ -34,7 +34,7 @@ ctest --test-dir build-release -L v03_system --repeat until-fail:2
 ctest --test-dir build-debug -LE udp_long --output-on-failure
 ```
 
-当前23项：Debug快速22，Release完整23含一次原60秒 expiry；重复组只有新增3项，不含 expiry。Production 使用 -DBUILD_TESTING=OFF 构建后，可运行同一 v03_validate.sh。普通 uid 另运行 `cmake -DPROGRAM="$PWD/build-release/bin/l4lb" -DSOURCE="$PWD" -DTMP="$PWD/validation-v03/cli" -P tests/cli_test.cmake`，38项包含不可读文件；namespace root 会跳过权限项，不冒充普通用户验证。
+当前31项：Debug快速30，Release完整31（V0.3/S3历史为23/22快速）含一次原60秒 expiry；重复组只有新增3项，不含 expiry。Production 使用 -DBUILD_TESTING=OFF 构建后，可运行同一 v03_validate.sh。普通 uid 另运行 `cmake -DPROGRAM="$PWD/build-release/bin/l4lb" -DSOURCE="$PWD" -DTMP="$PWD/validation-v03/cli" -P tests/cli_test.cmake`，当前44项包含不可读文件（V0.3/S3历史38项）；namespace root 会跳过权限项，不冒充普通用户验证。
 
 ## 场景与配置
 

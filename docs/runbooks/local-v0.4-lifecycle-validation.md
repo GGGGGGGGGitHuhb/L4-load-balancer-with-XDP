@@ -19,7 +19,7 @@ cmake -S . -B "$B/Production" -G Ninja -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUIL
 cmake --build "$B/Production" -j4
 ```
 
-当前28项CTest，Debug排除udp_long为27项；原26项保留，新增v04_lifecycle_state、v04_shutdown_product。Release原60秒expiry执行一次，长性能矩阵不进入CTest。网络受限环境可在临时`unshare --user --map-root-user --net bash`内先`ip link set lo up`再运行网络命令；仅设置子lo，不修改宿主网络/代理/sysctl。受限执行器可能要求该边界的窄授权。
+当前31项CTest，Debug排除udp_long为30项；V0.4/S2历史为28项（原26项加v04_lifecycle_state、v04_shutdown_product）。Release原60秒expiry执行一次，长性能矩阵不进入CTest。网络受限环境可在临时`unshare --user --map-root-user --net bash`内先`ip link set lo up`再运行网络命令；仅设置子lo，不修改宿主网络/代理/sysctl。受限执行器可能要求该边界的窄授权。
 
 ## 公开Production与工具自证
 
