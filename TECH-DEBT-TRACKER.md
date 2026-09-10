@@ -2,7 +2,7 @@
 
 本文角色报告/设计路径为本地治理记录（或未来计划位置），不随普通clone分发；公开复核使用README和规格/运行手册。
 
-当前阶段V1.0/S2已Completed（2026-09-10），D1 Approved，Builder001、Reviewer001独立PASS及Leader002齐备；无新增债项、阻塞或PM决策。TD-004本阶段公开文档与验收索引义务已完成，S3发布审查及后续XDP义务保持。以下早期阶段说明保留其历史语境。
+V1.0/S3及V1.0用户态开发范围已Completed（2026-09-10），D1 Approved，Builder001、Reviewer001独立PASS及Leader002齐备；本轮候选发布就绪，实际发布未执行。八项债务/观察处置已核对，无新增债项、阻塞或PM决策。TD-001/002保持关闭，TD-003未来XDP环境继续，TD-004本版本用户态及发布审查义务完成、未来XDP文档保持。以下早期阶段说明保留其历史语境。
 
 V0.1/S1 工程骨架与配置入口已完成（Completed，2026-09-07），Reviewer 结论 PASS。S2 已完成（2026-09-08，Reviewer002 PASS），S3 已完成（Reviewer001 PASS），V0.1 开发范围完成，本地 main 已包含 S3 合并提交 544c8d8；远端发布状态本轮未核验。
 
@@ -12,6 +12,10 @@ V0.1/S1 工程骨架与配置入口已完成（Completed，2026-09-07），Revie
 - 无本阶段阻塞或新增技术债；S2-R001 已修复并复审关闭，完成报告为 `docs/leader/reports/V0.1/S2-report-004.md`；S3 已完成且无新增债项，见 `docs/leader/reports/V0.1/S3-report-003.md`。
 
 ## 阶段状态
+
+### V1.0 / S3 发布审查
+
+六项AC和版本六标准满足；独立Debug30/30、Release31/31含长expiry、三构建/UID44、原TCP/UDP示例、短paired及历史JSON重算、资源回收通过。72运行输入及34保护文件保持，纯结果收尾不改产品。八项处置责任/目标/退出条件见下方条目和 [公开发布前审查](docs/specs/v1.0-release-review.md)。实际发布未执行，不自动开始XDP或采购环境。
 
 ### V1.0 / S2 文档与验收补齐
 
@@ -115,6 +119,8 @@ M1..M4 与 AC-01..07 已完成：独立 Debug/Release 各 7/7，Production 验�
 
 ### TD-001 README 构建命令尚未真实可用
 
+V1.0/S3处置（2026-09-10）：保持已解决。以本轮独立公开来源的README三构建、原参数TCP/UDP和CLI执行复核关闭依据；Builder本轮三构建/README/回归已通过，Reviewer001独立PASS且Leader002已收尾；实际结果见[发布前审查](docs/specs/v1.0-release-review.md)。影响仍为入口可运行性，Builder维护、Reviewer验收；后续命令长期失效时重新评估，不因历史条目存在重开。
+
 状态：已解决（2026-09-07）。
 
 影响范围：`README.md`、`V0.1 / S1`、构建与测试入口。
@@ -150,6 +156,8 @@ M1..M4 与 AC-01..07 已完成：独立 Debug/Release 各 7/7，Production 验�
 
 ### TD-002 配置格式和测试框架选择及落地
 
+V1.0/S3处置（2026-09-10）：保持已解决。key=value与现有CTest/CMake/Python标准库测试继续使用，不引入配置或测试框架变更；本轮配置/CLI及全回归复核结果见[发布前审查](docs/specs/v1.0-release-review.md)。Builder维护、Reviewer验收；未来配置兼容或测试依赖实质变化时由Leader分类。
+
 状态：已解决（2026-09-07）。
 
 影响范围：`V0.1 / S1`、`src/config/`、`tests/`、`docs/specs/config-schema.md`。
@@ -184,6 +192,8 @@ M1..M4 与 AC-01..07 已完成：独立 Debug/Release 各 7/7，Production 验�
 - `2026-05-19`：新增，原因是配置格式和测试框架是工程骨架阶段的关键基础选择。
 
 ### TD-003 云服务器 XDP/eBPF 验证环境尚未确认
+
+V1.0/S3归档分界（2026-09-10）：继续跟踪，不阻塞V1.0用户态候选。责任：Leader组织环境确认，Builder准备复现，Reviewer独立验收。目标：进入V1.1前确认环境；V1.2按其实际数据面再验。退出标准：对应Linux环境、内核/权限/attach方式、map交互与可复现证据到位，并明确云环境性能限制。本轮不选择实例、不采购、不增加成本承诺。
 
 状态：持续跟踪。
 
@@ -221,6 +231,8 @@ M1..M4 与 AC-01..07 已完成：独立 Debug/Release 各 7/7，Production 验�
 - `2026-05-19`：新增，原因是当前环境为 WSL2，XDP 真实验证需要后续确认。
 
 ### TD-004 长期规格文档随阶段补齐
+
+V1.0/S3归档分界（2026-09-10）：S1/S2及前版本用户态规格、运行、benchmark和验收索引义务已经完成；新增公开发布前审查记录已经Reviewer001独立PASS与Leader002收尾确认，本轮及V1.0用户态文档义务完成。未来XDP schema/runbook等继续保留，不能将TD-004整体关闭。责任：Leader按V1.1/V1.2设计指定公开文档，Builder产出，Reviewer核对实现一致并独立验收。目标：对应V1.1/V1.2阶段；退出标准：设计要求的xdp-map-schema、Linux环境/运行说明和数据面限制与实现一致且验收通过。
 
 状态：部分完成，剩余部分按原阶段接受延期。
 
@@ -269,6 +281,8 @@ M1..M4 与 AC-01..07 已完成：独立 Debug/Release 各 7/7，Production 验�
 
 ### OBS-001 文档先行可能导致早期文档多于实现
 
+V1.0/S3观察更新（2026-09-10）：S2公开命令已独立验收，本轮再以新来源执行发布前命令；当前不升级为技术债。Leader/Builder维持文档与实际同步，Reviewer核对；若后续再次长期不同步或承诺命令长期不可运行，触发重新评估。公开依据：[版本验收](docs/specs/v1.0-acceptance.md)。
+
 观察到什么：
 
 初始化时先建立 README、架构、路线图和 Agent 规则。S1 现已实现并验收，构建命令真实可用，当前未观察到文档阻塞实现。
@@ -282,6 +296,8 @@ M1..M4 与 AC-01..07 已完成：独立 Debug/Release 各 7/7，Production 验�
 如果 `V0.1 / S1` 完成后 README、ROADMAP、ARCHITECTURE 与实际工程结构仍明显不一致，或文档承诺的命令长期不可运行，应升级为技术债。
 
 ### OBS-002 XDP 与完整 TCP proxy 的边界需要持续防守
+
+V1.0/S3观察更新（2026-09-10）：继续防守XDP与完整TCP proxy边界，当前未实现XDP，不新增债。责任：Leader在未来设计把关、Builder按边界实现、Reviewer验收；V1.1/V1.2若开始向XDP塞入完整TCP代理语义，应返工或升级债项，而非扩大本轮发布就绪承诺。
 
 观察到什么：
 
@@ -297,6 +313,8 @@ M1..M4 与 AC-01..07 已完成：独立 Debug/Release 各 7/7，Production 验�
 
 ### OBS-003 高性能目标需要可复现性能证据
 
+V1.0/S3观察更新（2026-09-10）：正式V0.4报告和公开可重算包已有独立证据，本轮仅短smoke及离线全JSON一致性复核，不扩大WSL结论，当前不升级债。责任：Leader按新平台/负载或新性能主张安排匹配测量，Builder留证、Reviewer验收；缺少对应可复现数据或不当泛化时升级。公开依据：[正式报告](docs/benchmarks/reports/v0.4-user-space.md)。
+
 观察到什么：
 
 项目面向高性能网络方向。V0.4/S1已交付benchmark方法、工具及可复现的TCP/UDP工具验证样本；V0.4/S3已交付S1/S2正式对照与公开可重算数据并独立验收，不将WSL样本解释为普遍优化或硬件上限。
@@ -310,6 +328,8 @@ M1..M4 与 AC-01..07 已完成：独立 Debug/Release 各 7/7，Production 验�
 如果 `V0.4` 后仍只有功能测试，没有可复现的吞吐、延迟或 CPU 使用率记录，应升级为技术债。
 
 ### OBS-004 L4LB 与高性能 HTTP 服务器需要保持分层差异
+
+V1.0/S3观察更新（2026-09-10）：已有TCP/UDP flow、轮询、健康和control/data面边界，当前不升级债；未来XDP按V1.1/V1.2路线，未实现未来功能本身不是V1.0债。责任：Leader维护项目分层、Builder实施、Reviewer核对；若演变仅剩通用epoll或混入HTTP应用语义，触发定位评估。
 
 观察到什么：
 

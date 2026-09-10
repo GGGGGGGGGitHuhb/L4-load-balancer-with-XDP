@@ -258,9 +258,9 @@
 
 ### V1.0 用户态稳定版
 
-状态：进行中；S1、S2 Completed（2026-09-10），S3待开展，尚未发布V1.0。
+状态：S1/S2/S3及V1.0用户态开发范围Completed（2026-09-10）；本轮候选发布就绪，实际发布未执行。
 
-S1依据V1.0-S1-D1 Approved完成；F-001已返工关闭，历史组合证据保持。S2依据V1.0-S2-D1 Approved完成，授权登记Leader001、Builder001、Reviewer001独立PASS与Leader002收尾齐备。独立Debug30/30、Release31/31含长expiry、三构建、公开示例/链接/重算验证通过，六项AC满足，无新增技术债或阻塞。当前分支 `codex/v1.0-s2`，基线S1合并提交 `55399b4`；父按授权本地提交，S3及发布未完成。可公开复核结果见 [V1.0验收索引](docs/specs/v1.0-acceptance.md)。
+S1/S2历史批准与验收保持；S3依据V1.0-S3-D1 Approved完成，授权Leader001、Builder001、Reviewer001独立PASS和Leader002收尾齐备。S3独立Debug30/30、Release31/31含长expiry、三构建、普通UID44、公开示例/链接/重算通过，六版本标准及六项AC满足，无新债或阻塞。TD-003未来环境、TD-004未来XDP文档继续。当前分支 `codex/v1.0-s3`，基线S2合并提交 `a1bfc48`；父按授权本地提交，不执行发布或自动启动V1.1。可公开复核结果见 [V1.0验收索引](docs/specs/v1.0-acceptance.md)。
 
 目标：
 
@@ -286,7 +286,7 @@ S1依据V1.0-S1-D1 Approved完成；F-001已返工关闭，历史组合证据保
 
 - `S1 用户态行为冻结`（Completed，2026-09-10）：冻结 V1.0 用户可见语义，清理配置、日志和错误输出。详细设计文档：`docs/leader/designs/V1.0/S1-design.md`。
 - `S2 文档与验收补齐`（Completed，2026-09-10）：补齐 README、架构、规格、测试和 benchmark 文档。详细设计文档：`docs/leader/designs/V1.0/S2-design.md`。
-- `S3 发布审查`：完成 Reviewer 审查、技术债归档和发布前验证。详细设计文档：`docs/leader/designs/V1.0/S3-design.md`。
+- `S3 发布审查`（Completed，2026-09-10）：完成 Reviewer 审查、技术债归档和发布前验证。详细设计文档：`docs/leader/designs/V1.0/S3-design.md`。
 
 完成标准：
 
