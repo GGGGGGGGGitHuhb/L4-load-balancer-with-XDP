@@ -75,3 +75,5 @@ V0.3/S3双backend故障与指标联合验证见 [本机运行手册](../runbooks
 ## V0.4/S2停止与清理时序
 
 TCP首次消费停止信号后暂停maintenance，因此不发起新健康probe或periodic；只对已在用户态pending的成功send累计字节。service-stop-drained/deadline/forced/connecting取消均只计Closed，不虚增Timeout/Error，不计UDP Dropped。真正SO_ERROR/recv/send失败按原分类计Error。final仍在全部reactor owner清理后输出active=0；异常清理后沿原路径生成error尾快照。Closed先后与日志相互独立，通知异常不能阻止资源释放和其他必要通知尝试；故意statistics抛出仅证明异常边界，不伪称该计数已执行。schema无变化。
+
+V1.0/S1 将 schema=1、输出时序与同步 sink 限制纳入[用户态稳定契约](v1.0-user-visible-contract.md)，没有新增字段或改变统计口径。

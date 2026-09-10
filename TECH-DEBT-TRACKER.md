@@ -1,5 +1,7 @@
 # 当前概况
 
+当前阶段V1.0/S1已Completed（2026-09-10），D1 Approved，Builder002、Reviewer002独立PASS及Leader003齐备；F-001返工关闭，无新增债项、阻塞或PM决策。TD-004本阶段用户态冻结契约义务已完成，S2/S3文档与发布审查及后续XDP义务保持。以下早期阶段说明保留其历史语境。
+
 V0.1/S1 工程骨架与配置入口已完成（Completed，2026-09-07），Reviewer 结论 PASS。S2 已完成（2026-09-08，Reviewer002 PASS），S3 已完成（Reviewer001 PASS），V0.1 开发范围完成，本地 main 已包含 S3 合并提交 544c8d8；远端发布状态本轮未核验。
 
 - 已具备 C++20 工程、CLI、严格静态配置、固定轮询 TCP 双向转发、有界背压与半关闭，以及 Debug/Release 自动化测试。
@@ -8,6 +10,10 @@ V0.1/S1 工程骨架与配置入口已完成（Completed，2026-09-07），Revie
 - 无本阶段阻塞或新增技术债；S2-R001 已修复并复审关闭，完成报告为 `docs/leader/reports/V0.1/S2-report-004.md`；S3 已完成且无新增债项，见 `docs/leader/reports/V0.1/S3-report-003.md`。
 
 ## 阶段状态
+
+### V1.0 / S1 用户态行为冻结
+
+六项AC满足，批准见Leader002、收尾见 `docs/leader/reports/V1.0/S1-report-003.md`。首轮有效独立Release30/30含长expiry、Debug28个通过项与复审Debug/Release各4/4补验共同保护最终31项注册；三构建、普通UID44、静态/负向/资源清理与格式证据齐备。F-001成对端口预留、仅EADDRINUSE有界重试及失败清理已独立验收，不作为新技术债延期。S2/S3与V1.0发布尚未完成；父按授权本地提交。
 
 ### V0.4 / S3 性能报告与回归验证
 
@@ -211,6 +217,8 @@ M1..M4 与 AC-01..07 已完成：独立 Debug/Release 各 7/7，Production 验�
 ### TD-004 长期规格文档随阶段补齐
 
 状态：部分完成，剩余部分按原阶段接受延期。
+
+2026-09-10补充：V1.0/S1 `docs/specs/v1.0-user-visible-contract.md` 及配置/健康/metrics对应边界已交付，经Reviewer002 PASS和Leader003收尾验收。本阶段义务完成，S2完整文档核对、S3发布审查和后续XDP文档义务继续按原阶段推进。
 
 影响范围：`docs/specs/`、`docs/runbooks/`、`docs/benchmarks/`、阶段设计与验收。
 

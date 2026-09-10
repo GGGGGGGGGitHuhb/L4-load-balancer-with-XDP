@@ -541,8 +541,13 @@ void failures_and_timeouts() {
   send_all(idle_client.get(), "ping");
   check(exact(idle_client.get(), 4) == "ping", "idle establish");
   check(receive(idle_client.get()).empty(), "idle closes");
-  check(read_file(idle.trace).find("idle-timeout 110") != std::string::npos,
-        "idle evidence");
+  // Peer EOF can arrive before the service writes its close observation.
+  until(
+      [&] {
+        return read_file(idle.trace).find("idle-timeout 110") !=
+               std::string::npos;
+      },
+      "idle evidence");
   idle.stop();
   evidence(
       "AC-04 PASS: real EINPROGRESS/event/SO_ERROR=111 and healthy next; "

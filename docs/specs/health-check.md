@@ -47,3 +47,5 @@ control 持有 checker 和原 Scheduler，两个 reactor 在每轮唤醒、处�
 - 原始日志、源码指纹及 Release 负向验证见 Builder/Reviewer 报告。未实现指标快照、应用层/UDP 主动探测、重试、迁移、热加载或 XDP。
 
 V0.3/S3双backend故障与指标联合验证见 [本机运行手册](../runbooks/local-v0.3-validation.md) 和 [版本验收矩阵](v0.3-acceptance.md)；不改变本规格的生产语义。
+
+V1.0/S1 将以上行为纳入[用户态稳定契约](v1.0-user-visible-contract.md)，未更改探测或业务资格规则；UDP 的 TCP 健康端点要求仅适用于启用 tcp_connect 的配置。

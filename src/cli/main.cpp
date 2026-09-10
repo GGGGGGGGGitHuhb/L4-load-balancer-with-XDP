@@ -16,8 +16,13 @@ int main(int argc, char* argv[]) {
            "预热期拒绝新会话/flow。\n"
            "metrics 默认 off，可选 stderr（单行 metrics JSON，独立于 "
            "health_check）；同步 stderr 可能阻塞业务。\n"
-           "UDP 启用需在相同 IP/端口提供代表 UDP 服务的 TCP 健康端点；既有 "
-           "flow 不迁移。\n";
+           "UDP 仅在启用 health_check=tcp_connect 时需在相同 IP/端口提供代表 "
+           "UDP 服务的 TCP 健康端点；既有 "
+           "flow 不迁移。\n"
+           "ready 仅表示监听就绪，不保证后端可达或 Healthy。\n"
+           "TCP 停止仅尝试在固定 1 秒内排空用户态 pending，不保证送达；"
+           "UDP 停止关闭 "
+           "flows，不保证排空。同步输出阻塞时不保证进程按时退出。\n";
     return 0;
   }
   if (argc != 3 ||

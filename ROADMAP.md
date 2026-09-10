@@ -256,7 +256,9 @@
 
 ### V1.0 用户态稳定版
 
-状态：计划中
+状态：进行中；S1 Completed（2026-09-10），S2/S3待开展，尚未发布V1.0。
+
+S1依据V1.0-S1-D1 Approved完成；批准登记Leader002，Builder002、Reviewer002独立PASS与Leader003收尾齐备。F-001测试夹具端口竞争已返工关闭，六项AC满足，无新增技术债或阻塞。验证为首轮有效证据与复审受影响补验组合，不宣称一次最终31/31。当前分支 `codex/v1.0-s1`，起点V0.4/S3合并提交 `1bb9ea9`；父按用户授权完成后本地提交，推送与发布未执行。完成报告：`docs/leader/reports/V1.0/S1-report-003.md`。
 
 目标：
 
@@ -280,7 +282,7 @@
 
 阶段划分：
 
-- `S1 用户态行为冻结`：冻结 V1.0 用户可见语义，清理配置、日志和错误输出。详细设计文档：`docs/leader/designs/V1.0/S1-design.md`。
+- `S1 用户态行为冻结`（Completed，2026-09-10）：冻结 V1.0 用户可见语义，清理配置、日志和错误输出。详细设计文档：`docs/leader/designs/V1.0/S1-design.md`。
 - `S2 文档与验收补齐`：补齐 README、架构、规格、测试和 benchmark 文档。详细设计文档：`docs/leader/designs/V1.0/S2-design.md`。
 - `S3 发布审查`：完成 Reviewer 审查、技术债归档和发布前验证。详细设计文档：`docs/leader/designs/V1.0/S3-design.md`。
 
