@@ -1,0 +1,50 @@
+{
+  "kernel": "Linux 6.6.87.2-microsoft-standard-WSL2 x86_64 GNU/Linux",
+  "scope": "environment probe only; no project acceptance or performance claim",
+  "modes": {
+    "generic": {
+      "status": "PASS",
+      "checks": [
+        "load",
+        "attach",
+        "duplicate_rejected",
+        "bad_interface_rejected",
+        "udp_pass",
+        "udp_drop",
+        "map_switch_recovery",
+        "counter",
+        "map_read_write",
+        "redirect_exact_frame",
+        "detach",
+        "udp_after_detach"
+      ]
+    },
+    "native_veth": {
+      "status": "PASS",
+      "checks": [
+        "load",
+        "attach",
+        "duplicate_rejected",
+        "bad_interface_rejected",
+        "udp_pass",
+        "udp_drop",
+        "map_switch_recovery",
+        "counter",
+        "map_read_write",
+        "redirect_exact_frame",
+        "detach",
+        "udp_after_detach"
+      ]
+    }
+  },
+  "execution_source": "User executed sudo run.sh in WSL terminal; assistant inspected saved result-02.log. Not an independent Reviewer run.",
+  "ordinary_uid_load_rejected": true,
+  "evidence_sha256": {
+    "result-02.log": "18d30c85e1a4ded0f44485c27719a831e40b8e7da697038e1003aa08da458655",
+    "run.sh": "6a9a92ed419767830b932f254b6d64cd47af82ea3d31c5db0dc259a9620c0f53",
+    "probe.bpf.c": "e5b9d5a40376a4078289336d5551194bcd6fd90347c6225c29f9d5d16046db13",
+    "check.py": "a541649e6ec5c056c93a409c9989809717ae3d1a7d1115276a2b27b3ff75bd41",
+    "probe.bpf.o": "5f86799dd77d011ab05f9e345af32156986fc2a408647688797a84e1cb9e708a",
+    "result.log": "3eaa6b5cd63f8044fc3045ea4919780fa23e744d173e3fec4852a6639dd9b648"
+  }
+}

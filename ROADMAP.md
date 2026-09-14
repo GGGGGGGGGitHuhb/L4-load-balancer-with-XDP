@@ -11,7 +11,7 @@
 当前已完成 V0.1 的 S1 工程骨架、S2 TCP 转发与 S3 产品验证，V0.1 开发范围完成；本地 main 已同步至 V0.3/S3 合并提交 281db01；V0.2/S1 已完成 Completed（Reviewer002 PASS、Leader003 收尾），S2 Completed（Reviewer001 PASS、Leader003 收尾），S3 Completed（Reviewer001 PASS、Leader003收尾），V0.2开发范围完成；S3已合并并有远端标签v0.2-s3（7821b25）；V0.3/S1 Completed且已合并/标记9971818b；V0.3/S2 Completed并合并/标记2f5c26d；当前V0.3/S3及V0.3开发范围Completed。总体技术方向如下：
 
 - C++20 优先。
-- WSL2 用户态开发优先，云服务器 Linux 环境用于 XDP/eBPF 功能验证和阶段收尾。
+- 用户态及 XDP/eBPF 开发、功能验证与阶段收尾采用已验证的本地 WSL2/Linux 隔离网络；不要求购买云服务器。V1.2 性能结论限定于实测环境，环境变化需重新预检。依据见 `docs/runbooks/linux-xdp-env.md`（2026-09-11 用户授权）。
 - LLVM + CMake + Ninja 构建优先。
 - 用户态 socket/epoll 路径优先。
 - 用户可见文档使用中文，命令、路径和代码标识符保留原文。
@@ -306,7 +306,7 @@ S1/S2历史批准与验收保持；S3依据V1.0-S3-D1 Approved完成，授权Lea
 
 ### V1.1 XDP/eBPF 基础集成
 
-状态：计划中
+状态：S1 Completed（2026-09-14），D1 Approved；Builder001/002、Reviewer001独立PASS及Leader002收尾齐备。默认关闭的BPF构建骨架、无特权对象检查和构建矩阵已完成；完整用户态回归31/31、独立ON快速31项通过。S2/S3未开始，V1.1未完成，未提交或发布。公开入口及结果见 `docs/runbooks/xdp-build.md`。
 
 目标：
 
@@ -332,7 +332,7 @@ S1/S2历史批准与验收保持；S3依据V1.0-S3-D1 Approved完成，授权Lea
 
 阶段划分：
 
-- `S1 eBPF 构建骨架`：建立 BPF 目标、目录结构、最小 XDP 程序和构建命令。详细设计文档：`docs/leader/designs/V1.1/S1-design.md`。
+- `S1 eBPF 构建骨架`（Completed，2026-09-14）：建立 BPF 目标、目录结构、最小 XDP 程序和构建命令。详细设计文档：`docs/leader/designs/V1.1/S1-design.md`。
 - `S2 用户态加载与环境检查`：实现 attach/detach、设备参数、权限错误和环境提示。详细设计文档：`docs/leader/designs/V1.1/S2-design.md`。
 - `S3 XDP 文档与验证`：记录 Linux 环境要求、WSL2 限制和最小验证流程。详细设计文档：`docs/leader/designs/V1.1/S3-design.md`。
 
@@ -340,7 +340,7 @@ S1/S2历史批准与验收保持；S3依据V1.0-S3-D1 Approved完成，授权Lea
 
 - 用户态路径仍可独立运行和测试。
 - eBPF object 可以通过构建命令生成。
-- 在云服务器 Linux 环境中可以执行最小 attach/detach 验证。
+- 在已验证的本地 Linux/WSL2 隔离网络中执行最小 attach/detach 及流量验证，记录内核、接口和实际模式。
 - XDP 相关失败有明确错误提示。
 - XDP 环境文档和 map schema 初稿已生成。
 - 相关 Builder 报告和 Reviewer 审查报告已生成。
@@ -375,7 +375,7 @@ S1/S2历史批准与验收保持；S3依据V1.0-S3-D1 Approved完成，授权Lea
 - 不实现完整 TCP proxy。
 - 不实现复杂 conntrack。
 - 不实现生产级 NAT/LB。
-- 不把 XDP 性能结果泛化到 WSL2。
+- 不把其他平台的 XDP 性能结果泛化到 WSL2，也不把本地 WSL2/veth 结果泛化到其他平台或物理网卡。
 - 不把云服务器测试结果泛化为物理网卡 native XDP 极限性能。
 - 不引入 DPDK。
 
@@ -387,7 +387,7 @@ S1/S2历史批准与验收保持；S3依据V1.0-S3-D1 Approved完成，授权Lea
 
 完成标准：
 
-- XDP 原型可以在云服务器 Linux 环境中运行。
+- XDP 原型可以在已验证的本地 Linux/WSL2 隔离网络中运行；map、包处理及受限转发须在实际项目实现上验收。
 - 用户态控制面可以更新 XDP 所需 maps。
 - XDP 统计可以被读取或展示。
 - 用户态路径不被破坏。
@@ -449,9 +449,11 @@ S1/S2历史批准与验收保持；S3依据V1.0-S3-D1 Approved完成，授权Lea
 - 配置、调度、健康检查和指标语义清晰。
 - 默认测试可以稳定通过。
 - 性能测试方法已文档化。
-- 已明确可用的云服务器 Linux XDP 验证环境，并记录实例规格、内核、网卡、attach mode 和云网络限制。
+- 已明确可用的本地 Linux/WSL2 XDP 隔离验证环境，记录主机/虚拟化配置、内核、虚拟网卡、attach mode 和测量限制；云服务器不是前置条件。
 
 ## 变更记录
+
+- `2026-09-11`：依据用户授权和本地 generic/native veth 环境预检，取消 V1.1/V1.2 云端运行硬性要求，改用本地隔离网络；保留产品验收、可复现性能对比和环境边界要求。
 
 - `2026-05-21`：调整环境路线，明确 WSL2 用于用户态开发，云服务器用于 XDP/eBPF 验证与收尾；补充项目与高性能 HTTP 服务器的分层区别。
 - `2026-05-19`：创建初版路线图，确定项目从 C++ 用户态 TCP/UDP L4 负载均衡器演进到 XDP/eBPF fast path 的版本边界。
