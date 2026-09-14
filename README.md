@@ -2,7 +2,7 @@
 
 C++20 用户态四层负载均衡实验项目：单线程 LT epoll TCP 双向字节流、UDP flow 固定绑定、轮询、可选 TCP 握手健康检查与 stderr 指标。另提供可选的最小XDP/eBPF对象及独立加载器；默认用户态运行无需内核模块、数据库或外部服务。
 
-可选XDP：S1提供[BPF对象构建](docs/runbooks/xdp-build.md)，S2新增独立的[l4lb-xdp加载与卸载工具](docs/runbooks/xdp-loader.md)，默认均关闭。S2已完成独立验收（2026-09-14）；S3未开始，V1.1整体尚未完成。
+可选XDP：S1提供[BPF对象构建](docs/runbooks/xdp-build.md)，S2新增独立的[l4lb-xdp加载与卸载工具](docs/runbooks/xdp-loader.md)，默认均关闭。S2已完成独立验收（2026-09-14）；S3及V1.1开发范围已完成独立验收（2026-09-14），最小复现与六标准见[V1.1验证](docs/runbooks/xdp-validation.md)和[验收索引](docs/specs/v1.1-acceptance.md)。S3交付位于`codex/v1.1-s3`分支，V1.1未正式发布。
 
 ## 当前状态
 

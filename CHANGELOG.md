@@ -1,5 +1,12 @@
 # Changelog
 
+### 2026-09-14 V1.1/S3 文档与验证完成（未发布）
+
+- S2已合并为5284777（PR17），v1.1-s2附注标签已推送并核对远端；S3从该合并基线复验，无生产/构建/测试代码改动。
+- 补齐Linux/WSL2最小验证流程、公开机器摘要、六标准验收索引和map schema初稿；明确V1.1实际无maps、V1.2候选字段尚非ABI，保留历史预检边界。
+- Builder新Release默认OFF完整31/31（166.57秒）、ON两项通过；Reviewer独立OFF核心11/11、ON两项、BPF-only无Python生产构建通过；双方独立产物generic/native-veth各14项真实测试通过。
+- 独立Reviewer001 PASS和Leader002收尾，S3及V1.1开发范围Completed；S3交付位于`codex/v1.1-s3`分支，尚未合并，V1.1未正式发布，V1.2与性能义务继续。
+
 ### 2026-09-14 V1.1/S2 用户态 XDP 加载与卸载完成（未发布）
 
 - 新增默认关闭的独立l4lb-xdp工具和libbpf开发依赖检查；S1仅对象构建仍无需libbpf，原l4lb配置及TCP/UDP路径保持。
