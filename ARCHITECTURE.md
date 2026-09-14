@@ -121,7 +121,7 @@ XDP/eBPF 数据面层是后续用于包级 fast path 的可选数据路径。它
 
 ## 模块职责
 
-当前已实现CLI、配置、轮询、control装配、单线程TCP/UDP reactor及可选health/metrics，用户态行为已在V1.0/S1冻结。配置检查调用链仍为 argv → CLI 参数验证 → 有界只读配置加载 → 纯解析与完整校验 → 摘要或错误；--run 在校验后进入 control → net 完成监听、后端连接与双向转发。当前 UDP 实现边界见末尾 V0.2/S2；健康检查当前边界见末尾 V0.3/S1；指标边界见末尾V0.3/S2；XDP已新增S1最小构建对象，运行时集成仍为后续架构，职责边界保持稳定。
+当前已实现CLI、配置、轮询、control装配、单线程TCP/UDP reactor及可选health/metrics，用户态行为已在V1.0/S1冻结。配置检查调用链仍为 argv → CLI 参数验证 → 有界只读配置加载 → 纯解析与完整校验 → 摘要或错误；--run 在校验后进入 control → net 完成监听、后端连接与双向转发。当前 UDP 实现边界见末尾 V0.2/S2；健康检查当前边界见末尾 V0.3/S1；指标边界见末尾V0.3/S2；XDP已新增独立可选S2加载工具，尚无map或fast path业务集成，职责边界保持稳定。
 
 ### `src/cli/`
 
@@ -338,7 +338,7 @@ XDP fast path 只处理适合包级表达的逻辑。典型流程：
 
 ## 依赖方向
 
-当前control装配core/net/health/metrics；以下涉及xdp的运行时依赖仅为后续约束；src/xdp当前只提供独立构建的XDP_PASS对象。
+当前control装配core/net/health/metrics；以下涉及control到xdp的依赖仍为后续约束；当前XDP对象及加载器独立构建，不链接到原l4lb。
 
 允许的依赖方向：
 
@@ -684,4 +684,10 @@ Buffer保留初始化的固定64KiB数组，用head/size和连续读写span代�
 
 ## V1.1/S1 BPF 构建边界
 
-`src/xdp/xdp_pass.bpf.c`仅包含Linux UAPI与最小XDP_PASS入口；`cmake/Xdp.cmake`在L4LB_BUILD_XDP开启时探测BPF工具链并生成独立object。默认OFF，不向用户态目标传播BPF依赖、编译选项或链接对象。BUILD_TESTING开启时新增无特权xdp_build对象检查。当前无项目loader、maps或attach调用，长期XDP架构不表示这些能力已经实现。具体构建入口见 `docs/runbooks/xdp-build.md`。
+`src/xdp/xdp_pass.bpf.c`仅包含Linux UAPI与最小XDP_PASS入口；`cmake/Xdp.cmake`在L4LB_BUILD_XDP开启时探测BPF工具链并生成独立object。默认OFF，不向用户态目标传播BPF依赖、编译选项或链接对象。BUILD_TESTING开启时新增无特权xdp_build对象检查。S1交付时无项目loader、maps或attach调用；S2新增loader如下，maps仍未实现。具体构建入口见 `docs/runbooks/xdp-build.md`。
+
+## V1.1/S2 加载器边界
+
+`l4lb-xdp` 独立于既有l4lb：`main.cpp`严格解析attach/detach设备/模式/对象或ID，先阻塞退出信号；`loader.cpp`使用官方libbpf加载并挂载，前台同步sigwait后条件卸载。使用RAII管理object/FD，不引入回调注册或业务装配层。程序通过内核old_prog_fd原子比较保护其他挂载；比较FD复制到>=3，防止FD0被libbpf视为未指定。READY输出失败亦清理；SIGKILL不能自动清理，需要用户提供ID显式卸载。
+
+`L4LB_BUILD_XDP_LOADER`默认OFF，仅开启时检测libbpf>=1.0，且要求S1 BPF构建开启；不传播到原用户态目标。默认CTest只增加普通UID的CLI负向检查，真实BPF验收是显式root自建net namespace/veth脚本。无maps、持久pin、TCP代理或性能承诺。运行契约见[加载手册](docs/runbooks/xdp-loader.md)。

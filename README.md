@@ -1,12 +1,14 @@
 # L4 Load Balancer with XDP
 
-C++20 用户态四层负载均衡实验项目：单线程 LT epoll TCP 双向字节流、UDP flow 固定绑定、轮询、可选 TCP 握手健康检查与 stderr 指标。另提供可选的最小XDP/eBPF构建骨架；默认用户态运行无需内核模块、数据库或外部服务。
+C++20 用户态四层负载均衡实验项目：单线程 LT epoll TCP 双向字节流、UDP flow 固定绑定、轮询、可选 TCP 握手健康检查与 stderr 指标。另提供可选的最小XDP/eBPF对象及独立加载器；默认用户态运行无需内核模块、数据库或外部服务。
+
+可选XDP：S1提供[BPF对象构建](docs/runbooks/xdp-build.md)，S2新增独立的[l4lb-xdp加载与卸载工具](docs/runbooks/xdp-loader.md)，默认均关闭。S2已完成独立验收（2026-09-14）；S3未开始，V1.1整体尚未完成。
 
 ## 当前状态
 
 V0.1—V0.4 用户态开发范围已完成；V1.0/S1 已冻结[用户可见行为](docs/specs/v1.0-user-visible-contract.md)。V1.0/S2 文档与验收补齐已完成（2026-09-10）：独立Debug快速30/30、Release完整31/31、最短示例与公开文档验证通过，Leader已收尾。S3独立发布前审查PASS且Leader已收尾，**S1/S2/S3及V1.0用户态开发范围Completed，本轮候选发布就绪，实际发布未执行**（2026-09-10）。S3独立Debug30/30、Release31/31含长expiry及原TCP/UDP示例通过，不自动启动未来XDP阶段。本轮候选及三种状态见[公开发布前审查](docs/specs/v1.0-release-review.md)。阶段证据与待验事项见[公开 V1.0 验收索引](docs/specs/v1.0-acceptance.md)；历史版本结果分别保留在[V0.1](docs/specs/v0.1-acceptance.md)、[V0.2](docs/specs/v0.2-acceptance.md)、[V0.3](docs/specs/v0.3-acceptance.md)、[V0.4](docs/specs/v0.4-acceptance.md)矩阵中，不是当前测试数量。
 
-V1.1/S1构建骨架已完成（2026-09-14，独立审查PASS；未提交或发布）。显式开启 `-DL4LB_BUILD_XDP=ON` 后可构建 `l4lb_xdp`，生成独立BPF对象；默认用户态路径保持。命令和依赖见[XDP构建说明](docs/runbooks/xdp-build.md)。
+V1.1/S1构建骨架已完成（2026-09-14，独立审查PASS；已本地提交并标记v1.1-s1）。显式开启 `-DL4LB_BUILD_XDP=ON` 后可构建 `l4lb_xdp`，生成独立BPF对象；默认用户态路径保持。命令和依赖见[XDP构建说明](docs/runbooks/xdp-build.md)。
 
 ## 环境与快速构建
 

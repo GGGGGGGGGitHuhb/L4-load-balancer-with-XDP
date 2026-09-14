@@ -306,7 +306,7 @@ S1/S2历史批准与验收保持；S3依据V1.0-S3-D1 Approved完成，授权Lea
 
 ### V1.1 XDP/eBPF 基础集成
 
-状态：S1 Completed（2026-09-14），D1 Approved；Builder001/002、Reviewer001独立PASS及Leader002收尾齐备。默认关闭的BPF构建骨架、无特权对象检查和构建矩阵已完成；完整用户态回归31/31、独立ON快速31项通过。S2/S3未开始，V1.1未完成，未提交或发布。公开入口及结果见 `docs/runbooks/xdp-build.md`。
+状态：S1 Completed（2026-09-14），D1 Approved；Builder001/002、Reviewer001独立PASS及Leader002收尾齐备。默认关闭的BPF构建骨架、无特权对象检查和构建矩阵已完成；完整用户态回归31/31、独立ON快速31项通过。S1已本地提交e01eaea并标记v1.1-s1。S2 Completed（2026-09-14），D1 Approved、Builder001、Reviewer001独立PASS与Leader002收尾齐备；generic/native-veth各14项实际产品验证通过，独立33项CTest均有通过证据（4项网络测试采用隔离复验）。S3未开始，V1.1未完成。公开入口见 `docs/runbooks/xdp-build.md`、`docs/runbooks/xdp-loader.md`。
 
 目标：
 
@@ -333,7 +333,7 @@ S1/S2历史批准与验收保持；S3依据V1.0-S3-D1 Approved完成，授权Lea
 阶段划分：
 
 - `S1 eBPF 构建骨架`（Completed，2026-09-14）：建立 BPF 目标、目录结构、最小 XDP 程序和构建命令。详细设计文档：`docs/leader/designs/V1.1/S1-design.md`。
-- `S2 用户态加载与环境检查`：实现 attach/detach、设备参数、权限错误和环境提示。详细设计文档：`docs/leader/designs/V1.1/S2-design.md`。
+- `S2 用户态加载与环境检查`（Completed，2026-09-14）：实现 attach/detach、设备参数、权限错误和环境提示。详细设计文档：`docs/leader/designs/V1.1/S2-design.md`。
 - `S3 XDP 文档与验证`：记录 Linux 环境要求、WSL2 限制和最小验证流程。详细设计文档：`docs/leader/designs/V1.1/S3-design.md`。
 
 完成标准：

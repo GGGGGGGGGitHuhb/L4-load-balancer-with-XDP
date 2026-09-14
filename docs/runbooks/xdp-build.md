@@ -1,6 +1,6 @@
 # V1.1/S1 可选 eBPF 构建
 
-S1提供独立的最小 `XDP_PASS` 对象。构建不需要root、libbpf开发头、bpftool或内核BTF；不会加载或挂载程序。当前支持Linux原生构建（含WSL2），不支持CMake交叉工具链。加载器在S2实现。
+S1提供独立的最小 `XDP_PASS` 对象。构建不需要root、libbpf开发头、bpftool或内核BTF；不会加载或挂载程序。当前支持Linux原生构建（含WSL2），不支持CMake交叉工具链。S2独立加载器的额外选项与依赖见[加载与卸载](xdp-loader.md)。
 
 ## 默认用户态构建
 
@@ -50,7 +50,7 @@ python3 tests/xdp_build_test.py --work .stage-tmp/xdp-build-check
 
 ## 当前验证边界
 
-[本地环境预检](linux-xdp-env.md)证明9月11日generic/native veth基础能力；S1此处只交付编译骨架。项目loader、权限/接口CLI、正式map schema及运行验证继续按后续阶段推进。物理网卡native/offload和性能结论未验证。S1已于2026-09-14完成独立审查和Leader收尾，详见下方结果；尚未提交或发布。
+[本地环境预检](linux-xdp-env.md)证明9月11日generic/native veth基础能力；S1此处只交付编译骨架，已于2026-09-14完成独立审查、Leader收尾、本地提交e01eaea及标签v1.1-s1。S2新增的项目loader、权限/接口CLI和隔离运行测试见[加载手册](xdp-loader.md)。正式map schema仍待V1.2；物理网卡native/offload和性能结论未验证，阶段标签不表示V1.1整体发布。
 
 参考：[内核Clang说明](https://docs.kernel.org/bpf/clang-notes.html)、[CMake自定义构建规则](https://cmake.org/cmake/help/latest/command/add_custom_command.html)。
 
