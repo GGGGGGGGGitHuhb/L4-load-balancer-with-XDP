@@ -1,5 +1,12 @@
 # Changelog
 
+### 2026-09-14 V1.1/S2 用户态 XDP 加载与卸载完成（未发布）
+
+- 新增默认关闭的独立l4lb-xdp工具和libbpf开发依赖检查；S1仅对象构建仍无需libbpf，原l4lb配置及TCP/UDP路径保持。
+- 提供generic/native显式模式、设备/对象/ID严格校验、前台INT/TERM清理和按程序ID显式卸载；拒绝覆盖已有程序，以内核FD原子比较防止误卸载外部替换程序。
+- 修复审查发现的FD0比较失效边界；新增普通UID CLI负向测试与显式root隔离veth产品验证。Builder Release与Reviewer独立Debug两模式各14项通过。独立33项CTest均有PASS证据：host29项及隔离网络复验4项，首轮失败保留，不宣称host整组通过。
+- 新增加载手册，完成独立Reviewer001 PASS与Leader收尾；S3/V1.1整体、maps及性能结论未完成。
+
 ### 2026-09-14 V1.1/S1 eBPF 构建骨架完成（未发布）
 
 - 新增默认OFF的L4LB_BUILD_XDP选项、独立l4lb_xdp目标及最小XDP_PASS对象；显式开启才检查BPF Clang/UAPI依赖，默认用户态构建不新增依赖。
