@@ -1,6 +1,6 @@
 # V1.1/S2 XDP 加载与卸载
 
-`l4lb-xdp` 是独立可选工具，用于加载本项目最小 `XDP_PASS` 对象。默认用户态 `l4lb`、配置及TCP/UDP路径保持；这不是XDP负载均衡器，不提供map、包转发或性能结论。S3完整版本验证仍待后续阶段。
+`l4lb-xdp` 是独立可选工具，用于加载本项目最小 `XDP_PASS` 对象。默认用户态 `l4lb`、配置及TCP/UDP路径保持；这不是XDP负载均衡器，不提供map、包转发或性能结论。完整版本验证入口见[最小验证流程](xdp-validation.md)。
 
 ## 构建
 
@@ -64,4 +64,4 @@ sudo build-xdp/bin/l4lb-xdp detach --dev xb --mode generic --prog-id 123
 
 独立Reviewer PASS，S2 Completed。Ubuntu24.04.3/WSL2内核6.6.87.2-microsoft-standard-WSL2、Clang18、libbpf1.3.0：Builder Release与Reviewer独立Debug产物均完成generic/native-veth各14项真实验证。关闭stdin时libbpf把FD0视为未指定比较的边界已修复并复验；比较FD统一复制到>=3。
 
-普通UID CLI脚本33用例通过。当前ON两选项的CTest共33项均有独立PASS证据：宿主环境29/33，四项网络测试失败后在隔离namespace普通UID中4/4通过；未确定宿主失败具体原因，不宣称宿主整组通过。S1构建矩阵仍通过，默认OFF/S1-only不受loader依赖影响。S3完整版本收尾、其他内核/物理网卡和性能未验。
+普通UID CLI脚本33用例通过。当前ON两选项的CTest共33项均有独立PASS证据：宿主环境29/33，四项网络测试失败后在隔离namespace普通UID中4/4通过；未确定宿主失败具体原因，不宣称宿主整组通过。S1构建矩阵仍通过，默认OFF/S1-only不受loader依赖影响。以上为S2验收时的记录；S3最新验证见[版本验收索引](../specs/v1.1-acceptance.md)。其他内核/物理网卡和性能未验。

@@ -193,6 +193,8 @@ V1.0/S3处置（2026-09-10）：保持已解决。key=value与现有CTest/CMake/
 
 ### TD-003 XDP/eBPF 验证环境确认（原云服务器环境项）
 
+2026-09-14 S3验证进展：合并基线5284777的新构建已复验项目generic/native-veth生命周期与流量；环境页区分旧预检和本轮产品证据。完整结果见[最小验证](docs/runbooks/xdp-validation.md)与[版本验收](docs/specs/v1.1-acceptance.md)，S3经独立Reviewer001 PASS及Leader002收尾，本阶段验证义务完成。V1.2 map/数据面与性能义务仍未关闭。
+
 2026-09-14 S2验证进展：项目l4lb-xdp已在本地WSL2隔离veth完成generic/native两模式真实挂载/流量/条件卸载测试，Builder与Reviewer独立产物各14项通过。S2已独立Reviewer001 PASS并由Leader002收尾，不再以sudo密码为环境阻塞：本轮使用WSL官方root入口启动自建net namespace测试。S3、V1.2与性能义务继续，不整体关闭。
 
 2026-09-11 当前决定：用户明确要求本地可用则使用本地、不购买云服务器。本地 WSL2 6.6.87.2、generic/native veth 两模式均通过真实 UDP、map、计数和重定向能力预检；云采购前置条件撤销。状态：基础环境已确认，阶段产品验收和性能方法仍持续跟踪，不整体关闭。证据及限制见[本地 XDP 环境](docs/runbooks/linux-xdp-env.md)。Leader 维护路线，Builder 在 V1.1/V1.2 实现并复现，Reviewer 独立验收；退出条件为对应产品、清理、可复现性能对比和环境文档齐备。若实际需求遇到本地限制，先定位，不自动采购或降低标准。
@@ -237,6 +239,8 @@ V1.0/S3归档分界（2026-09-10）：继续跟踪，不阻塞V1.0用户态候�
 - `2026-05-19`：新增，原因是当前环境为 WSL2，XDP 真实验证需要后续确认。
 
 ### TD-004 长期规格文档随阶段补齐
+
+2026-09-14 S3文档进展：补齐公开最小验证流程、机器摘要、六标准验收索引和xdp-map-schema初稿；实际V1.1无maps，候选字段不等于V1.2 ABI。S3经独立Reviewer001验收，V1.1文档义务完成；V1.2实际schema批准/实现、数据面与性能文档继续。
 
 2026-09-14 S2文档进展：新增 `docs/runbooks/xdp-loader.md`，记录libbpf可选依赖、前台生命周期、显式条件卸载、权限错误及显式隔离测试。S2文档经独立Reviewer001验收；S3完整版本验证和V1.2 map/性能文档义务继续。
 

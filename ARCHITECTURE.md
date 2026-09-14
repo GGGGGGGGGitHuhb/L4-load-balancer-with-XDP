@@ -691,3 +691,9 @@ Buffer保留初始化的固定64KiB数组，用head/size和连续读写span代�
 `l4lb-xdp` 独立于既有l4lb：`main.cpp`严格解析attach/detach设备/模式/对象或ID，先阻塞退出信号；`loader.cpp`使用官方libbpf加载并挂载，前台同步sigwait后条件卸载。使用RAII管理object/FD，不引入回调注册或业务装配层。程序通过内核old_prog_fd原子比较保护其他挂载；比较FD复制到>=3，防止FD0被libbpf视为未指定。READY输出失败亦清理；SIGKILL不能自动清理，需要用户提供ID显式卸载。
 
 `L4LB_BUILD_XDP_LOADER`默认OFF，仅开启时检测libbpf>=1.0，且要求S1 BPF构建开启；不传播到原用户态目标。默认CTest只增加普通UID的CLI负向检查，真实BPF验收是显式root自建net namespace/veth脚本。无maps、持久pin、TCP代理或性能承诺。运行契约见[加载手册](docs/runbooks/xdp-loader.md)。
+
+## V1.1/S3 验证与文档边界
+
+S3复用S1/S2构建和测试，不新增运行时层。默认OFF、BPF-only、独立loader三种组合及普通UID/特权分层见[V1.1最小验证](docs/runbooks/xdp-validation.md)。特权脚本直接在临时net namespace中注入Ethernet/IPv4/UDP帧，验证真实挂载和条件卸载，普通用户态测试在隔离网络降权运行。
+
+[map schema初稿](docs/specs/xdp-map-schema.md)明确V1.1实际map集合为空；V1.2候选后端与统计字段只是后续设计输入，不是共享ABI或已实现控制面同步。版本六标准与记录环境见[验收索引](docs/specs/v1.1-acceptance.md)，公开JSON用于审计本轮结果，不作为性能或跨平台保证。
