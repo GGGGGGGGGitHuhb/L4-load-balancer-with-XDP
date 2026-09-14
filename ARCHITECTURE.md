@@ -18,8 +18,8 @@
 - 优先使用 C++ 标准库、Linux 系统调用和小而明确的第三方库。
 - 不默认引入大型网络框架、协程框架、完整用户态 TCP/IP 协议栈或 DPDK。
 - 不把 XDP/eBPF 作为第一阶段必需运行路径；用户态实现必须能独立构建、测试和演示。
-- 项目主要面向 Linux 环境；WSL2 可用于用户态开发和基础验证，XDP/eBPF 阶段优先使用云服务器 Linux 环境做功能验证和收尾。
-- 云服务器性能结果只能代表对应实例规格、内核、虚拟网卡和云网络环境，不作为物理网卡 native XDP 极限性能结论。
+- 项目主要面向 Linux 环境；用户态及 XDP/eBPF 功能验证与收尾采用已验证的本地 WSL2/Linux 隔离网络。云服务器不再是前置条件；环境依据见 `docs/runbooks/linux-xdp-env.md`。
+- 本地 WSL2/veth 或云服务器性能结果只代表各自实测配置；native veth 不等于物理网卡 native XDP 极限性能，本次预检不产生性能结论。
 
 跨平台约束：
 
@@ -121,7 +121,7 @@ XDP/eBPF 数据面层是后续用于包级 fast path 的可选数据路径。它
 
 ## 模块职责
 
-当前已实现CLI、配置、轮询、control装配、单线程TCP/UDP reactor及可选health/metrics，用户态行为已在V1.0/S1冻结。配置检查调用链仍为 argv → CLI 参数验证 → 有界只读配置加载 → 纯解析与完整校验 → 摘要或错误；--run 在校验后进入 control → net 完成监听、后端连接与双向转发。当前 UDP 实现边界见末尾 V0.2/S2；健康检查当前边界见末尾 V0.3/S1；指标边界见末尾V0.3/S2；XDP仍为长期架构，职责边界保持稳定。
+当前已实现CLI、配置、轮询、control装配、单线程TCP/UDP reactor及可选health/metrics，用户态行为已在V1.0/S1冻结。配置检查调用链仍为 argv → CLI 参数验证 → 有界只读配置加载 → 纯解析与完整校验 → 摘要或错误；--run 在校验后进入 control → net 完成监听、后端连接与双向转发。当前 UDP 实现边界见末尾 V0.2/S2；健康检查当前边界见末尾 V0.3/S1；指标边界见末尾V0.3/S2；XDP已新增S1最小构建对象，运行时集成仍为后续架构，职责边界保持稳定。
 
 ### `src/cli/`
 
@@ -338,7 +338,7 @@ XDP fast path 只处理适合包级表达的逻辑。典型流程：
 
 ## 依赖方向
 
-当前control装配core/net/health/metrics；以下涉及xdp的依赖仅为后续约束，src/xdp尚未实现。
+当前control装配core/net/health/metrics；以下涉及xdp的运行时依赖仅为后续约束；src/xdp当前只提供独立构建的XDP_PASS对象。
 
 允许的依赖方向：
 
@@ -468,7 +468,7 @@ XDP/eBPF 集成通过用户态加载器和 eBPF maps 完成。
 - XDP attach、detach 和 map 操作可能需要特权权限。
 - 对网络设备的修改必须显式记录和可恢复。
 - XDP 程序失败时不应破坏用户态基础路径。
-- 云服务器上的 XDP 验证必须记录实例规格、内核版本、网卡类型、attach mode 和云厂商网络限制。
+- XDP 验证必须记录主机/虚拟化配置、内核版本、网卡类型、attach mode、权限和测试拓扑；若使用云环境，另记实例规格和云网络限制。
 
 ## 错误处理与安全边界
 
@@ -574,7 +574,7 @@ XDP/eBPF 状态：
 - XDP/eBPF 程序不得承载完整 TCP 代理语义。
 - eBPF map schema 不得直接依赖 C++ 对象内存布局。
 - 默认测试不得要求 root 权限、真实网卡或 XDP native mode。
-- XDP/eBPF 阶段以云服务器 Linux 环境作为首选验证与收尾环境，相关结论必须记录环境边界。
+- XDP/eBPF 阶段以已验证的本地 Linux/WSL2 隔离网络作为验证与收尾环境；具体功能和性能须按阶段独立验收，记录环境边界。
 - 不引入 DPDK 作为本项目数据面。
 - 大型依赖、跨层全局状态和循环依赖默认禁止。
 
@@ -636,6 +636,8 @@ XDP/eBPF 状态：
 
 ## 变更记录
 
+- `2026-09-11`：根据用户授权与环境预检改用本地 XDP 验证路线，取消云服务器前置要求；模块边界保持。
+
 - `2026-05-21`：补充项目环境路线，明确 WSL2 用于用户态开发，云服务器用于 XDP/eBPF 功能验证与阶段收尾。
 - `2026-05-19`：创建初版架构文档，明确 C++ 用户态 L4 负载均衡器、控制面、用户态数据面和 XDP/eBPF 数据面的长期职责边界。
 
@@ -679,3 +681,7 @@ Buffer保留初始化的固定64KiB数组，用head/size和连续读写span代�
 ## V0.4/S3 对照工具边界
 
 `v04_benchmark_identity.py` 从固定Git对象导出与构建产品并核验manifest，`v04_benchmark_compare.py` 串行编排同一最终runner，`v04_benchmark_data.py` 独立重算原始统计/完整格点并生成可移植数据包。product_identity与工具工作树environment分开；产品src/configs保持S2，正式矩阵不进入CTest。公开报告与版本标准入口分别在 `docs/benchmarks/reports/v0.4-user-space.md`、`docs/specs/v0.4-acceptance.md`，阶段完成仍需独立Reviewer和Leader收尾。
+
+## V1.1/S1 BPF 构建边界
+
+`src/xdp/xdp_pass.bpf.c`仅包含Linux UAPI与最小XDP_PASS入口；`cmake/Xdp.cmake`在L4LB_BUILD_XDP开启时探测BPF工具链并生成独立object。默认OFF，不向用户态目标传播BPF依赖、编译选项或链接对象。BUILD_TESTING开启时新增无特权xdp_build对象检查。当前无项目loader、maps或attach调用，长期XDP架构不表示这些能力已经实现。具体构建入口见 `docs/runbooks/xdp-build.md`。

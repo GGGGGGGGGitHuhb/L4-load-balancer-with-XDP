@@ -1,10 +1,12 @@
 # L4 Load Balancer with XDP
 
-C++20 用户态四层负载均衡实验项目：单线程 LT epoll TCP 双向字节流、UDP flow 固定绑定、轮询、可选 TCP 握手健康检查与 stderr 指标。XDP/eBPF 是后续路线，当前无需内核模块、数据库或外部服务。
+C++20 用户态四层负载均衡实验项目：单线程 LT epoll TCP 双向字节流、UDP flow 固定绑定、轮询、可选 TCP 握手健康检查与 stderr 指标。另提供可选的最小XDP/eBPF构建骨架；默认用户态运行无需内核模块、数据库或外部服务。
 
 ## 当前状态
 
 V0.1—V0.4 用户态开发范围已完成；V1.0/S1 已冻结[用户可见行为](docs/specs/v1.0-user-visible-contract.md)。V1.0/S2 文档与验收补齐已完成（2026-09-10）：独立Debug快速30/30、Release完整31/31、最短示例与公开文档验证通过，Leader已收尾。S3独立发布前审查PASS且Leader已收尾，**S1/S2/S3及V1.0用户态开发范围Completed，本轮候选发布就绪，实际发布未执行**（2026-09-10）。S3独立Debug30/30、Release31/31含长expiry及原TCP/UDP示例通过，不自动启动未来XDP阶段。本轮候选及三种状态见[公开发布前审查](docs/specs/v1.0-release-review.md)。阶段证据与待验事项见[公开 V1.0 验收索引](docs/specs/v1.0-acceptance.md)；历史版本结果分别保留在[V0.1](docs/specs/v0.1-acceptance.md)、[V0.2](docs/specs/v0.2-acceptance.md)、[V0.3](docs/specs/v0.3-acceptance.md)、[V0.4](docs/specs/v0.4-acceptance.md)矩阵中，不是当前测试数量。
+
+V1.1/S1构建骨架已完成（2026-09-14，独立审查PASS；未提交或发布）。显式开启 `-DL4LB_BUILD_XDP=ON` 后可构建 `l4lb_xdp`，生成独立BPF对象；默认用户态路径保持。命令和依赖见[XDP构建说明](docs/runbooks/xdp-build.md)。
 
 ## 环境与快速构建
 
@@ -113,7 +115,7 @@ python3 tests/v04_benchmark_compare.py recompute --package docs/benchmarks/repor
 - [故障联合验证](docs/runbooks/local-v0.3-validation.md)、[资源与有界停止](docs/runbooks/local-v0.4-lifecycle-validation.md)、[历史开发环境](docs/runbooks/local-dev-env.md)。
 - [V1.0验收索引](docs/specs/v1.0-acceptance.md)区分S1历史组合证据、S2本轮验证和S3待验。
 
-仅支持静态IPv4，无DNS/IPv6/热加载/失败换后端重试或UDP可靠交付。容量默认1024，完整产品1024满载未经承诺；同步输出、内核缓冲等不包含在用户态pending容量中。UDP用于受控实验网络，无公网开放relay或源地址反欺骗防护。WSL/Python生成器/共享CPU测量不代表物理网卡或native XDP上限；后续XDP功能验证路线见技术债TD-003，主线不包含DPDK。
+仅支持静态IPv4，无DNS/IPv6/热加载/失败换后端重试或UDP可靠交付。容量默认1024，完整产品1024满载未经承诺；同步输出、内核缓冲等不包含在用户态pending容量中。UDP用于受控实验网络，无公网开放relay或源地址反欺骗防护。WSL/Python生成器/共享CPU测量不代表物理网卡或native XDP上限；XDP采用已预检的本地隔离网络，具体结果与边界见[本地XDP环境](docs/runbooks/linux-xdp-env.md)；TD-003继续跟踪阶段验收，主线不包含DPDK。
 
 `docs/leader/`、`docs/builder/`、`docs/reviewer/`及根AGENTS属于本地治理记录，不随普通clone分发；它们不是运行和公开验收的必读入口。ROADMAP中的未来设计路径是计划位置，不代表文件或能力已存在。公开链接检查可运行`python3 tests/docs_links.py .`，仅检查根与docs Markdown的本地链接和锚点，不联网扫外链。
 
