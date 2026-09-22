@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "MapSchema.h"
+#include "control/DsrConfigSync.h"
 
 struct bpf_object;
 
@@ -12,6 +13,9 @@ namespace l4lb::xdp {
 
 /** Explicit hook selection; never silently fall back from native to generic. */
 enum class Mode { Generic, Native };
+
+/** Mutually exclusive object and configuration ABI. */
+enum class Profile { kLegacy, kMapsV1, kUdpDsrV2 };
 
 const char* mode_name(Mode mode);
 int interface_index(const std::string& device);
@@ -25,8 +29,10 @@ class Attachment {
   Attachment(const Attachment&) = delete;
   Attachment& operator=(const Attachment&) = delete;
 
-  void load(const std::string& path, bool mapsMode = false,
-            const std::vector<XdpBackendValue>& backends = {});
+  void load(const std::string& path, Profile profile = Profile::kLegacy,
+            const std::vector<XdpBackendValue>& backends = {},
+            const control::DsrConfiguration& dsr = {});
+  UdpDsrStatsValue readDsrStats() const;
   uint64_t readPassPackets() const;
   void attach(int ifindex, Mode mode);
   void detach();
@@ -41,7 +47,7 @@ class Attachment {
   int ifindex_ = 0;
   Mode mode_ = Mode::Generic;
   bool attached_ = false;
-  bool mapsMode_ = false;
+  Profile profile_ = Profile::kLegacy;
 };
 
 /** Atomically detach only the requested program, or succeed if already absent.

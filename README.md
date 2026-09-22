@@ -2,11 +2,11 @@
 
 C++20 用户态四层负载均衡实验项目：单线程 LT epoll TCP 双向字节流、UDP flow 固定绑定、轮询、可选 TCP 握手健康检查与 stderr 指标。另提供可选的最小XDP/eBPF对象及独立加载器；默认用户态运行无需内核模块、数据库或外部服务。
 
-可选XDP：提供[BPF对象构建](docs/runbooks/xdp-build.md)和独立的[l4lb-xdp加载工具](docs/runbooks/xdp-loader.md)，默认均关闭。V1.1开发范围已验收；V1.2/S1新增[后端/统计 maps](docs/specs/xdp-map-schema.md)，挂载前一次性同步、回读并冻结，正常停止时输出包计数。旧模式保持；更改后端需停止重启，尚无包转发或健康联动。复现见[XDP验证](docs/runbooks/xdp-validation.md)，历史见[V1.1验收索引](docs/specs/v1.1-acceptance.md)。
+可选XDP：提供[BPF对象构建](docs/runbooks/xdp-build.md)和独立的[l4lb-xdp加载工具](docs/runbooks/xdp-loader.md)，默认均关闭。V1.2/S1提供[启动map同步与统计](docs/specs/xdp-map-schema.md)，S2新增[IPv4/UDP二层DSR](docs/specs/xdp-udp-dsr.md)：一个VIP、最多64个静态目标，按五元组转发到后端并直接回包。配置挂载前同步、回读并冻结，修改需停止重启。复现见[XDP验证](docs/runbooks/xdp-validation.md)。
 
 ## 当前状态
 
-V1.2/S1 已完成独立验收与收尾（2026-09-22）：后端map启动同步、回读/冻结与包计数已实现；交付分支 `codex/v1.2-s1`，尚未合并或发布。独立ON回归35/35、默认OFF Release31/31及两模式真实验证通过，见[验证摘要](docs/runbooks/xdp-map-validation-result.json)。V1.2整体未完成，S2包处理和S3性能比较尚未开始。
+V1.2/S2 已完成独立验收与收尾（2026-09-22）：Builder与Reviewer真实内核各1077用例，另有14项短包逻辑边界夹具；generic/native各16组真实转发与故障检查通过。ON完整37/37、默认OFF Release31/31通过，见[DSR验证摘要](docs/runbooks/xdp-dsr-validation-result.json)。交付分支 `codex/v1.2-s2`，尚未合并或打阶段标签；S1已由PR #19合并为 `afa5d99`，标签 `v1.2-s1` 已推送核验。S3运行期更新/健康联动、S4性能比较仍未实施，V1.2整体未完成，见[路线图](ROADMAP.md)。
 
 V0.1—V0.4 用户态开发范围已完成；V1.0/S1 已冻结[用户可见行为](docs/specs/v1.0-user-visible-contract.md)。V1.0/S2 文档与验收补齐已完成（2026-09-10）：独立Debug快速30/30、Release完整31/31、最短示例与公开文档验证通过，Leader已收尾。S3独立发布前审查PASS且Leader已收尾，**S1/S2/S3及V1.0用户态开发范围Completed，本轮候选发布就绪，实际发布未执行**（2026-09-10）。S3独立Debug30/30、Release31/31含长expiry及原TCP/UDP示例通过，不自动启动未来XDP阶段。本轮候选及三种状态见[公开发布前审查](docs/specs/v1.0-release-review.md)。阶段证据与待验事项见[公开 V1.0 验收索引](docs/specs/v1.0-acceptance.md)；历史版本结果分别保留在[V0.1](docs/specs/v0.1-acceptance.md)、[V0.2](docs/specs/v0.2-acceptance.md)、[V0.3](docs/specs/v0.3-acceptance.md)、[V0.4](docs/specs/v0.4-acceptance.md)矩阵中，不是当前测试数量。
 

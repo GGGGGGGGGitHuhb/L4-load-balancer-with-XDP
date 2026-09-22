@@ -60,7 +60,19 @@ add_custom_command(OUTPUT "${_xdp_maps_output}"
   BYPRODUCTS "${_xdp_maps_output}.d"
   VERBATIM)
 set_property(DIRECTORY APPEND PROPERTY ADDITIONAL_CLEAN_FILES "${_xdp_maps_output}.tmp")
-add_custom_target(l4lb_xdp ALL DEPENDS "${_xdp_output}" "${_xdp_maps_output}")
+set(_xdp_dsr_output "${CMAKE_CURRENT_BINARY_DIR}/xdp/xdp_udp_dsr.bpf.o")
+add_custom_command(OUTPUT "${_xdp_dsr_output}"
+  COMMAND "${CMAKE_COMMAND}" -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/xdp"
+  COMMAND "${CMAKE_COMMAND}" -E rm -f "${_xdp_dsr_output}" "${_xdp_dsr_output}.tmp"
+  COMMAND "${L4LB_BPF_CLANG}" ${_xdp_flags} -MD -MF "${_xdp_dsr_output}.d" -MQ "${_xdp_dsr_output}"
+    -c "${PROJECT_SOURCE_DIR}/src/xdp/xdp_udp_dsr.bpf.c" -o "${_xdp_dsr_output}.tmp"
+  COMMAND "${CMAKE_COMMAND}" -E rename "${_xdp_dsr_output}.tmp" "${_xdp_dsr_output}"
+  DEPENDS "${PROJECT_SOURCE_DIR}/src/xdp/xdp_udp_dsr.bpf.c" "${PROJECT_SOURCE_DIR}/src/xdp/UdpDsrSchema.h" "${L4LB_BPF_CLANG}" "${CMAKE_CURRENT_LIST_FILE}"
+  DEPFILE "${_xdp_dsr_output}.d"
+  BYPRODUCTS "${_xdp_dsr_output}.d"
+  VERBATIM)
+set_property(DIRECTORY APPEND PROPERTY ADDITIONAL_CLEAN_FILES "${_xdp_dsr_output}.tmp")
+add_custom_target(l4lb_xdp ALL DEPENDS "${_xdp_output}" "${_xdp_maps_output}" "${_xdp_dsr_output}")
 if(BUILD_TESTING)
   find_package(Python3 COMPONENTS Interpreter REQUIRED)
   add_test(NAME xdp_object COMMAND "${Python3_EXECUTABLE}" "${PROJECT_SOURCE_DIR}/tests/xdp_object_test.py" "${_xdp_output}")

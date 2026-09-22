@@ -354,13 +354,13 @@ S1/S2历史批准与验收保持；S3依据V1.0-S3-D1 Approved完成，授权Lea
 
 ### V1.2 XDP L4 Fast Path 原型
 
-状态：S1 Completed（2026-09-22）；S2/S3 计划中，V1.2 整体尚未完成。
+状态：S1 Completed（2026-09-22）；S2 Completed（2026-09-22，D1/R1已批准），S3/S4 计划中，V1.2 整体尚未完成。2026-09-22用户同意新增S3运行期控制面联动，原性能S3顺延为S4；各阶段详细设计仍分别审批。
 
-S1-D1/R1 经用户明确批准；Builder001..003、Reviewer001独立PASS、Leader003收尾齐备。交付启动期后端map同步/回读/冻结、严格ABI校验及per-CPU包计数，最多64个IPv4后端；更新需停止重启，仍全包XDP_PASS。独立ON完整35/35、双方新模式generic/native各19项与旧模式各14项、Builder OFF Release31/31通过。交付分支`codex/v1.2-s1`，尚未合并/打标签/发布。公开复现见[XDP验证](docs/runbooks/xdp-validation.md)，具体布局见[map schema](docs/specs/xdp-map-schema.md)。
+S1-D1/R1 经用户明确批准；Builder001..003、Reviewer001独立PASS、Leader003收尾齐备。交付启动期后端map同步/回读/冻结、严格ABI校验及per-CPU包计数，最多64个IPv4后端；更新需停止重启，仍全包XDP_PASS。独立ON完整35/35、双方新模式generic/native各19项与旧模式各14项、Builder OFF Release31/31通过。S1已通过PR #19合并为`afa5d99`，附注标签`v1.2-s1`已推送核验；当前`codex/v1.2-s2`从该基线完成S2，不表示V1.2发布。公开复现见[XDP验证](docs/runbooks/xdp-validation.md)，具体布局见[map schema](docs/specs/xdp-map-schema.md)。
 
 目标：
 
-实现一个受限范围内的 XDP L4 fast path 原型，用于验证包级解析、map 查询、统计更新和可回退的 fast path 设计。该版本强调理解边界和性能验证，不承诺生产级完整 TCP 代理语义。
+实现一个受限范围内的 XDP L4 fast path 原型，形成包处理、运行期后端配置发布、健康状态驱动摘除/恢复和可复现性能验证的闭环。明确未命中包、无可用后端和更新失败的处理边界，不承诺生产级完整 TCP 代理语义。
 
 核心能力：
 
@@ -369,6 +369,8 @@ S1-D1/R1 经用户明确批准；Builder001..003、Reviewer001独立PASS、Leade
 - 基础统计 map。
 - UDP 或受限 L4 转发原型。
 - 用户态控制面更新 eBPF maps。
+- 运行期间更新后端配置，并保证失败时保留上次有效配置，不发布半份配置。
+- 与UDP服务匹配的健康状态观测驱动后端摘除/恢复，转发行为与控制面状态一致。
 - fast path 与用户态路径的边界说明。
 - 初步性能对比报告。
 
@@ -384,13 +386,16 @@ S1-D1/R1 经用户明确批准；Builder001..003、Reviewer001独立PASS、Leade
 阶段划分：
 
 - `S1 map schema 与控制面同步`（Completed）：后端/配置/统计ABI与启动同步完成；必要会话map在S2转发语义明确后再判断，本阶段未引入。详细设计文档：`docs/leader/designs/V1.2/S1-design.md`。
-- `S2 XDP 包处理原型`：实现包头解析、map 查询、统计更新和受限转发行为。详细设计文档：`docs/leader/designs/V1.2/S2-design.md`。
-- `S3 性能对比与边界总结`：对比用户态路径和 XDP fast path，记录适用场景与限制。详细设计文档：`docs/leader/designs/V1.2/S3-design.md`。
+- `S2 XDP 包处理原型`（Completed）：静态单VIP IPv4/UDP二层DSR、五元组映射、map同步/冻结和八项统计已完成；Builder/Reviewer各1077内核用例及两模式各16组真实检查，ON37/37、OFF31/31通过。公开证据见[DSR摘要](docs/runbooks/xdp-dsr-validation-result.json)。详细设计文档：`docs/leader/designs/V1.2/S2-design.md`。
+- `S3 运行期配置更新与健康联动`（Planned）：先建立一致、可失败恢复的运行期配置发布，再接入探活、故障摘除和恢复加入；以真实转发验证控制面变化，明确全后端不可用和已有流映射变化的行为。S1/S2静态冻结契约保持，新发布机制或ABI需由S3详细设计批准；不承诺连接draining或无损迁移。详细设计文档（待阶段启动创建）：`docs/leader/designs/V1.2/S3-design.md`。
+- `S4 性能对比与边界总结`（Planned，原S3）：在S2/S3功能验收后，对比用户态路径和XDP fast path的吞吐、延迟和CPU，记录开启运行期控制面的成本、适用场景与限制；说明不同转发语义/拓扑，不能把DSR与代理当作完全等价工作负载。详细设计文档（待阶段启动创建）：`docs/leader/designs/V1.2/S4-design.md`。
 
 完成标准：
 
 - XDP 原型可以在已验证的本地 Linux/WSL2 隔离网络中运行；map、包处理及受限转发须在实际项目实现上验收。
 - 用户态控制面可以更新 XDP 所需 maps。
+- 运行期后端更新有明确的发布一致性与失败恢复证据；真实流量验证不会观察到半份配置。
+- 后端故障和恢复能驱动内核转发目标变化，探活协议、阈值、全不可用行为和流映射变化均已说明并独立验收。
 - XDP 统计可以被读取或展示。
 - 用户态路径不被破坏。
 - 性能对比方法和结果可复现。
@@ -431,7 +436,8 @@ S1-D1/R1 经用户明确批准；Builder001..003、Reviewer001独立PASS、Leade
 | `V1.1` | `S3 XDP 文档与验证` | 文档化 XDP 环境和验证 | runbook、最小验证报告 | `docs/runbooks/`、`docs/reviewer/` | `docs/leader/designs/V1.1/S3-design.md` |
 | `V1.2` | `S1 map schema 与控制面同步` | 定义 eBPF map 边界 | xdp-map-schema、同步逻辑 | `src/xdp/`、`src/control/` | `docs/leader/designs/V1.2/S1-design.md` |
 | `V1.2` | `S2 XDP 包处理原型` | 实现受限 fast path | 包头解析、map 查询、统计更新 | `src/xdp/` | `docs/leader/designs/V1.2/S2-design.md` |
-| `V1.2` | `S3 性能对比与边界总结` | 评估 XDP 原型价值 | 对比报告、限制总结 | `docs/benchmarks/`、`TECH-DEBT-TRACKER.md` | `docs/leader/designs/V1.2/S3-design.md` |
+| `V1.2` | `S3 运行期配置更新与健康联动` | 闭合控制面与内核转发链路 | 一致发布、失败恢复、后端摘除/恢复及真实流量验证 | `src/control/`、`src/xdp/`、`src/health/`、`tests/` | `docs/leader/designs/V1.2/S3-design.md` |
+| `V1.2` | `S4 性能对比与边界总结` | 评估完整原型收益与控制面成本 | 对比报告、限制总结 | `docs/benchmarks/`、`TECH-DEBT-TRACKER.md` | `docs/leader/designs/V1.2/S4-design.md` |
 
 ## 长期演进方向
 
@@ -439,7 +445,7 @@ S1-D1/R1 经用户明确批准；Builder001..003、Reviewer001独立PASS、Leade
 
 - 更多调度策略，例如 weighted round-robin、least-connections 或一致性哈希。
 - 更完整的 metrics 输出方式，例如文本 endpoint 或 Prometheus 兼容格式。
-- 配置热加载和连接 draining。
+- 更广泛的配置热加载和连接 draining；V1.2/S3仅承诺XDP后端配置运行期更新，draining仍属远期。
 - 更系统的故障注入测试。
 - 多线程 reactor 或 per-core 数据面设计。
 - 更深入的 XDP map 设计和 fast path 适用范围评估。
@@ -455,6 +461,7 @@ S1-D1/R1 经用户明确批准；Builder001..003、Reviewer001独立PASS、Leade
 
 ## 变更记录
 
+- `2026-09-22`：用户同意将V1.2扩展为四阶段，新增S3运行期配置更新与健康联动，原S3性能对比顺延S4；S2仍聚焦静态配置下的真实UDP转发，后续阶段详细设计分别审批。
 - `2026-09-11`：依据用户授权和本地 generic/native veth 环境预检，取消 V1.1/V1.2 云端运行硬性要求，改用本地隔离网络；保留产品验收、可复现性能对比和环境边界要求。
 
 - `2026-05-21`：调整环境路线，明确 WSL2 用于用户态开发，云服务器用于 XDP/eBPF 验证与收尾；补充项目与高性能 HTTP 服务器的分层区别。

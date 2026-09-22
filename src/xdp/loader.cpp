@@ -94,8 +94,9 @@ Attachment::~Attachment() {
   if (object_) bpf_object__close(object_);
 }
 
-void Attachment::load(const std::string& path, bool mapsMode,
-                      const std::vector<XdpBackendValue>& backends) {
+void Attachment::load(const std::string& path, Profile profile,
+                      const std::vector<XdpBackendValue>& backends,
+                      const control::DsrConfiguration& dsr) {
   if (object_) throw std::runtime_error("不能重复加载对象");
 
   // Open nonblocking so a FIFO/device path cannot hang the privileged loader.
@@ -136,18 +137,24 @@ void Attachment::load(const std::string& path, bool mapsMode,
     object_ = nullptr;
     fail("解析 BPF 对象 " + path, static_cast<int>(-error));
   }
+  const bool mapsMode = profile == Profile::kMapsV1;
+  const bool dsrMode = profile == Profile::kUdpDsrV2;
+  const char* programName = dsrMode    ? "xdp_udp_dsr"
+                            : mapsMode ? "xdp_maps_pass"
+                                       : "xdp_pass";
   auto* program = bpf_object__next_program(object_, nullptr);
   if (!program || bpf_object__next_program(object_, program) ||
-      std::strcmp(bpf_program__name(program),
-                  mapsMode ? "xdp_maps_pass" : "xdp_pass") != 0 ||
+      std::strcmp(bpf_program__name(program), programName) != 0 ||
       std::strcmp(bpf_program__section_name(program), "xdp") != 0 ||
       bpf_program__type(program) != BPF_PROG_TYPE_XDP ||
-      (!mapsMode && bpf_object__next_map(object_, nullptr))) {
+      (!mapsMode && !dsrMode && bpf_object__next_map(object_, nullptr))) {
     throw std::runtime_error(
-        mapsMode ? "对象应仅包含 xdp section 的 xdp_maps_pass 程序及规定 maps"
-                 : "对象应仅包含 xdp section 的 xdp_pass 程序且无 maps");
+        dsrMode ? "对象应仅包含 xdp section 的 xdp_udp_dsr 程序及规定 maps"
+        : mapsMode ? "对象应仅包含 xdp section 的 xdp_maps_pass 程序及规定 maps"
+                   : "对象应仅包含 xdp section 的 xdp_pass 程序且无 maps");
   }
   if (mapsMode) MapStore::validateObject(object_);
+  if (dsrMode) DsrMapStore::validateObject(object_);
   int result = bpf_object__load(object_);
   if (result < 0) fail("加载 BPF 对象 " + path, -result);
   program_fd_ = bpf_program__fd(program);
@@ -161,12 +168,23 @@ void Attachment::load(const std::string& path, bool mapsMode,
     MapStore maps(object_);
     control::synchronizeXdpConfig(maps, backends);
   }
-  mapsMode_ = mapsMode;
+  if (dsrMode) {
+    DsrMapStore maps(object_);
+    control::synchronizeDsrConfig(maps, dsr);
+  }
+  profile_ = profile;
 }
 
 uint64_t Attachment::readPassPackets() const {
-  if (!mapsMode_) throw std::runtime_error("未启用 maps 模式");
+  if (profile_ != Profile::kMapsV1)
+    throw std::runtime_error("未启用 maps 模式");
   return MapStore(object_).readPassPackets();
+}
+
+UdpDsrStatsValue Attachment::readDsrStats() const {
+  if (profile_ != Profile::kUdpDsrV2)
+    throw std::runtime_error("未启用 udp-dsr 模式");
+  return DsrMapStore(object_).readStats();
 }
 
 void Attachment::attach(int ifindex, Mode mode) {
