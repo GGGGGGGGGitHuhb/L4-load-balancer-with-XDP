@@ -354,7 +354,9 @@ S1/S2历史批准与验收保持；S3依据V1.0-S3-D1 Approved完成，授权Lea
 
 ### V1.2 XDP L4 Fast Path 原型
 
-状态：计划中
+状态：S1 Completed（2026-09-22）；S2/S3 计划中，V1.2 整体尚未完成。
+
+S1-D1/R1 经用户明确批准；Builder001..003、Reviewer001独立PASS、Leader003收尾齐备。交付启动期后端map同步/回读/冻结、严格ABI校验及per-CPU包计数，最多64个IPv4后端；更新需停止重启，仍全包XDP_PASS。独立ON完整35/35、双方新模式generic/native各19项与旧模式各14项、Builder OFF Release31/31通过。交付分支`codex/v1.2-s1`，尚未合并/打标签/发布。公开复现见[XDP验证](docs/runbooks/xdp-validation.md)，具体布局见[map schema](docs/specs/xdp-map-schema.md)。
 
 目标：
 
@@ -381,7 +383,7 @@ S1/S2历史批准与验收保持；S3依据V1.0-S3-D1 Approved完成，授权Lea
 
 阶段划分：
 
-- `S1 map schema 与控制面同步`：定义后端、统计和必要会话 map 的 key/value 结构。详细设计文档：`docs/leader/designs/V1.2/S1-design.md`。
+- `S1 map schema 与控制面同步`（Completed）：后端/配置/统计ABI与启动同步完成；必要会话map在S2转发语义明确后再判断，本阶段未引入。详细设计文档：`docs/leader/designs/V1.2/S1-design.md`。
 - `S2 XDP 包处理原型`：实现包头解析、map 查询、统计更新和受限转发行为。详细设计文档：`docs/leader/designs/V1.2/S2-design.md`。
 - `S3 性能对比与边界总结`：对比用户态路径和 XDP fast path，记录适用场景与限制。详细设计文档：`docs/leader/designs/V1.2/S3-design.md`。
 

@@ -13,6 +13,9 @@
 #include <iostream>
 #include <stdexcept>
 
+#include "MapStore.h"
+#include "control/XdpConfigSync.h"
+
 namespace l4lb::xdp {
 namespace {
 
@@ -91,7 +94,8 @@ Attachment::~Attachment() {
   if (object_) bpf_object__close(object_);
 }
 
-void Attachment::load(const std::string& path) {
+void Attachment::load(const std::string& path, bool mapsMode,
+                      const std::vector<XdpBackendValue>& backends) {
   if (object_) throw std::runtime_error("不能重复加载对象");
 
   // Open nonblocking so a FIFO/device path cannot hang the privileged loader.
@@ -134,13 +138,16 @@ void Attachment::load(const std::string& path) {
   }
   auto* program = bpf_object__next_program(object_, nullptr);
   if (!program || bpf_object__next_program(object_, program) ||
-      std::strcmp(bpf_program__name(program), "xdp_pass") != 0 ||
+      std::strcmp(bpf_program__name(program),
+                  mapsMode ? "xdp_maps_pass" : "xdp_pass") != 0 ||
       std::strcmp(bpf_program__section_name(program), "xdp") != 0 ||
       bpf_program__type(program) != BPF_PROG_TYPE_XDP ||
-      bpf_object__next_map(object_, nullptr)) {
+      (!mapsMode && bpf_object__next_map(object_, nullptr))) {
     throw std::runtime_error(
-        "对象应仅包含 xdp section 的 xdp_pass 程序且无 maps");
+        mapsMode ? "对象应仅包含 xdp section 的 xdp_maps_pass 程序及规定 maps"
+                 : "对象应仅包含 xdp section 的 xdp_pass 程序且无 maps");
   }
+  if (mapsMode) MapStore::validateObject(object_);
   int result = bpf_object__load(object_);
   if (result < 0) fail("加载 BPF 对象 " + path, -result);
   program_fd_ = bpf_program__fd(program);
@@ -150,6 +157,16 @@ void Attachment::load(const std::string& path) {
     fail("读取已加载程序 ID", errno);
   }
   program_id_ = program_info.id;
+  if (mapsMode) {
+    MapStore maps(object_);
+    control::synchronizeXdpConfig(maps, backends);
+  }
+  mapsMode_ = mapsMode;
+}
+
+uint64_t Attachment::readPassPackets() const {
+  if (!mapsMode_) throw std::runtime_error("未启用 maps 模式");
+  return MapStore(object_).readPassPackets();
 }
 
 void Attachment::attach(int ifindex, Mode mode) {

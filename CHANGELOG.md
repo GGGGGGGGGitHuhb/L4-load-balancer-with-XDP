@@ -1,5 +1,13 @@
 # Changelog
 
+### 2026-09-22 V1.2/S1 map schema 与控制面同步完成（未发布）
+
+- 新增独立 `xdp_maps.bpf.o` 与 schema v1：配置ARRAY、64项IPv4后端ARRAY、PERCPU_ARRAY包计数；保留旧无map对象和默认关闭的XDP构建。
+- `l4lb-xdp attach --maps --backend IPv4:PORT` 在挂载前完整写入、回读并冻结配置，失败不挂载。正常停止先条件卸载再输出XDP_STATS，统计/输出故障仍清理；不提供热更新、健康联动、包解析或转发。
+- 新增ABI/同步故障/参数/对象白名单测试和独立真实内核runner。Builder与Reviewer各自ON完整35/35；Builder OFF Release31/31含长expiry；双方generic/native-veth新模式各19项、旧模式各14项通过。默认OFF/BPF-only/production依赖隔离及格式检查通过。
+- 公开schema、运行/构建/验收文档及源码/产物指纹摘要同步；独立Reviewer PASS，Leader收尾，S1 Completed。首次沙箱socket权限失败、runner断言误判及Reviewer路径纠正保留，不覆盖失败历史。
+- 交付分支`codex/v1.2-s1`；尚未合并、打标签或发布。V1.2/S2/S3与性能结论仍待后续工作；不把WSL2/veth结果泛化到物理网卡。
+
 ### 2026-09-14 V1.1/S3 文档与验证完成（未发布）
 
 - S2已合并为5284777（PR17），v1.1-s2附注标签已推送并核对远端；S3从该合并基线复验，无生产/构建/测试代码改动。

@@ -1,6 +1,6 @@
-# V1.1 最小验证流程
+# XDP 最小验证流程
 
-本流程验证本项目XDP_PASS对象与l4lb-xdp加载工具，不验证负载均衡、map业务或性能。普通clone可使用以下命令；无需私有阶段报告、旧预检脚本或云服务器。
+本流程验证旧 XDP_PASS 加载方式，以及 V1.2/S1 新增的后端 map 同步、统计与失败清理，不验证负载均衡或性能。普通 clone 可使用以下命令；无需私有阶段报告、旧预检脚本或云服务器。
 
 ## 前置环境
 
@@ -41,19 +41,19 @@ cmake --build build-bpf --target l4lb_xdp
 ctest --test-dir build-bpf -L xdp_build --output-on-failure
 ```
 
-期望xdp_object通过；对象为ELF64/EM_BPF/REL、仅XDP_PASS和GPL，无maps。此组合不需要libbpf开发包。工具链故障与显式构建矩阵见[BPF构建手册](xdp-build.md)。
+期望 xdp_object 通过；旧对象为 ELF64/EM_BPF/REL、仅 XDP_PASS 和 GPL，无 maps。V1.2/S1 同时生成 xdp_maps.bpf.o；共享头由 BPF C 编译检查，进一步 metadata/同步检查在下一步。此组合不需要 libbpf 开发包。工具链故障与显式构建矩阵见[BPF构建手册](xdp-build.md)。
 
 ## 3. 编译loader与无特权负向检查
 
 ```bash
 cmake -S . -B build-xdp -G Ninja -DCMAKE_BUILD_TYPE=Debug \
   -DL4LB_BUILD_XDP=ON -DL4LB_BUILD_XDP_LOADER=ON
-cmake --build build-xdp --target l4lb-xdp -j4
+cmake --build build-xdp -j4
 build-xdp/bin/l4lb-xdp --help
 ctest --test-dir build-xdp -R '^xdp_' --output-on-failure
 ```
 
-期望xdp_object及xdp_loader_cli两项通过；后者内部33个用例，包含错误参数/文件/设备、map及多程序对象拒绝、普通UID权限错误。只构建loader时不要执行其他未构建的测试；运行全量CTest前先完整build。自定义libbpf目录配置见[加载手册](xdp-loader.md#构建)。
+期望 xdp_object、xdp_loader_cli、xdp_config_sync、xdp_maps_cli 四项通过。保留旧 CLI 内部33项；新增测试覆盖 ABI/字节序、0/1/64后端、132个同步步骤的故障注入、65处回读不一致、per-CPU汇总，以及12类对象白名单变异和参数拒绝。全量 ON CTest 为35项，默认 OFF仍31项。自定义libbpf目录配置见[加载手册](xdp-loader.md#构建)。
 
 ## 4. 显式真实挂载与流量验证
 
@@ -78,8 +78,31 @@ wsl.exe --distribution Ubuntu --user root --exec /usr/bin/python3 /绝对仓库�
 
 将路径和发行版名称替换为真实值。该方式只替代sudo启动，不能跳过脚本内的隔离或真实测试；不需要把WSL默认用户改成root。
 
+## 5. map 同步与故障验证
+
+普通用户先编译测试专用故障库；它只通过测试子进程的 LD_PRELOAD 注入，不链接进产品，不影响常规运行。再显式启动隔离网络内核验收：
+
+```bash
+mkdir -p .stage-tmp/xdp-map-validation/tmp
+cc -shared -fPIC -Wall -Wextra tests/XdpMapFaults.c -ldl \
+  -o .stage-tmp/xdp-map-validation/MapFaults.so
+set -o pipefail
+sudo env TMPDIR="$PWD/.stage-tmp/xdp-map-validation/tmp" \
+  python3 tests/xdp_maps_privileged.py \
+  --loader "$PWD/build-xdp/bin/l4lb-xdp" \
+  --object "$PWD/build-xdp/xdp/xdp_maps.bpf.o" \
+  --fault-library "$PWD/.stage-tmp/xdp-map-validation/MapFaults.so" \
+  2>&1 | tee .stage-tmp/xdp-map-validation/root.log
+```
+
+脚本自建 network namespace/veth，先从本测试 loader 的 fdinfo 确认自有 map ID，再独立读取真实 metadata 和全部槽。generic/native-veth 各19项，包含0/1/64后端回读、冻结后写入拒绝、包计数增长、卸载后 test-run 精确增加7包及原帧不变、七类同步故障不挂载、统计读取失败仍卸载、输出失败清理、ID/替换保护、关闭stdin、SIGKILL恢复和设备消失。检查成功退出后程序/maps ID释放；不按全系统名称猜测或修改他人 maps。
+
+验收统计包含非业务包，不以UDP发送数硬断言总计数；精确计数使用已卸载但持有fd的受控BPF test-run。测试依赖系统运行时 `libbpf.so.1`，不用 bpftool；缺权限或能力直接失败，不跳过关键路径。WSL可用上一节官方root入口启动本脚本，传入相同三个绝对路径与本轮专用TMPDIR。
+
+脚本第一次调试误把错误诊断中的“READY 输出失败”当成功READY行，随后改为行首匹配；这是测试误判，不是产品挂载清理失败，原失败日志保留。本轮结果与源码/产物指纹见[map验证摘要](xdp-map-validation-result.json)。
+
 ## 结果、错误与范围
 
-[机器摘要](xdp-validation-result.json)和[六项版本验收索引](../specs/v1.1-acceptance.md)记录本轮实际结果。历史预检证据仍在[原环境摘要](local-xdp-preflight.json)，不等价当前产品测试。
+[V1.1机器摘要](xdp-validation-result.json)和[V1.1六项版本验收索引](../specs/v1.1-acceptance.md)保留2026-09-14的历史结果；V1.2/S1见上节新摘要。历史预检证据仍在[原环境摘要](local-xdp-preflight.json)，不等价当前产品测试。
 
-权限、依赖、模式不支持、已有程序/ID不匹配等排查见[加载错误说明](xdp-loader.md#输入与错误)。遇到错误先保留完整日志和退出码，不使用force覆盖程序。V1.1实际没有maps，schema仅为[初稿](../specs/xdp-map-schema.md)；完整TCP代理、XDP负载均衡和V1.2性能对比不属于本流程。
+权限、依赖、模式不支持、已有程序/ID不匹配等排查见[加载错误说明](xdp-loader.md#输入与错误)。遇到错误先保留完整日志和退出码，不使用force覆盖程序。V1.1历史版本没有maps，V1.2/S1新增的正式[schema v1](../specs/xdp-map-schema.md)只支持启动同步与统计；完整TCP代理、包转发和性能对比不属于本流程。

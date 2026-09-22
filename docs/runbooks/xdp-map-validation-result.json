@@ -1,0 +1,325 @@
+{
+  "stage": "V1.2/S1",
+  "date": "2026-09-22",
+  "base_commit": "358f406562655a5af66ffb8808d12494f39099c2",
+  "acceptance": "PASS",
+  "scope": "Startup-only backend sync/freeze and XDP_PASS statistics; no forwarding/performance claim",
+  "sources": {
+    "src/xdp/MapSchema.h": "6da879c26dad8ef8e506fe5c3e3b4291a240e9737fb143881e2e937ab3bbd42d",
+    "src/xdp/MapStore.h": "2ed8e6ee6b8607b000f99f8e9810241dbd44214eca0110269c357e491cce27a2",
+    "src/xdp/MapStore.cpp": "49c03e9a088d94c52b6085b225299d726cbf007740d02aa0b54f7ffe093aec6e",
+    "src/xdp/loader.h": "42a576d399ed8e8332c775a1a99fdcb8b5b120a0e36ef66d6619ad5e71526acf",
+    "src/xdp/loader.cpp": "b046c768157728156c89b5b965f63c7d2010c69dfa50b04ade517f05830446d7",
+    "src/xdp/main.cpp": "62e63a80296de70d52c2df5ac31bb033641072e19eeb771e1279cb16b4d27b79",
+    "src/xdp/xdp_maps.bpf.c": "21c4d54163d31dd2530ae63b5041c7f27bd78fbdea31e85e5f5e26352d5261b7",
+    "src/xdp/xdp_pass.bpf.c": "56953100dec6c0ee4ec8b32157fd57fc204dd9a23f7ccf670b9421e28d3220b3",
+    "src/control/XdpConfigSync.h": "84a8e1a99247d899f9a517e2f2801c017473bdf09b8100ae779a183bce0c29b8",
+    "src/control/XdpConfigSync.cpp": "cf5fb36561cb5843af8e263a0ceddbf0d1f4db2d2f2dc7de9f0e1fc6e5f59dec",
+    "cmake/Xdp.cmake": "da5abe69336633acb3380a5eac949187382acc33d8469b27b639e3d24352e8f8",
+    "cmake/XdpLoader.cmake": "3b8286666de0d114fc68fca299935fabf76801ae466ec65b5b24f1794bfbe8f4",
+    "tests/XdpConfigSync_test.cpp": "c98c8bf10eaa8a5811caae4985872916e542909a0f8f61fb0cdee9a61191bacc",
+    "tests/xdp_maps_cli_test.py": "9dd295a0730d87e6ddb491237f9d6347b9f2ee9a1d47bafdc1af751188ce80e7",
+    "tests/XdpMapFaults.c": "30262a702247da1a1c968585d6d3276198bdf60024cab083e6f3547cbb1e5dae",
+    "tests/xdp_maps_privileged.py": "2fa10020b6f3caed48b7888086be45091949516731a9c5abbd8278be8f345233",
+    "tests/xdp_loader_privileged.py": "28ed27f82bb20090365aa145c6013726b95d47cfcf9291530c00d28e5acd1893"
+  },
+  "runs": {
+    "builder_artifacts_leader_run": {
+      "maps": {
+        "scope": "V1.2/S1 maps; no forwarding or performance claim",
+        "kernel": "Linux 6.6.87.2-microsoft-standard-WSL2 x86_64 GNU/Linux",
+        "sha256": {
+          "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v1.2-s1/builder/on/bin/l4lb-xdp": "3d154b5c93f72426c03d830dde800249244fcbb0ba3d9a8e9db13e01271dd8cf",
+          "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v1.2-s1/builder/on/xdp/xdp_maps.bpf.o": "96db7e7a9edbfe0627b833b16c79de1e26044e30d286b251b3ff99277f409164",
+          "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v1.2-s1/leader/MapFaults.so": "877c921c94c6a6233891f2110f955e69c90d42114904c9305b082b171a35378d",
+          "/home/power/projects/L4-LoadBalancer-withXDP/tests/xdp_maps_privileged.py": "2fa10020b6f3caed48b7888086be45091949516731a9c5abbd8278be8f345233",
+          "/home/power/projects/L4-LoadBalancer-withXDP/tests/XdpMapFaults.c": "9194471693f9fb1419e80eeff7075adaf15642a454e0d245c78a1f3e80934cef"
+        },
+        "modes": {
+          "generic": {
+            "status": "PASS",
+            "checks": [
+              "backends_0_readback_freeze_count_cleanup",
+              "backends_1_readback_freeze_count_cleanup",
+              "backends_64_readback_freeze_count_cleanup",
+              "detached_test_run_exact_count_and_frame_unchanged",
+              "backend-write_no_attach",
+              "config-write_no_attach",
+              "config-read-error_no_attach",
+              "config-mismatch_no_attach",
+              "backend-mismatch_no_attach",
+              "backend-freeze_no_attach",
+              "config-freeze_no_attach",
+              "stats_read_failure_still_detaches",
+              "duplicate_and_wrong_id_preserved",
+              "sigint_detach",
+              "closed_stdin_explicit_idempotent_detach_replacement_protection",
+              "ready_output_failure_cleanup",
+              "stop_output_failure_cleanup",
+              "sigkill_explicit_recovery_and_map_cleanup",
+              "device_removed_cleanup"
+            ]
+          },
+          "native": {
+            "status": "PASS",
+            "checks": [
+              "backends_0_readback_freeze_count_cleanup",
+              "backends_1_readback_freeze_count_cleanup",
+              "backends_64_readback_freeze_count_cleanup",
+              "detached_test_run_exact_count_and_frame_unchanged",
+              "backend-write_no_attach",
+              "config-write_no_attach",
+              "config-read-error_no_attach",
+              "config-mismatch_no_attach",
+              "backend-mismatch_no_attach",
+              "backend-freeze_no_attach",
+              "config-freeze_no_attach",
+              "stats_read_failure_still_detaches",
+              "duplicate_and_wrong_id_preserved",
+              "sigint_detach",
+              "closed_stdin_explicit_idempotent_detach_replacement_protection",
+              "ready_output_failure_cleanup",
+              "stop_output_failure_cleanup",
+              "sigkill_explicit_recovery_and_map_cleanup",
+              "device_removed_cleanup"
+            ]
+          }
+        }
+      },
+      "legacy": {
+        "kernel": "Linux 6.6.87.2-microsoft-standard-WSL2 x86_64 GNU/Linux",
+        "scope": "V1.1/S2 product loader; no physical NIC or performance claim",
+        "sha256": {
+          "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v1.2-s1/builder/on/bin/l4lb-xdp": "3d154b5c93f72426c03d830dde800249244fcbb0ba3d9a8e9db13e01271dd8cf",
+          "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v1.2-s1/builder/on/xdp/xdp_pass.bpf.o": "9371c471a46af0854beb49bca3e28c212b7767c4a3136d32c26020b5190e6681",
+          "/home/power/projects/L4-LoadBalancer-withXDP/tests/xdp_loader_privileged.py": "28ed27f82bb20090365aa145c6013726b95d47cfcf9291530c00d28e5acd1893"
+        },
+        "modes": {
+          "generic": {
+            "status": "PASS",
+            "checks": [
+              "attach_id",
+              "udp_pass",
+              "duplicate_preserved",
+              "wrong_id_preserved",
+              "sigterm_detach",
+              "udp_after_detach",
+              "sigint_detach",
+              "explicit_detach",
+              "idempotent_detach",
+              "replacement_preserved",
+              "ready_output_failure_cleanup",
+              "sigkill_explicit_recovery",
+              "closed_stdin_detach_and_cleanup",
+              "device_removed_cleanup"
+            ]
+          },
+          "native": {
+            "status": "PASS",
+            "checks": [
+              "attach_id",
+              "udp_pass",
+              "duplicate_preserved",
+              "wrong_id_preserved",
+              "sigterm_detach",
+              "udp_after_detach",
+              "sigint_detach",
+              "explicit_detach",
+              "idempotent_detach",
+              "replacement_preserved",
+              "ready_output_failure_cleanup",
+              "sigkill_explicit_recovery",
+              "closed_stdin_detach_and_cleanup",
+              "device_removed_cleanup"
+            ]
+          }
+        }
+      },
+      "on_full_ctest": {
+        "passed": 35,
+        "failed": 0,
+        "seconds": 62.83,
+        "log_local_only": ".stage-tmp/v1.2-s1/leader/full-regression-02.log",
+        "log_sha256": "d1282e4954e22b316a14072dc8473a1deb57897dea6ab2f9266527f6ab8b7a05"
+      },
+      "log_hashes": {
+        ".stage-tmp/v1.2-s1/leader/maps-root-02.log": "c86edde2a253a3d65ba338cf7160daa863f7d2f6fbadc5575d6fd4ad12c62e21",
+        ".stage-tmp/v1.2-s1/leader/legacy-root.log": "831d205d9155825db1b001962d010da024058219bdddd85c4253d4e52acd313d"
+      },
+      "off_release_ctest": {
+        "passed": 31,
+        "failed": 0,
+        "seconds": 62.87,
+        "log_local_only": ".stage-tmp/v1.2-s1/leader/off-release-tests.log",
+        "log_sha256": "ca3483b7c16c15cb4e0610f49af1602acb03b53b5de371ba8f72fe2ade3ca318"
+      }
+    },
+    "independent_reviewer": {
+      "maps": {
+        "scope": "V1.2/S1 maps; no forwarding or performance claim",
+        "kernel": "Linux 6.6.87.2-microsoft-standard-WSL2 x86_64 GNU/Linux",
+        "sha256": {
+          "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v1.2-s1/reviewer/on/bin/l4lb-xdp": "b7dbbbd67418d57ae67b161ae875722ea691f9ad26135141856b0c887d254f48",
+          "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v1.2-s1/reviewer/on/xdp/xdp_maps.bpf.o": "57f32f5420472bd5b7fb30a2119e1d6b10d052389b4e1a52678a686b4233371a",
+          "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v1.2-s1/reviewer/MapFaults.so": "877c921c94c6a6233891f2110f955e69c90d42114904c9305b082b171a35378d",
+          "/home/power/projects/L4-LoadBalancer-withXDP/tests/xdp_maps_privileged.py": "2fa10020b6f3caed48b7888086be45091949516731a9c5abbd8278be8f345233",
+          "/home/power/projects/L4-LoadBalancer-withXDP/tests/XdpMapFaults.c": "9194471693f9fb1419e80eeff7075adaf15642a454e0d245c78a1f3e80934cef"
+        },
+        "modes": {
+          "generic": {
+            "status": "PASS",
+            "checks": [
+              "backends_0_readback_freeze_count_cleanup",
+              "backends_1_readback_freeze_count_cleanup",
+              "backends_64_readback_freeze_count_cleanup",
+              "detached_test_run_exact_count_and_frame_unchanged",
+              "backend-write_no_attach",
+              "config-write_no_attach",
+              "config-read-error_no_attach",
+              "config-mismatch_no_attach",
+              "backend-mismatch_no_attach",
+              "backend-freeze_no_attach",
+              "config-freeze_no_attach",
+              "stats_read_failure_still_detaches",
+              "duplicate_and_wrong_id_preserved",
+              "sigint_detach",
+              "closed_stdin_explicit_idempotent_detach_replacement_protection",
+              "ready_output_failure_cleanup",
+              "stop_output_failure_cleanup",
+              "sigkill_explicit_recovery_and_map_cleanup",
+              "device_removed_cleanup"
+            ]
+          },
+          "native": {
+            "status": "PASS",
+            "checks": [
+              "backends_0_readback_freeze_count_cleanup",
+              "backends_1_readback_freeze_count_cleanup",
+              "backends_64_readback_freeze_count_cleanup",
+              "detached_test_run_exact_count_and_frame_unchanged",
+              "backend-write_no_attach",
+              "config-write_no_attach",
+              "config-read-error_no_attach",
+              "config-mismatch_no_attach",
+              "backend-mismatch_no_attach",
+              "backend-freeze_no_attach",
+              "config-freeze_no_attach",
+              "stats_read_failure_still_detaches",
+              "duplicate_and_wrong_id_preserved",
+              "sigint_detach",
+              "closed_stdin_explicit_idempotent_detach_replacement_protection",
+              "ready_output_failure_cleanup",
+              "stop_output_failure_cleanup",
+              "sigkill_explicit_recovery_and_map_cleanup",
+              "device_removed_cleanup"
+            ]
+          }
+        }
+      },
+      "legacy": {
+        "kernel": "Linux 6.6.87.2-microsoft-standard-WSL2 x86_64 GNU/Linux",
+        "scope": "V1.1/S2 product loader; no physical NIC or performance claim",
+        "sha256": {
+          "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v1.2-s1/reviewer/on/bin/l4lb-xdp": "b7dbbbd67418d57ae67b161ae875722ea691f9ad26135141856b0c887d254f48",
+          "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v1.2-s1/reviewer/on/xdp/xdp_pass.bpf.o": "63de366bfba23851a2bf7484b56b1609ac88ebe719124d493fef4356e927ff3c",
+          "/home/power/projects/L4-LoadBalancer-withXDP/tests/xdp_loader_privileged.py": "28ed27f82bb20090365aa145c6013726b95d47cfcf9291530c00d28e5acd1893"
+        },
+        "modes": {
+          "generic": {
+            "status": "PASS",
+            "checks": [
+              "attach_id",
+              "udp_pass",
+              "duplicate_preserved",
+              "wrong_id_preserved",
+              "sigterm_detach",
+              "udp_after_detach",
+              "sigint_detach",
+              "explicit_detach",
+              "idempotent_detach",
+              "replacement_preserved",
+              "ready_output_failure_cleanup",
+              "sigkill_explicit_recovery",
+              "closed_stdin_detach_and_cleanup",
+              "device_removed_cleanup"
+            ]
+          },
+          "native": {
+            "status": "PASS",
+            "checks": [
+              "attach_id",
+              "udp_pass",
+              "duplicate_preserved",
+              "wrong_id_preserved",
+              "sigterm_detach",
+              "udp_after_detach",
+              "sigint_detach",
+              "explicit_detach",
+              "idempotent_detach",
+              "replacement_preserved",
+              "ready_output_failure_cleanup",
+              "sigkill_explicit_recovery",
+              "closed_stdin_detach_and_cleanup",
+              "device_removed_cleanup"
+            ]
+          }
+        }
+      },
+      "on_full_ctest": {
+        "passed": 35,
+        "failed": 0,
+        "seconds": 62.31,
+        "log_local_only": ".stage-tmp/v1.2-s1/reviewer/logs/regression.log",
+        "log_sha256": "f0d53c5ea4dc4528d8f0c3e88447a9c2e8147966729ef726081784482ddddf8c"
+      },
+      "log_hashes": {
+        ".stage-tmp/v1.2-s1/reviewer/logs/maps-real.log": "c885bc2d2b441dd650347e99e508263f918ebdcb6f7ea10ba42715d0b1cb3f2f",
+        ".stage-tmp/v1.2-s1/reviewer/logs/legacy-real.log": "f526163ed9c491e771afef519ef1f2c539dbf3926756ad3ee4065d64af329290"
+      }
+    }
+  },
+  "limitations": [
+    "WSL2 generic/native-veth only; no physical NIC/offload/performance conclusions",
+    "Full raw logs are local artifacts, not distributed with public clone; public runners reproduce checks",
+    "Builder initial sandbox socket EPERM retained; network tests rerun in isolated namespace as ordinary user",
+    "First leader runner failed on READY diagnostic substring; fixed line-prefix assertion; product unchanged",
+    "Reviewer initial invocation used wrong binary path and failed before tests; corrected route retained"
+  ],
+  "stage_status": "Completed",
+  "reviewer_report": "docs/reviewer/reports/V1.2/S1-report-001.md (local governance record; public reproduction uses this runbook and source runners)",
+  "acceptance_source_sha256": {
+    "src/xdp/MapSchema.h": "6da879c26dad8ef8e506fe5c3e3b4291a240e9737fb143881e2e937ab3bbd42d",
+    "src/xdp/MapStore.h": "2ed8e6ee6b8607b000f99f8e9810241dbd44214eca0110269c357e491cce27a2",
+    "src/xdp/MapStore.cpp": "49c03e9a088d94c52b6085b225299d726cbf007740d02aa0b54f7ffe093aec6e",
+    "src/xdp/loader.h": "42a576d399ed8e8332c775a1a99fdcb8b5b120a0e36ef66d6619ad5e71526acf",
+    "src/xdp/loader.cpp": "b046c768157728156c89b5b965f63c7d2010c69dfa50b04ade517f05830446d7",
+    "src/xdp/main.cpp": "62e63a80296de70d52c2df5ac31bb033641072e19eeb771e1279cb16b4d27b79",
+    "src/xdp/xdp_maps.bpf.c": "a47934333694c893c7d9428f8b63dcd175d2319ce2e1da1dcbd2c8e58bc05154",
+    "src/xdp/xdp_pass.bpf.c": "56953100dec6c0ee4ec8b32157fd57fc204dd9a23f7ccf670b9421e28d3220b3",
+    "src/control/XdpConfigSync.h": "84a8e1a99247d899f9a517e2f2801c017473bdf09b8100ae779a183bce0c29b8",
+    "src/control/XdpConfigSync.cpp": "cf5fb36561cb5843af8e263a0ceddbf0d1f4db2d2f2dc7de9f0e1fc6e5f59dec",
+    "cmake/Xdp.cmake": "da5abe69336633acb3380a5eac949187382acc33d8469b27b639e3d24352e8f8",
+    "cmake/XdpLoader.cmake": "3b8286666de0d114fc68fca299935fabf76801ae466ec65b5b24f1794bfbe8f4",
+    "tests/XdpConfigSync_test.cpp": "c98c8bf10eaa8a5811caae4985872916e542909a0f8f61fb0cdee9a61191bacc",
+    "tests/xdp_maps_cli_test.py": "9dd295a0730d87e6ddb491237f9d6347b9f2ee9a1d47bafdc1af751188ce80e7",
+    "tests/XdpMapFaults.c": "9194471693f9fb1419e80eeff7075adaf15642a454e0d245c78a1f3e80934cef",
+    "tests/xdp_maps_privileged.py": "2fa10020b6f3caed48b7888086be45091949516731a9c5abbd8278be8f345233",
+    "tests/xdp_loader_privileged.py": "28ed27f82bb20090365aa145c6013726b95d47cfcf9291530c00d28e5acd1893"
+  },
+  "post_acceptance_formatting": {
+    "reason": "pre-commit clang-format hook adjusted two C files; no semantic changes",
+    "checks": {
+      "src/xdp/xdp_maps.bpf.c": {
+        "before_sha256": "a47934333694c893c7d9428f8b63dcd175d2319ce2e1da1dcbd2c8e58bc05154",
+        "after_sha256": "21c4d54163d31dd2530ae63b5041c7f27bd78fbdea31e85e5f5e26352d5261b7",
+        "preprocessed_equal_ignoring_whitespace": true
+      },
+      "tests/XdpMapFaults.c": {
+        "before_sha256": "9194471693f9fb1419e80eeff7075adaf15642a454e0d245c78a1f3e80934cef",
+        "after_sha256": "30262a702247da1a1c968585d6d3276198bdf60024cab083e6f3547cbb1e5dae",
+        "preprocessed_equal_ignoring_whitespace": true
+      }
+    },
+    "runtime_evidence_scope": "Recorded runs and binary hashes describe the pre-format acceptance build; source identity before formatting is retained in acceptance_source_sha256."
+  }
+}

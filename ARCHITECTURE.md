@@ -692,6 +692,14 @@ Buffer保留初始化的固定64KiB数组，用head/size和连续读写span代�
 
 `L4LB_BUILD_XDP_LOADER`默认OFF，仅开启时检测libbpf>=1.0，且要求S1 BPF构建开启；不传播到原用户态目标。默认CTest只增加普通UID的CLI负向检查，真实BPF验收是显式root自建net namespace/veth脚本。无maps、持久pin、TCP代理或性能承诺。运行契约见[加载手册](docs/runbooks/xdp-loader.md)。
 
+## V1.2/S1 map 与启动同步边界
+
+独立 `xdp_maps.bpf.o` 与旧 `xdp_pass.bpf.o` 并存，二者始终 XDP_PASS。`MapSchema.h` 定义 cfg ARRAY、64项backend ARRAY和单项PERCPU_ARRAY统计；固定宽度布局由C/BPF与C++共同断言，不承载会话或用户态对象。
+
+`control/XdpConfigSync`负责参数转换及完整写入/回读/冻结次序；`xdp/MapStore`负责ABI白名单、内核metadata、读写和统计汇总；`Attachment`持有object/fd并在同步完成后才挂载。配置发布前无包路径读者，发布后冻结，不引入并发热更新或健康状态联动。CLI呈现READY、错误及独立XDP_STATS，原用户态metrics不变。
+
+新增代码仅链接到可选 `l4lb-xdp`。BPF-only不需要libbpf开发包，默认OFF不探测XDP依赖。正常停止先条件卸载再读统计；SIGKILL残留按实际program ID显式恢复，没有pin或他人map写入。正式布局、非原子统计采样和兼容界限见[map schema](docs/specs/xdp-map-schema.md)，验证入口见[XDP流程](docs/runbooks/xdp-validation.md)。
+
 ## V1.1/S3 验证与文档边界
 
 S3复用S1/S2构建和测试，不新增运行时层。默认OFF、BPF-only、独立loader三种组合及普通UID/特权分层见[V1.1最小验证](docs/runbooks/xdp-validation.md)。特权脚本直接在临时net namespace中注入Ethernet/IPv4/UDP帧，验证真实挂载和条件卸载，普通用户态测试在隔离网络降权运行。
