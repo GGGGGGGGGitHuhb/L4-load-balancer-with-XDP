@@ -1,6 +1,8 @@
-# XDP map schema v1
+# XDP map schema
 
 V1.2/S1，2026-09-22。共享定义为 `src/xdp/MapSchema.h`，C/BPF 和 C++ 均编译检查大小、偏移和对齐。V1.1 的 `xdp_pass.bpf.o` 仍无 maps；新增 `xdp_maps.bpf.o` 需显式 `--maps` 加载。两者都返回 XDP_PASS，S1 不解析包头、不选择后端、不转发。
+
+V1.2/S2新增独立 `--udp-dsr` profile和schema v2，详见[UDP DSR布局与统计](xdp-udp-dsr.md#abi-v2与统计)。本页以下字段均为仍受支持的v1，不把v1配置静默解释成v2。v2以ifindex/MAC目标替代v1的IPv4后端项，配置及统计大小也不同；旧对象、名称和内存布局保持。
 
 ## 固定布局
 
@@ -15,7 +17,7 @@ V1.2/S1，2026-09-22。共享定义为 `src/xdp/MapSchema.h`，C/BPF 和 C++ 均
 - cfg 的 schemaVersion=1，backendCount 为 0..64。后端编号为启动参数顺序，只有 `[0, backendCount)` 有效；余下槽和 reserved 全零。空集合有效，仍放行全部包。
 - 地址和端口为网络字节序，其他整数为本机序。这是同机运行时 ABI，不能原样用于跨机器持久化或协议传输。
 - 输入为 IPv4 字面量及 1..65535 端口；拒绝 DNS、IPv6、0.0.0.0、组播、255.255.255.255、重复 endpoint 和超过 64 项。允许 loopback/private 地址；不检查健康、路由可达性或子网定向广播。
-- 没有可用状态、权重、VIP、MAC、出口接口或会话结构。S2 依据受限转发设计确定后续字段，不复用用户态 C++ 对象布局。
+- v1没有可用状态、权重、VIP、MAC、出口接口或会话结构。S2在独立v2 ABI中定义VIP与MAC/出口，不复用用户态C++对象布局。
 
 ## 同步与所有权
 

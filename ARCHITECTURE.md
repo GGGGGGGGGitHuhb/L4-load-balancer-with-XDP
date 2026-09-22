@@ -121,7 +121,7 @@ XDP/eBPF 数据面层是后续用于包级 fast path 的可选数据路径。它
 
 ## 模块职责
 
-当前已实现CLI、配置、轮询、control装配、单线程TCP/UDP reactor及可选health/metrics，用户态行为已在V1.0/S1冻结。配置检查调用链仍为 argv → CLI 参数验证 → 有界只读配置加载 → 纯解析与完整校验 → 摘要或错误；--run 在校验后进入 control → net 完成监听、后端连接与双向转发。当前 UDP 实现边界见末尾 V0.2/S2；健康检查当前边界见末尾 V0.3/S1；指标边界见末尾V0.3/S2；XDP已新增独立可选S2加载工具，尚无map或fast path业务集成，职责边界保持稳定。
+当前已实现CLI、配置、轮询、control装配、单线程TCP/UDP reactor及可选health/metrics，用户态行为已在V1.0/S1冻结。配置检查调用链仍为 argv → CLI 参数验证 → 有界只读配置加载 → 纯解析与完整校验 → 摘要或错误；--run 在校验后进入 control → net 完成监听、后端连接与双向转发。当前 UDP 实现边界见末尾 V0.2/S2；健康检查当前边界见末尾 V0.3/S1；指标边界见末尾V0.3/S2；XDP提供独立可选加载器，V1.2/S1新增启动map同步，S2新增静态IPv4/UDP二层DSR，职责边界见末尾对应章节。
 
 ### `src/cli/`
 
@@ -705,3 +705,11 @@ Buffer保留初始化的固定64KiB数组，用head/size和连续读写span代�
 S3复用S1/S2构建和测试，不新增运行时层。默认OFF、BPF-only、独立loader三种组合及普通UID/特权分层见[V1.1最小验证](docs/runbooks/xdp-validation.md)。特权脚本直接在临时net namespace中注入Ethernet/IPv4/UDP帧，验证真实挂载和条件卸载，普通用户态测试在隔离网络降权运行。
 
 [map schema初稿](docs/specs/xdp-map-schema.md)明确V1.1实际map集合为空；V1.2候选后端与统计字段只是后续设计输入，不是共享ABI或已实现控制面同步。版本六标准与记录环境见[验收索引](docs/specs/v1.1-acceptance.md)，公开JSON用于审计本轮结果，不作为性能或跨平台保证。
+
+## V1.2/S2 UDP DSR 边界
+
+`xdp_udp_dsr.bpf.o`使用独立schema v2，与旧PASS和schema v1对象并存。包路径有界解析Ethernet/IPv4/UDP，校验IPv4头及长度，按五元组FNV-1a选择静态目标，通过`bpf_redirect`送往出口；仅改二层MAC，后端以VIP直接回包。未支持、非目标、无后端或坏配置PASS，helper即时失败DROP；重定向请求不代表实际送达。
+
+`control/DsrConfigSync`负责VIP/目标解析与写入、完整回读、冻结；`xdp/DsrMapStore`负责v2白名单、内核map访问及八项per-CPU计数汇总。加载器检查入口/出口Ethernet接口、状态、MAC和MTU，先发布完整只读配置再挂载；停止先条件卸载再读统计。原用户态代理、metrics和S1同步路径保持。
+
+后端VIP、回程、邻居由部署方配置，产品不改宿主网络。无会话、NAT、热更新或健康联动；运行期联动留S3，性能留S4。正式ABI、解析边界和统计语义见[DSR规格](docs/specs/xdp-udp-dsr.md)，独立namespace/veth复现见[XDP验证](docs/runbooks/xdp-validation.md)。

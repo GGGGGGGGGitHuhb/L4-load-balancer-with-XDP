@@ -14,7 +14,10 @@ namespace {
 
 struct Options {
   bool attach = false;
-  bool mapsMode = false;
+  l4lb::xdp::Profile profile = l4lb::xdp::Profile::kLegacy;
+  std::string vip;
+  std::vector<std::string> targets;
+  l4lb::control::DsrConfiguration dsr;
   std::vector<std::string> endpoints;
   std::vector<XdpBackendValue> backends;
   std::string device;
@@ -28,6 +31,8 @@ void usage() {
       << "用法：\n"
          "  l4lb-xdp attach --dev NAME --object PATH [--mode generic|native]\n"
          "    maps 模式：追加 --maps [--backend IPv4:PORT]...\n"
+         "    DSR 模式：追加 --udp-dsr --vip IPv4:PORT [--target "
+         "EGRESS@MAC]...\n"
          "  l4lb-xdp detach --dev NAME --prog-id ID [--mode generic|native]\n"
          "  l4lb-xdp --help\n"
          "默认 generic；attach 前台等待 SIGINT/SIGTERM，然后条件卸载。\n"
@@ -46,8 +51,10 @@ Options parse(int argc, char** argv) {
   bool seen_id = false;
   for (int i = 2; i < argc; i += 2) {
     std::string key = argv[i];
-    if (key == "--maps" && options.attach && !options.mapsMode) {
-      options.mapsMode = true;
+    if ((key == "--maps" || key == "--udp-dsr") && options.attach &&
+        options.profile == l4lb::xdp::Profile::kLegacy) {
+      options.profile = key == "--maps" ? l4lb::xdp::Profile::kMapsV1
+                                        : l4lb::xdp::Profile::kUdpDsrV2;
       --i;
       continue;
     }
@@ -57,6 +64,10 @@ Options parse(int argc, char** argv) {
     std::string value = argv[i + 1];
     if (key == "--backend" && options.attach) {
       options.endpoints.push_back(value);
+    } else if (key == "--vip" && options.attach && options.vip.empty()) {
+      options.vip = value;
+    } else if (key == "--target" && options.attach) {
+      options.targets.push_back(value);
     } else if (key == "--dev" && options.device.empty()) {
       options.device = value;
     } else if (key == "--object" && options.attach && options.object.empty()) {
@@ -90,9 +101,19 @@ Options parse(int argc, char** argv) {
     throw std::invalid_argument("缺少 --object");
   if (!options.attach && !seen_id)
     throw std::invalid_argument("缺少 --prog-id");
-  if (!options.mapsMode && !options.endpoints.empty())
+  if (options.profile != l4lb::xdp::Profile::kMapsV1 &&
+      !options.endpoints.empty())
     throw std::invalid_argument("--backend 需要 --maps");
   options.backends = l4lb::control::parseXdpBackends(options.endpoints);
+  if (options.profile == l4lb::xdp::Profile::kUdpDsrV2) {
+    if (options.vip.empty())
+      throw std::invalid_argument("--udp-dsr 需要 --vip");
+    // Literal checks remain parameter errors; interface inspection happens
+    // before load.
+    l4lb::control::parseXdpBackends({options.vip});
+  } else if (!options.vip.empty() || !options.targets.empty()) {
+    throw std::invalid_argument("--vip/--target 需要 --udp-dsr");
+  }
   return options;
 }
 
@@ -130,14 +151,21 @@ int main(int argc, char** argv) {
                 << "（已卸载或本模式无程序）" << std::endl;
       return std::cout ? 0 : 1;
     }
+    if (options.profile == l4lb::xdp::Profile::kUdpDsrV2)
+      options.dsr = l4lb::control::parseDsrConfiguration(
+          options.device, options.vip, options.targets);
     l4lb::xdp::Attachment attachment;
-    attachment.load(options.object, options.mapsMode, options.backends);
+    attachment.load(options.object, options.profile, options.backends,
+                    options.dsr);
     attachment.attach(ifindex, options.mode);
     std::cout << "READY dev=" << options.device
               << " mode=" << l4lb::xdp::mode_name(options.mode)
               << " prog_id=" << attachment.program_id();
-    if (options.mapsMode)
+    if (options.profile == l4lb::xdp::Profile::kMapsV1)
       std::cout << " schema=1 backend_count=" << options.backends.size();
+    if (options.profile == l4lb::xdp::Profile::kUdpDsrV2)
+      std::cout << " schema=2 profile=udp-dsr backend_count="
+                << options.dsr.backends.size();
     std::cout << std::endl;
     if (!std::cout) throw std::runtime_error("READY 输出失败，清理挂载");
     int received = 0;
@@ -152,10 +180,27 @@ int main(int argc, char** argv) {
       cleanupFailed = true;
       std::cerr << "XDP 卸载失败：" << error.what() << '\n';
     }
-    if (options.mapsMode) {
+    if (options.profile == l4lb::xdp::Profile::kMapsV1) {
       try {
         auto packets = attachment.readPassPackets();
         std::cout << "XDP_STATS schema=1 pass_packets=" << packets << std::endl;
+      } catch (const std::exception& error) {
+        cleanupFailed = true;
+        std::cerr << "XDP 统计失败：" << error.what() << '\n';
+      }
+    }
+    if (options.profile == l4lb::xdp::Profile::kUdpDsrV2) {
+      try {
+        auto stats = attachment.readDsrStats();
+        std::cout << "XDP_STATS schema=2 total_packets=" << stats.totalPackets
+                  << " pass_packets=" << stats.passPackets
+                  << " redirect_requests=" << stats.redirectRequests
+                  << " drop_packets=" << stats.dropPackets
+                  << " unsupported_packets=" << stats.unsupportedPackets
+                  << " no_backend_packets=" << stats.noBackendPackets
+                  << " invalid_config_packets=" << stats.invalidConfigPackets
+                  << " helper_error_packets=" << stats.helperErrorPackets
+                  << std::endl;
       } catch (const std::exception& error) {
         cleanupFailed = true;
         std::cerr << "XDP 统计失败：" << error.what() << '\n';
@@ -166,6 +211,9 @@ int main(int argc, char** argv) {
               << " mode=" << l4lb::xdp::mode_name(options.mode)
               << " prog_id=" << attachment.program_id() << std::endl;
     return std::cout && received != SIGPIPE ? 0 : 1;
+  } catch (const std::invalid_argument& error) {
+    std::cerr << "参数错误：" << error.what() << '\n';
+    return 2;
   } catch (const std::exception& error) {
     std::cerr << "XDP 失败 dev=" << options.device
               << " mode=" << l4lb::xdp::mode_name(options.mode) << "："

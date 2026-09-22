@@ -1,0 +1,333 @@
+{
+  "stage": "V1.2/S2",
+  "date": "2026-09-22",
+  "base_commit": "afa5d99e7a6c8880340419c09b960c25006be612",
+  "acceptance": "PASS",
+  "scope": "Static IPv4/UDP L2 DSR, one VIP, 0..64 targets; no runtime updates, health integration or performance claim",
+  "sources": {
+    "cmake/Xdp.cmake": "1246dde8573a33542bdea616f4902ca9616f85bfaa6431f2dd8ea5ff1255c1ba",
+    "cmake/XdpLoader.cmake": "233674c306f69232d1e3a6eff85684b583a92a7242af444778b43ef8b4592cb8",
+    "src/xdp/loader.cpp": "dfe23f0292da9d1db07306b0cb3788df4b55f200ede3553d15c2643751cf0afa",
+    "src/xdp/loader.h": "e346fc5ed3ca7aa7a1ea1ef55524533a8bfeb570b586c0fff139d80495d8a823",
+    "src/xdp/main.cpp": "23d88975cd970a76abdb61b69cb7c37170fb3607ef0a99490cbf91f9b4e94fd4",
+    "src/xdp/UdpDsrSchema.h": "a522c361b686f5740e2dbcc82051614fa1acc0d39f80fcd75977b5c4fff37956",
+    "src/xdp/DsrMapStore.cpp": "34df204dac548bad19c3e9fe70c19666f1575155b3c2fa763394277cef200f8f",
+    "src/xdp/DsrMapStore.h": "26b691691a30954a1a13985e2c5d8bd78581cf76c149005eddf02ee73ab10d42",
+    "src/xdp/xdp_udp_dsr.bpf.c": "776fc3cac08bec1f7c81b076a477ac361d046113c79e84e5f797b57cdb5dbf6b",
+    "src/control/DsrConfigSync.cpp": "906744ad0a1d0733f5a26bb2a7bd14938d3747197068e610c6799cb7abbeebeb",
+    "src/control/DsrConfigSync.h": "5412b2e063a182ff06649bee33c6a3dd35cd74778065719f18bde074586aeca1",
+    "tests/UdpDsrConfig_test.cpp": "ccc056d2aec8b6bbeb940d9027c980ecaa30e7ff54710288f3413008b7bdb5a9",
+    "tests/udp_dsr_cli_test.py": "e29472fcd1115794df5baa9d1767d6aa7bb5c74ab8bf694a15ffe7e7bb6bd87b",
+    "tests/XdpDsrFaults.c": "e1716c32a6e3b987fed88c6c3981f204827bacf7081024d12679cc761aa9114e",
+    "tests/build_xdp_dsr_fixtures.py": "feaebce333a382ba7a6d48e11001b68938827eb63be239ad0ab6f1721c451795",
+    "tests/xdp_udp_dsr_privileged.py": "8520662556d9f91ee73fd205930f2349815d4b0e0b46a5994e33511aa987151e"
+  },
+  "build_matrix": {
+    "builder": [
+      "OFF Release",
+      "OFF Debug",
+      "BPF-only",
+      "ON Release",
+      "production BUILD_TESTING=OFF without Python"
+    ],
+    "reviewer": [
+      "ON Debug"
+    ]
+  },
+  "ctest": {
+    "builder_artifacts_leader_run": {
+      "ON": {
+        "passed": 37,
+        "seconds": 62.65
+      },
+      "OFF_Release": {
+        "passed": 31,
+        "seconds": 62.28
+      }
+    },
+    "reviewer": {
+      "ON_Debug": {
+        "passed": 37,
+        "seconds": 62.41
+      }
+    }
+  },
+  "runs": {
+    "builder_dsr": {
+      "kernel": "Linux 6.6.87.2-microsoft-standard-WSL2 x86_64 GNU/Linux",
+      "scope": "functional veth only; no performance or physical NIC claim",
+      "sha256": {
+        "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v1.2-s2/builder/on/bin/l4lb-xdp": "6882de8ef85bd60703deb09bfd37225f03a7108c0ee9fe1f2bd41e233fd32983",
+        "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v1.2-s2/builder/on/xdp/xdp_udp_dsr.bpf.o": "e5374a78a9a956b841b0a7d8daaeecd0ca3f4464e4a346f2a307b9ff7417970f",
+        "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v1.2-s2/builder/on/xdp/xdp_pass.bpf.o": "a4f0c33208293e4746741b1d44cc2ed27484a2088a4a4526ff219be1d95d3788",
+        "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v1.2-s2/test-builder/fixtures/helper-error.bpf.o": "1215f19ef97cce1f3ac83e01331f1de55f3dea0d45324470b0f83ad3e129bb38",
+        "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v1.2-s2/test-builder/fixtures/short-bound.bpf.o": "d175155751b2c3ae0d5a81c6c1eb7d0b7410589b600e63072d533451d29e1f8b",
+        "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v1.2-s2/test-builder/fixtures/libdsr-faults.so": "181449bb1e5698d02c9b39a440f85d0d51856c384ae6ddcb58b8572e82ed575d",
+        "/home/power/projects/L4-LoadBalancer-withXDP/tests/xdp_udp_dsr_privileged.py": "8520662556d9f91ee73fd205930f2349815d4b0e0b46a5994e33511aa987151e",
+        "/home/power/projects/L4-LoadBalancer-withXDP/tests/build_xdp_dsr_fixtures.py": "feaebce333a382ba7a6d48e11001b68938827eb63be239ad0ab6f1721c451795",
+        "/home/power/projects/L4-LoadBalancer-withXDP/tests/XdpDsrFaults.c": "e1716c32a6e3b987fed88c6c3981f204827bacf7081024d12679cc761aa9114e"
+      },
+      "kernel_cases": {
+        "test_run_cases": 1077,
+        "short_logical_bound_fixture_cases": 14,
+        "ethernet_shorter_than_14": "kernel test-run API rejects before execution"
+      },
+      "modes": {
+        "generic": [
+          "real_full_map_readback_freeze_metadata",
+          "interface_validation_negatives",
+          "two_backend_request_response_and_mac_capture",
+          "stable_hash_and_reply_source",
+          "host_pass_delivery",
+          "stop_stats_equal_independent_kernel_sum",
+          "duplicate_wrong_id_preserved",
+          "egress_down_no_delivery_recovery",
+          "sigint_cleanup",
+          "closed_stdin_replacement_protection",
+          "output_failure_cleanup",
+          "sigkill_recovery",
+          "sync_readback_freeze_failures_no_attach",
+          "stats_failure_detaches",
+          "egress_deleted_no_delivery_cleanup",
+          "ingress_deleted_cleanup"
+        ],
+        "native": [
+          "real_full_map_readback_freeze_metadata",
+          "interface_validation_negatives",
+          "two_backend_request_response_and_mac_capture",
+          "stable_hash_and_reply_source",
+          "host_pass_delivery",
+          "stop_stats_equal_independent_kernel_sum",
+          "duplicate_wrong_id_preserved",
+          "egress_down_no_delivery_recovery",
+          "sigint_cleanup",
+          "closed_stdin_replacement_protection",
+          "output_failure_cleanup",
+          "sigkill_recovery",
+          "sync_readback_freeze_failures_no_attach",
+          "stats_failure_detaches",
+          "egress_deleted_no_delivery_cleanup",
+          "ingress_deleted_cleanup"
+        ]
+      }
+    },
+    "reviewer_maps": {
+      "scope": "V1.2/S1 maps; no forwarding or performance claim",
+      "kernel": "Linux 6.6.87.2-microsoft-standard-WSL2 x86_64 GNU/Linux",
+      "sha256": {
+        "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v1.2-s2/reviewer/on/bin/l4lb-xdp": "4967453e46fefeacabd8dd1f3df30f07a5e7c4000ada986f9ebacbe90a58f4b6",
+        "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v1.2-s2/reviewer/on/xdp/xdp_maps.bpf.o": "f429b22642a87772c271120548d2f5f8d464637f9eaab090629fafaed2bca052",
+        "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v1.2-s2/reviewer/fixtures/MapFaults.so": "877c921c94c6a6233891f2110f955e69c90d42114904c9305b082b171a35378d",
+        "/home/power/projects/L4-LoadBalancer-withXDP/tests/xdp_maps_privileged.py": "2fa10020b6f3caed48b7888086be45091949516731a9c5abbd8278be8f345233",
+        "/home/power/projects/L4-LoadBalancer-withXDP/tests/XdpMapFaults.c": "30262a702247da1a1c968585d6d3276198bdf60024cab083e6f3547cbb1e5dae"
+      },
+      "modes": {
+        "generic": {
+          "status": "PASS",
+          "checks": [
+            "backends_0_readback_freeze_count_cleanup",
+            "backends_1_readback_freeze_count_cleanup",
+            "backends_64_readback_freeze_count_cleanup",
+            "detached_test_run_exact_count_and_frame_unchanged",
+            "backend-write_no_attach",
+            "config-write_no_attach",
+            "config-read-error_no_attach",
+            "config-mismatch_no_attach",
+            "backend-mismatch_no_attach",
+            "backend-freeze_no_attach",
+            "config-freeze_no_attach",
+            "stats_read_failure_still_detaches",
+            "duplicate_and_wrong_id_preserved",
+            "sigint_detach",
+            "closed_stdin_explicit_idempotent_detach_replacement_protection",
+            "ready_output_failure_cleanup",
+            "stop_output_failure_cleanup",
+            "sigkill_explicit_recovery_and_map_cleanup",
+            "device_removed_cleanup"
+          ]
+        },
+        "native": {
+          "status": "PASS",
+          "checks": [
+            "backends_0_readback_freeze_count_cleanup",
+            "backends_1_readback_freeze_count_cleanup",
+            "backends_64_readback_freeze_count_cleanup",
+            "detached_test_run_exact_count_and_frame_unchanged",
+            "backend-write_no_attach",
+            "config-write_no_attach",
+            "config-read-error_no_attach",
+            "config-mismatch_no_attach",
+            "backend-mismatch_no_attach",
+            "backend-freeze_no_attach",
+            "config-freeze_no_attach",
+            "stats_read_failure_still_detaches",
+            "duplicate_and_wrong_id_preserved",
+            "sigint_detach",
+            "closed_stdin_explicit_idempotent_detach_replacement_protection",
+            "ready_output_failure_cleanup",
+            "stop_output_failure_cleanup",
+            "sigkill_explicit_recovery_and_map_cleanup",
+            "device_removed_cleanup"
+          ]
+        }
+      }
+    },
+    "reviewer_legacy": {
+      "kernel": "Linux 6.6.87.2-microsoft-standard-WSL2 x86_64 GNU/Linux",
+      "scope": "V1.1/S2 product loader; no physical NIC or performance claim",
+      "sha256": {
+        "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v1.2-s2/reviewer/on/bin/l4lb-xdp": "4967453e46fefeacabd8dd1f3df30f07a5e7c4000ada986f9ebacbe90a58f4b6",
+        "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v1.2-s2/reviewer/on/xdp/xdp_pass.bpf.o": "1f96687fbe635a0f2aa55aa7b66f7e80f280d57c4f68113c825abec08ecfbc00",
+        "/home/power/projects/L4-LoadBalancer-withXDP/tests/xdp_loader_privileged.py": "28ed27f82bb20090365aa145c6013726b95d47cfcf9291530c00d28e5acd1893"
+      },
+      "modes": {
+        "generic": {
+          "status": "PASS",
+          "checks": [
+            "attach_id",
+            "udp_pass",
+            "duplicate_preserved",
+            "wrong_id_preserved",
+            "sigterm_detach",
+            "udp_after_detach",
+            "sigint_detach",
+            "explicit_detach",
+            "idempotent_detach",
+            "replacement_preserved",
+            "ready_output_failure_cleanup",
+            "sigkill_explicit_recovery",
+            "closed_stdin_detach_and_cleanup",
+            "device_removed_cleanup"
+          ]
+        },
+        "native": {
+          "status": "PASS",
+          "checks": [
+            "attach_id",
+            "udp_pass",
+            "duplicate_preserved",
+            "wrong_id_preserved",
+            "sigterm_detach",
+            "udp_after_detach",
+            "sigint_detach",
+            "explicit_detach",
+            "idempotent_detach",
+            "replacement_preserved",
+            "ready_output_failure_cleanup",
+            "sigkill_explicit_recovery",
+            "closed_stdin_detach_and_cleanup",
+            "device_removed_cleanup"
+          ]
+        }
+      }
+    },
+    "reviewer_dsr": {
+      "kernel": "Linux 6.6.87.2-microsoft-standard-WSL2 x86_64 GNU/Linux",
+      "scope": "functional veth only; no performance or physical NIC claim",
+      "sha256": {
+        "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v1.2-s2/reviewer/on/bin/l4lb-xdp": "4967453e46fefeacabd8dd1f3df30f07a5e7c4000ada986f9ebacbe90a58f4b6",
+        "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v1.2-s2/reviewer/on/xdp/xdp_udp_dsr.bpf.o": "d0c641b3c72b0de5441d7e6f4dc80430234fd4cb0c494907c4b7279f2f36ba43",
+        "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v1.2-s2/reviewer/on/xdp/xdp_pass.bpf.o": "1f96687fbe635a0f2aa55aa7b66f7e80f280d57c4f68113c825abec08ecfbc00",
+        "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v1.2-s2/reviewer/fixtures/helper-error.bpf.o": "df4dfd153f02a739f311340c93fd6428c57c35e6cbd97ac1a0b5a0b34f09ac96",
+        "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v1.2-s2/reviewer/fixtures/short-bound.bpf.o": "b6a94d65d677df1bcaefc1a333047c641b6b04ffed0e18b71bdb37dac74ce8bf",
+        "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v1.2-s2/reviewer/fixtures/libdsr-faults.so": "181449bb1e5698d02c9b39a440f85d0d51856c384ae6ddcb58b8572e82ed575d",
+        "/home/power/projects/L4-LoadBalancer-withXDP/tests/xdp_udp_dsr_privileged.py": "8520662556d9f91ee73fd205930f2349815d4b0e0b46a5994e33511aa987151e",
+        "/home/power/projects/L4-LoadBalancer-withXDP/tests/build_xdp_dsr_fixtures.py": "feaebce333a382ba7a6d48e11001b68938827eb63be239ad0ab6f1721c451795",
+        "/home/power/projects/L4-LoadBalancer-withXDP/tests/XdpDsrFaults.c": "e1716c32a6e3b987fed88c6c3981f204827bacf7081024d12679cc761aa9114e"
+      },
+      "kernel_cases": {
+        "test_run_cases": 1077,
+        "short_logical_bound_fixture_cases": 14,
+        "ethernet_shorter_than_14": "kernel test-run API rejects before execution"
+      },
+      "modes": {
+        "generic": [
+          "real_full_map_readback_freeze_metadata",
+          "interface_validation_negatives",
+          "two_backend_request_response_and_mac_capture",
+          "stable_hash_and_reply_source",
+          "host_pass_delivery",
+          "stop_stats_equal_independent_kernel_sum",
+          "duplicate_wrong_id_preserved",
+          "egress_down_no_delivery_recovery",
+          "sigint_cleanup",
+          "closed_stdin_replacement_protection",
+          "output_failure_cleanup",
+          "sigkill_recovery",
+          "sync_readback_freeze_failures_no_attach",
+          "stats_failure_detaches",
+          "egress_deleted_no_delivery_cleanup",
+          "ingress_deleted_cleanup"
+        ],
+        "native": [
+          "real_full_map_readback_freeze_metadata",
+          "interface_validation_negatives",
+          "two_backend_request_response_and_mac_capture",
+          "stable_hash_and_reply_source",
+          "host_pass_delivery",
+          "stop_stats_equal_independent_kernel_sum",
+          "duplicate_wrong_id_preserved",
+          "egress_down_no_delivery_recovery",
+          "sigint_cleanup",
+          "closed_stdin_replacement_protection",
+          "output_failure_cleanup",
+          "sigkill_recovery",
+          "sync_readback_freeze_failures_no_attach",
+          "stats_failure_detaches",
+          "egress_deleted_no_delivery_cleanup",
+          "ingress_deleted_cleanup"
+        ]
+      }
+    }
+  },
+  "limitations": [
+    "WSL2 6.6.87.2 veth functional validation only; no physical NIC or performance result",
+    "Native-veth backend RX requires separately attached legacy XDP_PASS to enable NAPI",
+    "Isolated client TX checksum offload disabled; backend VIP and fixed return neighbors configured by fixture, not product",
+    "Linux test-run rejects input shorter than 14 bytes; separate logical-bound fixture covers 0..13, not real short wire frames",
+    "redirect_requests counts helper requests, not delivery; asynchronous egress failure may drop",
+    "Raw logs remain local under .stage-tmp/v1.2-s2; this tracked summary contains identities and results, not a bundled raw evidence archive"
+  ],
+  "corrections": [
+    "Initial veth UDP partial checksums needed isolated client offload setup",
+    "VIP-source ARP required isolated backend static return neighbors",
+    "Native-veth required backend RX XDP_PASS/NAPI setup",
+    "Runner fixed anchored READY matching, constructor failure cleanup and stale capture/egress identity handling; product semantics unchanged",
+    "Initial short-bound fixture failed verifier; fixture-only original packet-bound proof fixed loading, production object unchanged"
+  ],
+  "logs": {
+    ".stage-tmp/v1.2-s2/leader/on-full-tests.log": {
+      "sha256": "cd6f5b96a7f9fd34e3de9bad6feb8d015aa2bae2a004bd2a196a94c488ee4399"
+    },
+    ".stage-tmp/v1.2-s2/leader/off-release-full.log": {
+      "sha256": "98168d3068d82eed2e4eab2535974ddc692f3dda75e451382a8385ec2a89adaf"
+    },
+    ".stage-tmp/v1.2-s2/test-builder/logs/final-summary.json": {
+      "sha256": "64f10c840a2074483760df7ca0dcdbc08f018899ba7aadc18ead51f95076ceeb"
+    },
+    ".stage-tmp/v1.2-s2/reviewer/logs/on-configure.log": {
+      "sha256": "3d326fb661851654fac5666c6675984e84d7bbe089c81a864b6c0c7f69df33e5"
+    },
+    ".stage-tmp/v1.2-s2/reviewer/logs/on-build.log": {
+      "sha256": "558463d46907f4337585740bea73fc6803ce28ebe77b30651eee2e3856272730"
+    },
+    ".stage-tmp/v1.2-s2/reviewer/logs/on-xdp.log": {
+      "sha256": "bf2b94a3c8c6eb373da187a24009a728e17dde7bc6525625bbca283b9dd20cac"
+    },
+    ".stage-tmp/v1.2-s2/reviewer/logs/regression.log": {
+      "sha256": "8bb3b9d1a330d12b5f1bdd737f5bfc04deec59ada6525ac65a5affbd1315da6c"
+    },
+    ".stage-tmp/v1.2-s2/reviewer/logs/maps-real.log": {
+      "sha256": "9278f67f8a1e742b85d317f58a3d40884004ab7041134a5b372088c76defc8ce"
+    },
+    ".stage-tmp/v1.2-s2/reviewer/logs/legacy-real.log": {
+      "sha256": "0be3bc7e49a15c777d70e8ba4ed26d0d0526c5307a367663c099673279fafeaa"
+    },
+    ".stage-tmp/v1.2-s2/reviewer/logs/format.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    ".stage-tmp/v1.2-s2/reviewer/logs/dsr-real.log": {
+      "sha256": "753fcd7b13d8671d44557279e986bfc8eca4f41cf036f67d84f502abe31a122b"
+    }
+  }
+}

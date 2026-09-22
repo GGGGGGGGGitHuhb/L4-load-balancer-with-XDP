@@ -1,10 +1,10 @@
 # XDP 最小验证流程
 
-本流程验证旧 XDP_PASS 加载方式，以及 V1.2/S1 新增的后端 map 同步、统计与失败清理，不验证负载均衡或性能。普通 clone 可使用以下命令；无需私有阶段报告、旧预检脚本或云服务器。
+本流程验证旧 XDP_PASS、V1.2/S1 后端 map 同步，以及S2静态IPv4/UDP二层DSR真实转发；不测性能。普通 clone 可使用以下命令；无需私有阶段报告、旧预检脚本或云服务器。
 
 ## 前置环境
 
-Linux或WSL2、支持C++20的编译器、CMake≥3.20、Ninja、Python3、支持BPF的Clang、Linux UAPI开发头、libbpf≥1.0开发库。显式内核测试还需iproute2、util-linux及当前命名空间足够的BPF/网络权限。Ubuntu通常对应clang、llvm、cmake、ninja-build、python3、linux-libc-dev、libc6-dev、libbpf-dev、iproute2、util-linux；按实际缺项安装。bpftool不是前置。
+Linux或WSL2、支持C++20的编译器、CMake≥3.20、Ninja、Python3、支持BPF的Clang、Linux UAPI开发头、libbpf≥1.0开发库。显式内核测试还需iproute2、util-linux、ethtool及当前命名空间足够的BPF/网络权限。Ubuntu通常对应clang、llvm、cmake、ninja-build、python3、linux-libc-dev、libc6-dev、libbpf-dev、iproute2、util-linux；按实际缺项安装。bpftool不是前置。
 
 本轮在Ubuntu24.04.3、WSL2内核6.6.87.2-microsoft-standard-WSL2、Clang18.1.3、libbpf1.3.0验证。其他版本需自行复验，不保证每块物理网卡native支持。先阅读[环境边界](linux-xdp-env.md)与[加载契约](xdp-loader.md)。
 
@@ -41,7 +41,7 @@ cmake --build build-bpf --target l4lb_xdp
 ctest --test-dir build-bpf -L xdp_build --output-on-failure
 ```
 
-期望 xdp_object 通过；旧对象为 ELF64/EM_BPF/REL、仅 XDP_PASS 和 GPL，无 maps。V1.2/S1 同时生成 xdp_maps.bpf.o；共享头由 BPF C 编译检查，进一步 metadata/同步检查在下一步。此组合不需要 libbpf 开发包。工具链故障与显式构建矩阵见[BPF构建手册](xdp-build.md)。
+期望 xdp_object 通过；旧对象为 ELF64/EM_BPF/REL、仅 XDP_PASS 和 GPL，无 maps。V1.2同时生成 xdp_maps.bpf.o 和 xdp_udp_dsr.bpf.o；共享头由 BPF C 编译检查，进一步 metadata/同步检查在下一步。此组合不需要 libbpf 开发包。工具链故障与显式构建矩阵见[BPF构建手册](xdp-build.md)。
 
 ## 3. 编译loader与无特权负向检查
 
@@ -50,10 +50,10 @@ cmake -S . -B build-xdp -G Ninja -DCMAKE_BUILD_TYPE=Debug \
   -DL4LB_BUILD_XDP=ON -DL4LB_BUILD_XDP_LOADER=ON
 cmake --build build-xdp -j4
 build-xdp/bin/l4lb-xdp --help
-ctest --test-dir build-xdp -R '^xdp_' --output-on-failure
+ctest --test-dir build-xdp -R '^(xdp_|udp_dsr_)' --output-on-failure
 ```
 
-期望 xdp_object、xdp_loader_cli、xdp_config_sync、xdp_maps_cli 四项通过。保留旧 CLI 内部33项；新增测试覆盖 ABI/字节序、0/1/64后端、132个同步步骤的故障注入、65处回读不一致、per-CPU汇总，以及12类对象白名单变异和参数拒绝。全量 ON CTest 为35项，默认 OFF仍31项。自定义libbpf目录配置见[加载手册](xdp-loader.md#构建)。
+期望旧四项及 udp_dsr_config、udp_dsr_cli 共六项通过。保留旧 CLI 内部33项；新增测试覆盖 ABI/字节序、0/1/64后端、132个同步步骤的故障注入、65处回读不一致、per-CPU汇总，以及12类对象白名单变异和参数拒绝。DSR另覆盖23种CLI错误、12种v2对象变异、132处同步故障与65处回读故障。全量 ON CTest 为37项，默认 OFF仍31项。自定义libbpf目录配置见[加载手册](xdp-loader.md#构建)。
 
 ## 4. 显式真实挂载与流量验证
 
@@ -101,8 +101,37 @@ sudo env TMPDIR="$PWD/.stage-tmp/xdp-map-validation/tmp" \
 
 脚本第一次调试误把错误诊断中的“READY 输出失败”当成功READY行，随后改为行首匹配；这是测试误判，不是产品挂载清理失败，原失败日志保留。本轮结果与源码/产物指纹见[map验证摘要](xdp-map-validation-result.json)。
 
+## 6. 静态 UDP DSR 真实内核与双后端验证
+
+普通用户编译显式测试夹具，再以root运行隔离测试；夹具不替换生产对象，也不链接产品。`--log-dir`必须为本次新目录，失败日志保留。
+
+```bash
+python3 tests/build_xdp_dsr_fixtures.py --output .stage-tmp/dsr-fixtures --clang clang-18
+mkdir -p .stage-tmp/dsr-validation/tmp
+set -o pipefail
+sudo env TMPDIR="$PWD/.stage-tmp/dsr-validation/tmp" \
+  PYTHONPYCACHEPREFIX="$PWD/.stage-tmp/dsr-validation/pycache" \
+  python3 tests/xdp_udp_dsr_privileged.py \
+  --loader "$PWD/build-xdp/bin/l4lb-xdp" \
+  --object "$PWD/build-xdp/xdp/xdp_udp_dsr.bpf.o" \
+  --pass-object "$PWD/build-xdp/xdp/xdp_pass.bpf.o" \
+  --helper-error-object "$PWD/.stage-tmp/dsr-fixtures/helper-error.bpf.o" \
+  --short-bound-object "$PWD/.stage-tmp/dsr-fixtures/short-bound.bpf.o" \
+  --fault-library "$PWD/.stage-tmp/dsr-fixtures/libdsr-faults.so" \
+  --log-dir "$PWD/.stage-tmp/dsr-validation/run-001" \
+  2>&1 | tee .stage-tmp/dsr-validation/root.log
+```
+
+runner自建LB、客户端及两后端namespace/veth；客户端到VIP的下一跳强制经过LB入口，后端在自身配置VIP并直接向客户端回包。检查两后端真实收包、二层MAC、五元组稳定映射和响应源VIP，不能用helper返回值或同namespace本地路由替代成功送达。
+
+隔离拓扑额外关闭客户端veth TX checksum offload（需ethtool），确保注入的是完整UDP校验和而非等待网卡补齐的partial checksum；后端配置固定回程邻居，避免以非同网段VIP发起ARP导致回程失败。native-veth模式还在后端接收端挂旧XDP_PASS以启用接收NAPI。这些都是测试拓扑前置，产品不修改校验和、不配置邻居或额外挂载程序；宿主接口/路由保持。
+
+真实BPF test-run覆盖0/1/2/64目标、固定哈希向量、包头/长度/校验和/分片边界、输出字节与八项计数。Linux test-run在运行BPF前拒绝小于14字节的输入，因此0..13字节逻辑边界用独立short-bound夹具补测，不宣称验证了真实短线帧；helper-error夹具使用非法flags触发真实helper错误，不能将该夹具当作生产对象。
+
+产品拓扑检查还包括接口负向、真实map metadata/全部槽回读/冻结、非目标PASS、出口down/删除、入口删除、输出/统计失败、SIGINT/SIGTERM/SIGKILL恢复和外部替换保护。出口异步失败时可以已有redirect请求但后端未收到包；S2无自动摘除，运行期更新/健康联动留S3。结果与最终源码/产物身份见[DSR验证摘要](xdp-dsr-validation-result.json)。
+
 ## 结果、错误与范围
 
-[V1.1机器摘要](xdp-validation-result.json)和[V1.1六项版本验收索引](../specs/v1.1-acceptance.md)保留2026-09-14的历史结果；V1.2/S1见上节新摘要。历史预检证据仍在[原环境摘要](local-xdp-preflight.json)，不等价当前产品测试。
+[V1.1机器摘要](xdp-validation-result.json)和[V1.1六项版本验收索引](../specs/v1.1-acceptance.md)保留2026-09-14的历史结果；V1.2/S1见map摘要，S2见DSR摘要。历史预检证据仍在[原环境摘要](local-xdp-preflight.json)，不等价当前产品测试。
 
-权限、依赖、模式不支持、已有程序/ID不匹配等排查见[加载错误说明](xdp-loader.md#输入与错误)。遇到错误先保留完整日志和退出码，不使用force覆盖程序。V1.1历史版本没有maps，V1.2/S1新增的正式[schema v1](../specs/xdp-map-schema.md)只支持启动同步与统计；完整TCP代理、包转发和性能对比不属于本流程。
+权限、依赖、模式不支持、已有程序/ID不匹配等排查见[加载错误说明](xdp-loader.md#输入与错误)。遇到错误先保留完整日志和退出码，不使用force覆盖程序。V1.1历史版本没有maps，V1.2/S1新增的正式[schema v1](../specs/xdp-map-schema.md)只支持启动同步与统计；S2新增的[DSR](../specs/xdp-udp-dsr.md)覆盖受限UDP转发；完整TCP代理和性能对比不属于本流程。
