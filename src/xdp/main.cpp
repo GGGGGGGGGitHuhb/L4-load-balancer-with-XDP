@@ -7,12 +7,16 @@
 #include <stdexcept>
 #include <string>
 
+#include "control/XdpConfigSync.h"
 #include "loader.h"
 
 namespace {
 
 struct Options {
   bool attach = false;
+  bool mapsMode = false;
+  std::vector<std::string> endpoints;
+  std::vector<XdpBackendValue> backends;
   std::string device;
   std::string object;
   l4lb::xdp::Mode mode = l4lb::xdp::Mode::Generic;
@@ -23,6 +27,7 @@ void usage() {
   std::cout
       << "用法：\n"
          "  l4lb-xdp attach --dev NAME --object PATH [--mode generic|native]\n"
+         "    maps 模式：追加 --maps [--backend IPv4:PORT]...\n"
          "  l4lb-xdp detach --dev NAME --prog-id ID [--mode generic|native]\n"
          "  l4lb-xdp --help\n"
          "默认 generic；attach 前台等待 SIGINT/SIGTERM，然后条件卸载。\n"
@@ -41,11 +46,18 @@ Options parse(int argc, char** argv) {
   bool seen_id = false;
   for (int i = 2; i < argc; i += 2) {
     std::string key = argv[i];
+    if (key == "--maps" && options.attach && !options.mapsMode) {
+      options.mapsMode = true;
+      --i;
+      continue;
+    }
     if (i + 1 >= argc || argv[i + 1][0] == '\0') {
       throw std::invalid_argument("选项缺少值：" + key);
     }
     std::string value = argv[i + 1];
-    if (key == "--dev" && options.device.empty()) {
+    if (key == "--backend" && options.attach) {
+      options.endpoints.push_back(value);
+    } else if (key == "--dev" && options.device.empty()) {
       options.device = value;
     } else if (key == "--object" && options.attach && options.object.empty()) {
       options.object = value;
@@ -78,6 +90,9 @@ Options parse(int argc, char** argv) {
     throw std::invalid_argument("缺少 --object");
   if (!options.attach && !seen_id)
     throw std::invalid_argument("缺少 --prog-id");
+  if (!options.mapsMode && !options.endpoints.empty())
+    throw std::invalid_argument("--backend 需要 --maps");
+  options.backends = l4lb::control::parseXdpBackends(options.endpoints);
   return options;
 }
 
@@ -116,18 +131,37 @@ int main(int argc, char** argv) {
       return std::cout ? 0 : 1;
     }
     l4lb::xdp::Attachment attachment;
-    attachment.load(options.object);
+    attachment.load(options.object, options.mapsMode, options.backends);
     attachment.attach(ifindex, options.mode);
     std::cout << "READY dev=" << options.device
               << " mode=" << l4lb::xdp::mode_name(options.mode)
-              << " prog_id=" << attachment.program_id() << std::endl;
+              << " prog_id=" << attachment.program_id();
+    if (options.mapsMode)
+      std::cout << " schema=1 backend_count=" << options.backends.size();
+    std::cout << std::endl;
     if (!std::cout) throw std::runtime_error("READY 输出失败，清理挂载");
     int received = 0;
     int error = sigwait(&signals, &received);
     if (error != 0)
       throw std::runtime_error("等待信号失败：" +
                                std::string(std::strerror(error)));
-    attachment.detach();
+    bool cleanupFailed = false;
+    try {
+      attachment.detach();
+    } catch (const std::exception& error) {
+      cleanupFailed = true;
+      std::cerr << "XDP 卸载失败：" << error.what() << '\n';
+    }
+    if (options.mapsMode) {
+      try {
+        auto packets = attachment.readPassPackets();
+        std::cout << "XDP_STATS schema=1 pass_packets=" << packets << std::endl;
+      } catch (const std::exception& error) {
+        cleanupFailed = true;
+        std::cerr << "XDP 统计失败：" << error.what() << '\n';
+      }
+    }
+    if (cleanupFailed) return 1;
     std::cout << "DETACHED dev=" << options.device
               << " mode=" << l4lb::xdp::mode_name(options.mode)
               << " prog_id=" << attachment.program_id() << std::endl;

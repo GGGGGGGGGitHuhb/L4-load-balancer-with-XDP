@@ -1,6 +1,6 @@
-# V1.1/S1 可选 eBPF 构建
+# 可选 eBPF 对象构建
 
-S1提供独立的最小 `XDP_PASS` 对象。构建不需要root、libbpf开发头、bpftool或内核BTF；不会加载或挂载程序。当前支持Linux原生构建（含WSL2），不支持CMake交叉工具链。S2独立加载器的额外选项与依赖见[加载与卸载](xdp-loader.md)。
+提供独立的最小 `XDP_PASS` 对象，并在 V1.2/S1 新增带配置/统计 maps 的 PASS 对象。构建不需要 root、libbpf 开发头、bpftool 或内核 BTF；不会加载或挂载程序。当前支持 Linux 原生构建（含 WSL2），不支持 CMake 交叉工具链。独立加载器的额外选项与依赖见[加载与卸载](xdp-loader.md)。
 
 ## 默认用户态构建
 
@@ -18,9 +18,9 @@ cmake --build build-xdp --target l4lb_xdp
 ctest --test-dir build-xdp -L xdp_build --output-on-failure
 ```
 
-产物：`build-xdp/xdp/xdp_pass.bpf.o`。只构建l4lb_xdp不会生成其他测试可执行文件；执行全量CTest前先 `cmake --build build-xdp -j4`。ON时全量build也包含BPF目标，但对象不链接进l4lb。对象检查为无特权CTest标签 `xdp_build`，仅ON且BUILD_TESTING时注册。
+产物：`build-xdp/xdp/xdp_pass.bpf.o` 与 `build-xdp/xdp/xdp_maps.bpf.o`。只构建 l4lb_xdp 不会生成其他测试可执行文件；执行全量 CTest 前先 `cmake --build build-xdp -j4`。ON 时全量 build 也包含 BPF 目标，但对象不链接进 l4lb。旧对象检查为无特权 CTest 标签 `xdp_build`，仅 ON 且 BUILD_TESTING 时注册；新 maps 对象的 ABI/metadata 检查随可选 loader 的 `xdp_config_sync` 测试运行，真实检查见[验证流程](xdp-validation.md)。
 
-对象包含ELF64/EM_BPF/REL、可执行xdp section、GPL license和两条指令（r0=XDP_PASS、exit），不包含maps；测试也拒绝错误machine和返回动作的变异样本。检查是构建契约检查，不代替内核verifier或真实挂载验收。BPF始终使用-O2/-g，Debug/Release只影响用户态配置，不把-O0用于BPF。
+旧对象包含 ELF64/EM_BPF/REL、可执行 xdp section、GPL license 和两条指令（r0=XDP_PASS、exit），不包含 maps；旧测试仍拒绝错误 machine 和返回动作的变异样本。新对象使用本地 BTF map 声明和 Linux UAPI，共用 `MapSchema.h`，含三个 maps、lookup 与 per-CPU 原子计数，仍返回 PASS。检查不代替内核 verifier 或真实挂载验收。BPF 始终使用 -O2/-g，Debug/Release 只影响用户态配置，不把 -O0 用于 BPF。
 
 ## 编译器和头文件
 
@@ -50,7 +50,7 @@ python3 tests/xdp_build_test.py --work .stage-tmp/xdp-build-check
 
 ## 当前验证边界
 
-[本地环境预检](linux-xdp-env.md)证明9月11日generic/native veth基础能力；S1此处只交付编译骨架，已于2026-09-14完成独立审查、Leader收尾、本地提交e01eaea及标签v1.1-s1。S2新增的项目loader、权限/接口CLI和隔离运行测试见[加载手册](xdp-loader.md)。正式map schema仍待V1.2；物理网卡native/offload和性能结论未验证，阶段标签不表示V1.1整体发布。
+[本地环境预检](linux-xdp-env.md)证明9月11日 generic/native veth 基础能力；V1.1/S1 编译骨架于2026-09-14完成独立审查、Leader收尾、本地提交e01eaea及标签v1.1-s1。后续 loader 与 V1.2/S1 maps 使用方式见[加载手册](xdp-loader.md)，正式布局见[map schema](../specs/xdp-map-schema.md)。物理网卡 native/offload 和性能结论未验证，阶段标签不等于整个版本发布。
 
 参考：[内核Clang说明](https://docs.kernel.org/bpf/clang-notes.html)、[CMake自定义构建规则](https://cmake.org/cmake/help/latest/command/add_custom_command.html)。
 

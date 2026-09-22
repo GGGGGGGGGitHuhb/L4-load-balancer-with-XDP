@@ -1,6 +1,6 @@
-# V1.1/S2 XDP 加载与卸载
+# XDP 加载、map 同步与卸载
 
-`l4lb-xdp` 是独立可选工具，用于加载本项目最小 `XDP_PASS` 对象。默认用户态 `l4lb`、配置及TCP/UDP路径保持；这不是XDP负载均衡器，不提供map、包转发或性能结论。完整版本验证入口见[最小验证流程](xdp-validation.md)。
+`l4lb-xdp` 是独立可选工具，可加载旧的无 map `XDP_PASS` 对象，或显式加载 V1.2/S1 带后端配置和统计 maps 的对象。默认用户态 `l4lb`、配置及 TCP/UDP 路径保持；两种 XDP 对象都放行全部包，不提供包转发或性能结论。验证入口见[最小验证流程](xdp-validation.md)。
 
 ## 构建
 
@@ -9,7 +9,7 @@
 ```bash
 cmake -S . -B build-xdp -G Ninja \
   -DCMAKE_BUILD_TYPE=Debug -DL4LB_BUILD_XDP=ON -DL4LB_BUILD_XDP_LOADER=ON
-cmake --build build-xdp --target l4lb-xdp -j4
+cmake --build build-xdp -j4
 build-xdp/bin/l4lb-xdp --help
 ctest --test-dir build-xdp -R '^xdp_' --output-on-failure
 ```
@@ -18,7 +18,7 @@ ctest --test-dir build-xdp -R '^xdp_' --output-on-failure
 
 ## 先在隔离网络验证
 
-以下唯一sudo命令运行仓库显式测试。脚本先创建独立network namespace，只在其中创建veth，退出时销毁临时网络，不修改宿主网卡。需要Python3、iproute2、util-linux和允许加载BPF的root环境。
+以下 sudo 命令运行仓库旧模式显式测试。脚本先创建独立 network namespace，只在其中创建 veth，退出时销毁临时网络，不修改宿主网卡。需要 Python3、iproute2、util-linux 和允许加载 BPF 的 root 环境。新增 maps 的真实测试命令见[最小验证流程](xdp-validation.md#5-map-同步与故障验证)。
 
 ```bash
 sudo python3 tests/xdp_loader_privileged.py \
@@ -48,10 +48,26 @@ sudo build-xdp/bin/l4lb-xdp detach --dev xb --mode generic --prog-id 123
 
 正常卸载或该模式已无程序返回0；不同ID/竞态失败返回1，保留其他程序。显式卸载后前台进程仍等待，可用Ctrl+C结束；若中途挂了新程序，旧进程退出不会卸载它，并以1报告ID不匹配。SIGKILL、进程崩溃或主机异常不能保证自动清理，应使用已确认ID显式卸载；不提供无条件force卸载。
 
+## V1.2/S1 后端同步与统计
+
+在已创建的测试设备上使用新增对象；`--backend` 可重复，`--maps` 只能出现一次，顺序不限：
+
+```bash
+sudo build-xdp/bin/l4lb-xdp attach --dev xb \
+  --object build-xdp/xdp/xdp_maps.bpf.o --maps \
+  --backend 10.0.0.1:8000 --backend 10.0.0.2:8001 --mode generic
+```
+
+不传后端表示空集合。最多 64 个唯一 IPv4:PORT；输入限制和布局见[map schema](../specs/xdp-map-schema.md)。只在启动时写入和回读完整配置，再冻结并挂载；成功 READY 追加 `schema=1 backend_count=2`。更新后端需停止重启，没有健康检查联动或运行期写入。
+
+正常停止先尝试卸载，再输出 `XDP_STATS schema=1 pass_packets=N`。N 是所有 CPU 的 XDP_PASS 包计数采样，包含背景包，不等同业务请求数；无包头解析或后端转发。统计或输出失败返回 1，仍执行卸载。SIGKILL 恢复沿用按 ID 显式卸载，同时释放程序引用的 maps。
+
+写入、回读或 freeze 失败不挂载、不输出 READY，关闭本次对象；freeze 不支持不会降级绕过。错误包含操作上下文，系统调用错误附 errno。内核 map 没有 pin，不复用他人 map。
+
 ## 输入与错误
 
-- `--help`独立使用返回0；语法错误返回2；运行或输出失败返回1。选项不允许重复、未知或跨子命令混用。设备名为1—15字节，不包含空白、斜杠或冒号；ID为正uint32十进制数。
-- 对象必须为非空普通文件，最多16 MiB；用同一次打开读取的有界字节解析加载，避免检查后路径被替换。拒绝额外程序、maps、错误section/type/name。形状检查不是安全审计：只加载可信的项目对象，不能保证任意同名程序语义为PASS。
+- `--help`独立使用返回0；语法错误返回2；运行或输出失败返回1。除 attach 的 `--maps` 模式允许重复 `--backend` 外，选项不允许重复、未知或跨子命令混用。设备名为1—15字节，不包含空白、斜杠或冒号；ID为正uint32十进制数。
+- 对象必须为非空普通文件，最多16 MiB；用同一次打开读取的有界字节解析加载，避免检查后路径被替换。旧模式拒绝所有 maps；maps 模式只接受指定程序及三个 maps 的完整元数据，不兼容版本、缺失/额外 map、额外程序、错误 section/type/name 均拒绝。形状检查不是安全审计：只加载可信的项目对象，不能保证任意同名程序语义为 PASS。
 - 缺开发依赖：安装libbpf-dev或修正两个CMake依赖路径；若仅编译BPF，关闭loader选项。
 - 找不到设备：在同一network namespace内用 `ip link` 核对设备名。
 - EPERM/EACCES：检查sudo、CAP_BPF/CAP_NET_ADMIN、容器限制和memlock；root不等于拥有全部能力。libbpf可能先输出低层加载探针错误，随后本工具补充操作上下文。工具不自动修改系统限制。

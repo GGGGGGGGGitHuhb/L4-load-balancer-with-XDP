@@ -1,5 +1,7 @@
 # 当前概况
 
+2026-09-22：V1.2/S1 Completed，独立Reviewer001 PASS、Leader003收尾。TD-003的真实map产品验证和TD-004的schema/同步手册本阶段义务已完成；两项仍持续跟踪S2转发与S3性能/边界文档。没有新增技术债；不整体关闭未来义务。公开证据见[XDP验证](docs/runbooks/xdp-validation.md)。
+
 本文角色报告/设计路径为本地治理记录（或未来计划位置），不随普通clone分发；公开复核使用README和规格/运行手册。
 
 V1.0/S3及V1.0用户态开发范围已Completed（2026-09-10），D1 Approved，Builder001、Reviewer001独立PASS及Leader002齐备；本轮候选发布就绪，实际发布未执行。八项债务/观察处置已核对，无新增债项、阻塞或PM决策。TD-001/002保持关闭，TD-003未来XDP环境继续，TD-004本版本用户态及发布审查义务完成、未来XDP文档保持。以下早期阶段说明保留其历史语境。
@@ -193,6 +195,8 @@ V1.0/S3处置（2026-09-10）：保持已解决。key=value与现有CTest/CMake/
 
 ### TD-003 XDP/eBPF 验证环境确认（原云服务器环境项）
 
+2026-09-22 S1进展：V1.2/S1新maps模式generic/native-veth各19项、旧模式各14项在Builder/Reviewer独立产物上通过，包括真实配置回读/freeze、计数和清理。原宿主socket沙箱限制通过临时namespace内普通UID回归完成，未修改宿主网络。转发及可复现性能对比仍待S2/S3，不将本项整体关闭。
+
 2026-09-14 S3验证进展：合并基线5284777的新构建已复验项目generic/native-veth生命周期与流量；环境页区分旧预检和本轮产品证据。完整结果见[最小验证](docs/runbooks/xdp-validation.md)与[版本验收](docs/specs/v1.1-acceptance.md)，S3经独立Reviewer001 PASS及Leader002收尾，本阶段验证义务完成。V1.2 map/数据面与性能义务仍未关闭。
 
 2026-09-14 S2验证进展：项目l4lb-xdp已在本地WSL2隔离veth完成generic/native两模式真实挂载/流量/条件卸载测试，Builder与Reviewer独立产物各14项通过。S2已独立Reviewer001 PASS并由Leader002收尾，不再以sudo密码为环境阻塞：本轮使用WSL官方root入口启动自建net namespace测试。S3、V1.2与性能义务继续，不整体关闭。
@@ -239,6 +243,8 @@ V1.0/S3归档分界（2026-09-10）：继续跟踪，不阻塞V1.0用户态候�
 - `2026-05-19`：新增，原因是当前环境为 WSL2，XDP 真实验证需要后续确认。
 
 ### TD-004 长期规格文档随阶段补齐
+
+2026-09-22 S1进展：正式schema v1、启动同步/停止统计手册、真实map验证runner与机器摘要完成并独立验收。S2受限转发语义、必要session schema判断和S3性能/局限说明继续；未新增已接受延期项。
 
 2026-09-14 S3文档进展：补齐公开最小验证流程、机器摘要、六标准验收索引和xdp-map-schema初稿；实际V1.1无maps，候选字段不等于V1.2 ABI。S3经独立Reviewer001验收，V1.1文档义务完成；V1.2实际schema批准/实现、数据面与性能文档继续。
 
