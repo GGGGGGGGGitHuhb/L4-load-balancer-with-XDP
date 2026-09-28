@@ -1,5 +1,9 @@
 # 当前概况
 
+2026-09-28：V1.2/S3 Completed，D1/R1 Approved、独立Reviewer PASS及Leader收尾齐备。TD-003的运行期一致发布/健康摘除恢复真实验证、TD-004的schema v3/运行期部署与验证文档本阶段义务完成；S4性能与未来平台义务继续，不整体关闭。无新增债项或未解决发现；WSL2/veth仅支持功能结论，UDP echo不等于应用健康，变更集合可重映射已有流。见[运行期验证摘要](docs/runbooks/xdp-runtime-validation-result.json)。下列日期条目保留历史状态。
+
+2026-09-22：S2标签`v1.2-s2`已发布核验；S3详细设计D1与验收计划R1已准备（Draft待审批）。TD-003/004的运行期一致发布、UDP健康联动真实验证及文档义务继续，M1内核验证尚未执行；本轮没有新增/关闭债项，S4性能范围保持。
+
 2026-09-22：V1.2/S2 Completed，静态UDP DSR及独立真实内核/双后端验证完成。TD-003本阶段转发/故障证据、TD-004本阶段ABI/DSR部署与验证手册义务完成；S3运行期更新/健康联动、S4性能义务继续，不整体关闭。没有新增技术债，见[DSR验证摘要](docs/runbooks/xdp-dsr-validation-result.json)。
 
 2026-09-22：V1.2/S1 Completed，独立Reviewer001 PASS、Leader003收尾。TD-003的真实map产品验证和TD-004的schema/同步手册本阶段义务已完成；按用户批准的新路线，两项继续覆盖S2转发、S3运行期更新/健康联动与S4性能/边界文档。没有新增技术债；不整体关闭未来义务。公开证据见[XDP验证](docs/runbooks/xdp-validation.md)。

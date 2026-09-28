@@ -1,10 +1,12 @@
 #pragma once
 
 #include <cstdint>
+#include <memory>
 #include <string>
 #include <vector>
 
 #include "MapSchema.h"
+#include "RuntimeMapStore.h"
 #include "control/DsrConfigSync.h"
 
 struct bpf_object;
@@ -15,7 +17,7 @@ namespace l4lb::xdp {
 enum class Mode { Generic, Native };
 
 /** Mutually exclusive object and configuration ABI. */
-enum class Profile { kLegacy, kMapsV1, kUdpDsrV2 };
+enum class Profile { kLegacy, kMapsV1, kUdpDsrV2, kUdpRuntimeV3 };
 
 const char* mode_name(Mode mode);
 int interface_index(const std::string& device);
@@ -31,7 +33,10 @@ class Attachment {
 
   void load(const std::string& path, Profile profile = Profile::kLegacy,
             const std::vector<XdpBackendValue>& backends = {},
-            const control::DsrConfiguration& dsr = {});
+            const control::DsrConfiguration& dsr = {},
+            const UdpRuntimeSnapshot* runtime = nullptr);
+  void publishRuntime(const UdpRuntimeSnapshot& snapshot);
+  UdpDsrStatsValue readRuntimeStats() const;
   UdpDsrStatsValue readDsrStats() const;
   uint64_t readPassPackets() const;
   void attach(int ifindex, Mode mode);
@@ -40,6 +45,7 @@ class Attachment {
   uint32_t program_id() const { return program_id_; }
 
  private:
+  std::unique_ptr<RuntimeMapStore> runtimeMaps_;
   std::vector<char> object_bytes_;
   bpf_object* object_ = nullptr;
   int program_fd_ = -1;

@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <string>
 
+#include "control/RuntimeDsrService.h"
 #include "control/XdpConfigSync.h"
 #include "loader.h"
 
@@ -16,6 +17,7 @@ struct Options {
   bool attach = false;
   l4lb::xdp::Profile profile = l4lb::xdp::Profile::kLegacy;
   std::string vip;
+  std::string runtimeConfig;
   std::vector<std::string> targets;
   l4lb::control::DsrConfiguration dsr;
   std::vector<std::string> endpoints;
@@ -33,6 +35,8 @@ void usage() {
          "    maps 模式：追加 --maps [--backend IPv4:PORT]...\n"
          "    DSR 模式：追加 --udp-dsr --vip IPv4:PORT [--target "
          "EGRESS@MAC]...\n"
+         "    动态 DSR：--udp-dsr-runtime --vip IPv4:PORT --runtime-config "
+         "PATH\n"
          "  l4lb-xdp detach --dev NAME --prog-id ID [--mode generic|native]\n"
          "  l4lb-xdp --help\n"
          "默认 generic；attach 前台等待 SIGINT/SIGTERM，然后条件卸载。\n"
@@ -51,10 +55,12 @@ Options parse(int argc, char** argv) {
   bool seen_id = false;
   for (int i = 2; i < argc; i += 2) {
     std::string key = argv[i];
-    if ((key == "--maps" || key == "--udp-dsr") && options.attach &&
-        options.profile == l4lb::xdp::Profile::kLegacy) {
-      options.profile = key == "--maps" ? l4lb::xdp::Profile::kMapsV1
-                                        : l4lb::xdp::Profile::kUdpDsrV2;
+    if ((key == "--maps" || key == "--udp-dsr" || key == "--udp-dsr-runtime") &&
+        options.attach && options.profile == l4lb::xdp::Profile::kLegacy) {
+      options.profile = key == "--udp-dsr-runtime"
+                            ? l4lb::xdp::Profile::kUdpRuntimeV3
+                        : key == "--maps" ? l4lb::xdp::Profile::kMapsV1
+                                          : l4lb::xdp::Profile::kUdpDsrV2;
       --i;
       continue;
     }
@@ -66,6 +72,9 @@ Options parse(int argc, char** argv) {
       options.endpoints.push_back(value);
     } else if (key == "--vip" && options.attach && options.vip.empty()) {
       options.vip = value;
+    } else if (key == "--runtime-config" && options.attach &&
+               options.runtimeConfig.empty()) {
+      options.runtimeConfig = value;
     } else if (key == "--target" && options.attach) {
       options.targets.push_back(value);
     } else if (key == "--dev" && options.device.empty()) {
@@ -105,7 +114,13 @@ Options parse(int argc, char** argv) {
       !options.endpoints.empty())
     throw std::invalid_argument("--backend 需要 --maps");
   options.backends = l4lb::control::parseXdpBackends(options.endpoints);
-  if (options.profile == l4lb::xdp::Profile::kUdpDsrV2) {
+  if (options.profile == l4lb::xdp::Profile::kUdpRuntimeV3) {
+    if (options.vip.empty() || options.runtimeConfig.empty() ||
+        !options.targets.empty())
+      throw std::invalid_argument(
+          "动态DSR需要--vip/--runtime-config，禁止--target");
+    l4lb::control::parseXdpBackends({options.vip});
+  } else if (options.profile == l4lb::xdp::Profile::kUdpDsrV2) {
     if (options.vip.empty())
       throw std::invalid_argument("--udp-dsr 需要 --vip");
     // Literal checks remain parameter errors; interface inspection happens
@@ -114,6 +129,9 @@ Options parse(int argc, char** argv) {
   } else if (!options.vip.empty() || !options.targets.empty()) {
     throw std::invalid_argument("--vip/--target 需要 --udp-dsr");
   }
+  if (options.profile != l4lb::xdp::Profile::kUdpRuntimeV3 &&
+      !options.runtimeConfig.empty())
+    throw std::invalid_argument("--runtime-config 需要 --udp-dsr-runtime");
   return options;
 }
 
@@ -139,6 +157,8 @@ int main(int argc, char** argv) {
     sigaddset(&signals, SIGTERM);
     // SIGPIPE must not bypass RAII cleanup if the output reader disappears.
     sigaddset(&signals, SIGPIPE);
+    if (options.profile == l4lb::xdp::Profile::kUdpRuntimeV3)
+      sigaddset(&signals, SIGHUP);
     if (sigprocmask(SIG_BLOCK, &signals, nullptr) != 0) {
       throw std::runtime_error("无法阻塞退出信号");
     }
@@ -155,6 +175,10 @@ int main(int argc, char** argv) {
       options.dsr = l4lb::control::parseDsrConfiguration(
           options.device, options.vip, options.targets);
     l4lb::xdp::Attachment attachment;
+    if (options.profile == l4lb::xdp::Profile::kUdpRuntimeV3)
+      return l4lb::control::runRuntimeDsr(
+          attachment, options.object, options.device, options.vip,
+          options.runtimeConfig, options.mode, signals);
     attachment.load(options.object, options.profile, options.backends,
                     options.dsr);
     attachment.attach(ifindex, options.mode);
