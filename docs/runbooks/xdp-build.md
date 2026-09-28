@@ -1,6 +1,6 @@
 # 可选 eBPF 对象构建
 
-提供独立的最小 `XDP_PASS` 对象、V1.2/S1配置/统计maps PASS对象，以及V1.2/S2的UDP二层DSR对象。构建不需要 root、libbpf 开发头、bpftool 或内核 BTF；不会加载或挂载程序。当前支持 Linux 原生构建（含 WSL2），不支持 CMake 交叉工具链。独立加载器的额外选项与依赖见[加载与卸载](xdp-loader.md)。
+提供独立的最小 `XDP_PASS` 对象、V1.2/S1配置/统计maps PASS对象，V1.2/S2的静态UDP二层DSR对象，以及S3的运行期DSR对象。构建不需要 root、libbpf 开发头、bpftool 或内核 BTF；不会加载或挂载程序。当前支持 Linux 原生构建（含 WSL2），不支持 CMake 交叉工具链。独立加载器的额外选项与依赖见[加载与卸载](xdp-loader.md)。
 
 ## 默认用户态构建
 
@@ -18,11 +18,13 @@ cmake --build build-xdp --target l4lb_xdp
 ctest --test-dir build-xdp -L xdp_build --output-on-failure
 ```
 
-产物：`build-xdp/xdp/xdp_pass.bpf.o`、`build-xdp/xdp/xdp_maps.bpf.o` 和 `build-xdp/xdp/xdp_udp_dsr.bpf.o`。只构建 l4lb_xdp 不会生成其他测试可执行文件；执行全量 CTest 前先 `cmake --build build-xdp -j4`。ON 时全量 build 也包含 BPF 目标，但对象不链接进 l4lb。旧对象检查为无特权 CTest 标签 `xdp_build`，仅 ON 且 BUILD_TESTING 时注册；maps/DSR对象的ABI及同步检查随可选loader测试运行，真实内核与DSR往返检查见[验证流程](xdp-validation.md)。
+产物：`build-xdp/xdp/xdp_pass.bpf.o`、`build-xdp/xdp/xdp_maps.bpf.o` 、`build-xdp/xdp/xdp_udp_dsr.bpf.o` 和 `build-xdp/xdp/xdp_udp_runtime.bpf.o`。只构建 l4lb_xdp 不会生成其他测试可执行文件；执行全量 CTest 前先 `cmake --build build-xdp -j4`。ON 时全量 build 也包含 BPF 目标，但对象不链接进 l4lb。旧对象检查为无特权 CTest 标签 `xdp_build`，仅 ON 且 BUILD_TESTING 时注册；maps/DSR对象的ABI及同步检查随可选loader测试运行，真实内核与DSR往返检查见[验证流程](xdp-validation.md)。
 
 旧对象包含 ELF64/EM_BPF/REL、可执行 xdp section、GPL license 和两条指令（r0=XDP_PASS、exit），不包含 maps；旧测试仍拒绝错误 machine 和返回动作的变异样本。新对象使用本地 BTF map 声明和 Linux UAPI，共用 `MapSchema.h`，含三个 maps、lookup 与 per-CPU 原子计数，仍返回 PASS。检查不代替内核 verifier 或真实挂载验收。BPF 始终使用 -O2/-g，Debug/Release 只影响用户态配置，不把 -O0 用于 BPF。
 
 DSR对象另用 `UdpDsrSchema.h`，包含v2配置、目标和统计map；有界解析IPv4/UDP、按五元组选目标、仅改MAC后redirect。旧PASS对象指令检查不适用于DSR；必须通过独立verifier/test-run和实际后端收发验收，不以ELF存在就证明转发成功。
+
+运行期对象另用`UdpRuntimeSchema.h`与v3不可变快照，包含ARRAY_OF_MAPS活动入口；仍不依赖libbpf开发包即可编译。加载/动态发布需要可选loader及真实内核能力，见[运行期控制](../specs/xdp-runtime-control.md)。
 
 ## 编译器和头文件
 

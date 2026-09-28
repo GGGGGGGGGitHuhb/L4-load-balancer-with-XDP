@@ -354,9 +354,9 @@ S1/S2历史批准与验收保持；S3依据V1.0-S3-D1 Approved完成，授权Lea
 
 ### V1.2 XDP L4 Fast Path 原型
 
-状态：S1 Completed（2026-09-22）；S2 Completed（2026-09-22，D1/R1已批准），S3/S4 计划中，V1.2 整体尚未完成。2026-09-22用户同意新增S3运行期控制面联动，原性能S3顺延为S4；各阶段详细设计仍分别审批。
+状态：S1 Completed（2026-09-22）；S2 Completed（2026-09-22，D1/R1已批准），S3 Completed（2026-09-28，D1/R1 Approved、独立Reviewer PASS、Leader收尾），S4计划中，V1.2 整体尚未完成。2026-09-22用户同意新增S3运行期控制面联动，原性能S3顺延为S4；各阶段详细设计仍分别审批。
 
-S1-D1/R1 经用户明确批准；Builder001..003、Reviewer001独立PASS、Leader003收尾齐备。交付启动期后端map同步/回读/冻结、严格ABI校验及per-CPU包计数，最多64个IPv4后端；更新需停止重启，仍全包XDP_PASS。独立ON完整35/35、双方新模式generic/native各19项与旧模式各14项、Builder OFF Release31/31通过。S1已通过PR #19合并为`afa5d99`，附注标签`v1.2-s1`已推送核验；当前`codex/v1.2-s2`从该基线完成S2，不表示V1.2发布。公开复现见[XDP验证](docs/runbooks/xdp-validation.md)，具体布局见[map schema](docs/specs/xdp-map-schema.md)。
+S1-D1/R1 经用户明确批准；Builder001..003、Reviewer001独立PASS、Leader003收尾齐备。交付启动期后端map同步/回读/冻结、严格ABI校验及per-CPU包计数，最多64个IPv4后端；更新需停止重启，仍全包XDP_PASS。独立ON完整35/35、双方新模式generic/native各19项与旧模式各14项、Builder OFF Release31/31通过。S1已通过PR #19合并为`afa5d99`，附注标签`v1.2-s1`已推送核验；S2已由PR #20合并为`0c3de8e`，标签`v1.2-s2`已推送核验；当前`codex/v1.2-s3`从该基线完成S3，尚未提交/推送，不表示V1.2发布。公开复现见[XDP验证](docs/runbooks/xdp-validation.md)，具体布局见[map schema](docs/specs/xdp-map-schema.md)。
 
 目标：
 
@@ -387,7 +387,7 @@ S1-D1/R1 经用户明确批准；Builder001..003、Reviewer001独立PASS、Leade
 
 - `S1 map schema 与控制面同步`（Completed）：后端/配置/统计ABI与启动同步完成；必要会话map在S2转发语义明确后再判断，本阶段未引入。详细设计文档：`docs/leader/designs/V1.2/S1-design.md`。
 - `S2 XDP 包处理原型`（Completed）：静态单VIP IPv4/UDP二层DSR、五元组映射、map同步/冻结和八项统计已完成；Builder/Reviewer各1077内核用例及两模式各16组真实检查，ON37/37、OFF31/31通过。公开证据见[DSR摘要](docs/runbooks/xdp-dsr-validation-result.json)。详细设计文档：`docs/leader/designs/V1.2/S2-design.md`。
-- `S3 运行期配置更新与健康联动`（Planned）：先建立一致、可失败恢复的运行期配置发布，再接入探活、故障摘除和恢复加入；以真实转发验证控制面变化，明确全后端不可用和已有流映射变化的行为。S1/S2静态冻结契约保持，新发布机制或ABI需由S3详细设计批准；不承诺连接draining或无损迁移。详细设计文档（待阶段启动创建）：`docs/leader/designs/V1.2/S3-design.md`。
+- `S3 运行期配置更新与健康联动`（Completed，2026-09-28）：先建立一致、可失败恢复的运行期配置发布，再接入探活、故障摘除和恢复加入；以真实转发验证控制面变化，明确全后端不可用和已有流映射变化的行为。S1/S2静态冻结契约保持，新发布机制或ABI需由S3详细设计批准；不承诺连接draining或无损迁移。详细设计文档：`docs/leader/designs/V1.2/S3-design.md`（D1 Approved）；配套审查计划R1已批准，独立验收PASS并完成Leader收尾；[公开验证摘要](docs/runbooks/xdp-runtime-validation-result.json)记录最终身份与双方结果。
 - `S4 性能对比与边界总结`（Planned，原S3）：在S2/S3功能验收后，对比用户态路径和XDP fast path的吞吐、延迟和CPU，记录开启运行期控制面的成本、适用场景与限制；说明不同转发语义/拓扑，不能把DSR与代理当作完全等价工作负载。详细设计文档（待阶段启动创建）：`docs/leader/designs/V1.2/S4-design.md`。
 
 完成标准：

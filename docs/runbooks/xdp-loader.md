@@ -1,6 +1,6 @@
 # XDP 加载、map 同步与卸载
 
-`l4lb-xdp` 是独立可选工具，可加载旧的无map PASS、S1带配置/统计map的PASS，以及S2显式UDP二层DSR对象。默认用户态`l4lb`、配置及TCP/UDP路径保持；前两种对象放行全部包，第三种只对匹配VIP/端口的受限UDP流量转发。功能与性能结论区分，验证入口见[最小验证流程](xdp-validation.md)。
+`l4lb-xdp` 是独立可选工具，可加载旧的无map PASS、S1带配置/统计map的PASS，S2静态UDP二层DSR，以及S3动态DSR对象。默认用户态`l4lb`、配置及TCP/UDP路径保持；前两种对象放行全部包，后两种只对匹配VIP/端口的受限UDP流量转发。功能与性能结论区分，验证入口见[最小验证流程](xdp-validation.md)。
 
 ## 构建
 
@@ -76,16 +76,24 @@ sudo build-xdp/bin/l4lb-xdp attach --dev ingress0 \
   --target 'egress1@02:00:00:00:00:12' --mode generic
 ```
 
-`--target`允许0..64项；零目标PASS。入口/出口须UP、Ethernet、MTU至少1500，出口不得等于入口。参数、逐包边界、ABI与回程要求见[UDP DSR规格](../specs/xdp-udp-dsr.md)。未命中包PASS只继续主机栈，不承诺落到原用户态代理。运行期配置冻结，变更需停止重启；S3再做动态更新和健康联动。
+`--target`允许0..64项；零目标PASS。入口/出口须UP、Ethernet、MTU至少1500，出口不得等于入口。参数、逐包边界、ABI与回程要求见[UDP DSR规格](../specs/xdp-udp-dsr.md)。未命中包PASS只继续主机栈，不承诺落到原用户态代理。运行期配置冻结，变更需停止重启；动态更新和健康联动使用下节独立S3 profile。
 
 READY包含`schema=2 profile=udp-dsr backend_count=N`；正常停止先条件卸载再输出schema=2统计。`redirect_requests`是重定向请求，不能当作后端送达数。出口运行中down/消失可能丢包，工具不自动换目标或修复网络；恢复后按显式配置重新启动。
 
 旧detach命令和预期ID保护适用于所有profile。真实验证runner由[XDP验证流程](xdp-validation.md)提供，它创建专属namespace/veth并完成两后端往返，不要求用户手工配置宿主网卡。
 
+## V1.2/S3 运行期配置与健康联动
+
+新增`--udp-dsr-runtime --vip IPv4:PORT --runtime-config PATH`，使用`xdp_udp_runtime.bpf.o`。配置示例见[样例文件](../../configs/xdp/runtime.conf)；地址/接口/MAC须换成真实部署值。完整[文件格式、探测协议、发布及停止契约](../specs/xdp-runtime-control.md)明确了UDP echo前提，不能用旧TCP connect健康检查替代。
+
+启动时Unknown不转发；原子替换文件后向前台loader PID发送HUP重载。完整候选快照通过写入、回读、冻结后才切换活动引用；提交前失败保持旧配置。全不可用时新profile对匹配报文DROP，静态v2仍PASS。健康或配置变化可能重映射已有UDP流。
+
+READY包含schema=3、profile=udp-dsr-runtime、generation、configured_backends、active_backends；HEALTH表示探测状态，PUBLISH表示实际应用结果，发布失败不能冒称摘除已生效。INT/TERM先条件卸载再输出八项schema=3统计。stdout背压有界，满队列/断pipe终止清理。
+
 ## 输入与错误
 
-- `--help`独立使用返回0；语法错误返回2；运行或输出失败返回1。仅对应profile允许重复`--backend`或`--target`；其他选项不允许重复、未知或跨子命令混用，`--maps`与`--udp-dsr`互斥。设备名为1—15字节，不包含空白、斜杠或冒号；ID为正uint32十进制数。
-- 对象必须为非空普通文件，最多16 MiB；用同一次打开读取的有界字节解析加载，避免检查后路径被替换。旧模式拒绝所有maps；maps/DSR各自仅接受对应单程序与三个v1/v2 maps的完整元数据，不兼容版本、缺失/额外map、额外程序、错误section/type/name均拒绝。形状检查不是安全审计：只加载可信的项目对象，不能保证任意同名程序行为正确。
+- `--help`独立使用返回0；语法错误返回2；运行或输出失败返回1。仅对应profile允许重复`--backend`或`--target`；其他选项不允许重复、未知或跨子命令混用，`--maps`、`--udp-dsr`与`--udp-dsr-runtime`互斥。设备名为1—15字节，不包含空白、斜杠或冒号；ID为正uint32十进制数。
+- 对象必须为非空普通文件，最多16 MiB；用同一次打开读取的有界字节解析加载，避免检查后路径被替换。旧模式拒绝所有maps；maps/静态DSR/动态DSR各自仅接受对应单程序与三个v1/v2/v3 maps的完整元数据，不兼容版本、缺失/额外map、额外程序、错误section/type/name均拒绝。形状检查不是安全审计：只加载可信的项目对象，不能保证任意同名程序行为正确。
 - 缺开发依赖：安装libbpf-dev或修正两个CMake依赖路径；若仅编译BPF，关闭loader选项。
 - 找不到设备：在同一network namespace内用 `ip link` 核对设备名。
 - EPERM/EACCES：检查sudo、CAP_BPF/CAP_NET_ADMIN、容器限制和memlock；root不等于拥有全部能力。libbpf可能先输出低层加载探针错误，随后本工具补充操作上下文。工具不自动修改系统限制。

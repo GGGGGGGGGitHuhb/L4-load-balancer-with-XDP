@@ -1,6 +1,6 @@
 # XDP 最小验证流程
 
-本流程验证旧 XDP_PASS、V1.2/S1 后端 map 同步，以及S2静态IPv4/UDP二层DSR真实转发；不测性能。普通 clone 可使用以下命令；无需私有阶段报告、旧预检脚本或云服务器。
+本流程验证旧 XDP_PASS、V1.2/S1 后端 map 同步，S2静态IPv4/UDP二层DSR，以及S3运行期更新/健康联动；不测性能。普通 clone 可使用以下命令；无需私有阶段报告、旧预检脚本或云服务器。
 
 ## 前置环境
 
@@ -50,10 +50,10 @@ cmake -S . -B build-xdp -G Ninja -DCMAKE_BUILD_TYPE=Debug \
   -DL4LB_BUILD_XDP=ON -DL4LB_BUILD_XDP_LOADER=ON
 cmake --build build-xdp -j4
 build-xdp/bin/l4lb-xdp --help
-ctest --test-dir build-xdp -R '^(xdp_|udp_dsr_)' --output-on-failure
+ctest --test-dir build-xdp -R '^(xdp_|udp_dsr_|udp_runtime_)' --output-on-failure
 ```
 
-期望旧四项及 udp_dsr_config、udp_dsr_cli 共六项通过。保留旧 CLI 内部33项；新增测试覆盖 ABI/字节序、0/1/64后端、132个同步步骤的故障注入、65处回读不一致、per-CPU汇总，以及12类对象白名单变异和参数拒绝。DSR另覆盖23种CLI错误、12种v2对象变异、132处同步故障与65处回读故障。全量 ON CTest 为37项，默认 OFF仍31项。自定义libbpf目录配置见[加载手册](xdp-loader.md#构建)。
+期望旧四项及 udp_dsr_config、udp_dsr_cli 共六项通过。保留旧 CLI 内部33项；新增测试覆盖 ABI/字节序、0/1/64后端、132个同步步骤的故障注入、65处回读不一致、per-CPU汇总，以及12类对象白名单变异和参数拒绝。DSR另覆盖23种CLI错误、12种v2对象变异、132处同步故障与65处回读故障。S3另新增配置文件、UDP探测纯逻辑/随机源失败/真实socket、CLI及对象负向五项，当前相关11项、全量ON42项，默认OFF仍31项。自定义libbpf目录配置见[加载手册](xdp-loader.md#构建)。
 
 ## 4. 显式真实挂载与流量验证
 
@@ -130,8 +130,53 @@ runner自建LB、客户端及两后端namespace/veth；客户端到VIP的下一�
 
 产品拓扑检查还包括接口负向、真实map metadata/全部槽回读/冻结、非目标PASS、出口down/删除、入口删除、输出/统计失败、SIGINT/SIGTERM/SIGKILL恢复和外部替换保护。出口异步失败时可以已有redirect请求但后端未收到包；S2无自动摘除，运行期更新/健康联动留S3。结果与最终源码/产物身份见[DSR验证摘要](xdp-dsr-validation-result.json)。
 
+## 7. 运行期发布与健康联动
+
+本节需S3对象和loader，部署行为见[运行期规格](../specs/xdp-runtime-control.md)。仍在隔离netns中验证，不修改宿主网络。夹具构建还需C++20编译器、pthread、clang-format及libbpf开发包；`--libbpf-prefix /usr`适用于系统安装，否则改为实际开发前缀。
+
+```bash
+mkdir -p .stage-tmp/runtime-validation/tmp
+export TMPDIR="$PWD/.stage-tmp/runtime-validation/tmp"
+export PYTHONPYCACHEPREFIX="$PWD/.stage-tmp/runtime-validation/pycache"
+python3 tests/build_runtime_fixtures.py \
+  --output .stage-tmp/runtime-fixtures --libbpf-prefix /usr --clang clang-18
+cc -shared -fPIC tests/RuntimeOutputFaults.c -ldl \
+  -o .stage-tmp/runtime-fixtures/libRuntimeOutputFaults.so
+set -o pipefail
+sudo unshare --net env TMPDIR="$TMPDIR" \
+  LD_PRELOAD="$PWD/.stage-tmp/runtime-fixtures/libRuntimeMapFaults.so" \
+  "$PWD/.stage-tmp/runtime-fixtures/RuntimeMapStoreKernel_test" \
+  "$PWD/build-xdp/xdp/xdp_udp_runtime.bpf.o" \
+  "$PWD/.stage-tmp/runtime-fixtures/runtime-diagnostic.bpf.o" \
+  2>&1 | tee .stage-tmp/runtime-validation/maps.log
+sudo env TMPDIR="$TMPDIR" PYTHONPYCACHEPREFIX="$PYTHONPYCACHEPREFIX" \
+  python3 tests/xdp_runtime_privileged.py \
+  --loader "$PWD/build-xdp/bin/l4lb-xdp" \
+  --object "$PWD/build-xdp/xdp/xdp_udp_runtime.bpf.o" \
+  --pass-object "$PWD/build-xdp/xdp/xdp_pass.bpf.o" \
+  --fault-library "$PWD/.stage-tmp/runtime-fixtures/libRuntimeMapFaults.so" \
+  --log-dir "$PWD/.stage-tmp/runtime-validation/flow-001" \
+  2>&1 | tee .stage-tmp/runtime-validation/flow.log
+sudo env TMPDIR="$TMPDIR" PYTHONPYCACHEPREFIX="$PYTHONPYCACHEPREFIX" \
+  python3 tests/runtime_output_privileged.py \
+  --loader "$PWD/build-xdp/bin/l4lb-xdp" \
+  --object "$PWD/build-xdp/xdp/xdp_udp_runtime.bpf.o" \
+  --pass-object "$PWD/build-xdp/xdp/xdp_pass.bpf.o" \
+  --output-library "$PWD/.stage-tmp/runtime-fixtures/libRuntimeOutputFaults.so" \
+  --log-dir "$PWD/.stage-tmp/runtime-validation/output-001" \
+  2>&1 | tee .stage-tmp/runtime-validation/output.log
+```
+
+每次使用新的log-dir，失败日志不能覆盖。M1入口对产品和专用诊断对象分别并发反复发布，检查单包字段同代、冻结拒写、提交前失败保持旧快照、提交后故障标记及fd/map ID回收。诊断对象包含额外代次断言，是测试夹具，不替代产品对象。map ID消失不证明RCU物理释放已同步完成。
+
+产品runner完成generic/native真实双后端UDP echo探测与VIP源业务回包；新增/删除/重排、共享VIP探测拒绝、坏文件/提交前失败旧流保持、摘除/恢复、全不可用DROP、健康发布失败重试节流、持续HUP与TERM、出口/入口故障及SIGKILL恢复均需通过。generic额外在持续真实流量下完成100次发布，每次成功发布相隔至少1秒，因此运行需要数分钟；抓包只能属于完整A或B。
+
+输出runner区分真实pipe满后仍能健康联动/有界停止，和EAGAIN故障注入触发64KiB队列上限；另用单次write故障证明unchanged输出失败仍致命。输出/状态转换日志不替代内核活动集合和真实回包断言。旧三profile真实runner也必须分别通过，不能以S3结果替代兼容验证。
+
 ## 结果、错误与范围
 
 [V1.1机器摘要](xdp-validation-result.json)和[V1.1六项版本验收索引](../specs/v1.1-acceptance.md)保留2026-09-14的历史结果；V1.2/S1见map摘要，S2见DSR摘要。历史预检证据仍在[原环境摘要](local-xdp-preflight.json)，不等价当前产品测试。
 
 权限、依赖、模式不支持、已有程序/ID不匹配等排查见[加载错误说明](xdp-loader.md#输入与错误)。遇到错误先保留完整日志和退出码，不使用force覆盖程序。V1.1历史版本没有maps，V1.2/S1新增的正式[schema v1](../specs/xdp-map-schema.md)只支持启动同步与统计；S2新增的[DSR](../specs/xdp-udp-dsr.md)覆盖受限UDP转发；完整TCP代理和性能对比不属于本流程。
+
+本阶段的源文件、产物指纹及双方实测结果见[S3验证摘要](xdp-runtime-validation-result.json)；原始日志位于摘要列出的本地临时目录，普通clone可按本手册复现。

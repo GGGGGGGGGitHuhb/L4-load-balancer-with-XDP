@@ -4,6 +4,8 @@ V1.2/S1，2026-09-22。共享定义为 `src/xdp/MapSchema.h`，C/BPF 和 C++ 均
 
 V1.2/S2新增独立 `--udp-dsr` profile和schema v2，详见[UDP DSR布局与统计](xdp-udp-dsr.md#abi-v2与统计)。本页以下字段均为仍受支持的v1，不把v1配置静默解释成v2。v2以ifindex/MAC目标替代v1的IPv4后端项，配置及统计大小也不同；旧对象、名称和内存布局保持。
 
+V1.2/S3动态profile使用独立[ABI v3与不可变快照](xdp-runtime-control.md#不可变快照与-abi-v3)；v1/v2字段和冻结契约保持。
+
 ## 固定布局
 
 所有 key 为 4 字节本机序 `__u32`；cfg/stats 只用 key=0。下表 value 的数字为字节偏移。

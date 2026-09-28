@@ -713,3 +713,11 @@ S3复用S1/S2构建和测试，不新增运行时层。默认OFF、BPF-only、�
 `control/DsrConfigSync`负责VIP/目标解析与写入、完整回读、冻结；`xdp/DsrMapStore`负责v2白名单、内核map访问及八项per-CPU计数汇总。加载器检查入口/出口Ethernet接口、状态、MAC和MTU，先发布完整只读配置再挂载；停止先条件卸载再读统计。原用户态代理、metrics和S1同步路径保持。
 
 后端VIP、回程、邻居由部署方配置，产品不改宿主网络。无会话、NAT、热更新或健康联动；运行期联动留S3，性能留S4。正式ABI、解析边界和统计语义见[DSR规格](docs/specs/xdp-udp-dsr.md)，独立namespace/veth复现见[XDP验证](docs/runbooks/xdp-validation.md)。
+
+## V1.2/S3 运行期 DSR 控制面
+
+新增第四种独立profile：`xdp_udp_runtime.bpf.o`读取schema v3的单个ARRAY_OF_MAPS活动入口，每包只取得一次不可变inner快照；完整VIP、代次、计数和64槽目标处于同一1048字节值中。`RuntimeMapStore`创建、写入、回读并冻结新inner，再用一次outer更新提交；旧快照不原地复用，由内核引用/RCU退休。统计map独立，不随配置发布清零。旧v1/v2契约不变。
+
+`RuntimeDsrConfig`负责严格有界文件读取、纯文本解析及接口/目标身份解析；`UdpProbeChecker`负责单线程非阻塞UDP echo、deadline/nonce和2success/3failure状态，不读取BPF或输出日志；`RuntimeDsrService`串行编排HUP事务、desired健康集合和已应用generation，至多每秒尝试一次发布。候选探测资源和状态在提交前准备，提交后只做无抛出所有权替换；后续致命观测/日志失败终止卸载，不假称回滚。
+
+runtime用signalfd和20ms有界轮询收割响应，优先消费停止信号；输出以64KiB非阻塞队列限制背压。全部不可用时仅新profile对有效匹配报文DROP；配置/健康改变可能重映射既有UDP流，不引入会话或draining。部署方提供UDP echo端点、VIP和回程，产品不配置网络。ABI、探测与提交点语义见[运行期控制规格](docs/specs/xdp-runtime-control.md)。S4负责性能，本阶段不作吞吐或物理网卡结论。

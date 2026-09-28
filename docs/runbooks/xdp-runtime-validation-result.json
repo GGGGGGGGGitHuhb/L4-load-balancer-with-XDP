@@ -1,0 +1,543 @@
+{
+  "stage": "V1.2/S3",
+  "date": "2026-09-28",
+  "base_commit": "0c3de8ec68b06f6ad7aa9ed4eae482495e837609",
+  "acceptance": "PASS: independent Reviewer accepted AC-01..07 and RV-01..08; Leader Closing completed; unpublished working tree",
+  "scope": "Immutable runtime DSR snapshots, HUP configuration transactions, UDP echo health removal and recovery; no performance claim",
+  "sources": {
+    "cmake/Xdp.cmake": "96e80adad901d3620bbac0f6d9e350cea7841820c89b5d5b39ce9e99e37aed9c",
+    "cmake/XdpLoader.cmake": "0d41f8b92f231c3bed19ce0f408c88a6ade618047acd386eb7a6a42118073c05",
+    "configs/xdp/runtime.conf": "c43ecc64c659383e48f17684cae3aaf1a551f73afd6f48ba86a0e2a43996f0a4",
+    "src/control/RuntimeDsrConfig.cpp": "56a5e631a0b1af43f2f80eca3694b675961c0913ade993b5b318db50254c475f",
+    "src/control/RuntimeDsrConfig.h": "fcd5e2e0bf6643198f03ad96d8b81286bbf1562fa5bda406283daedd53418e9e",
+    "src/control/RuntimeDsrService.cpp": "f3918847781f655714bf9f892aeb1d8597e6ef7cd86bd3b8ce773f8428583c6f",
+    "src/control/RuntimeDsrService.h": "ebb42d8c1b8c2a8df4c75379b7b4912163b28f1b8b24ea6a4ba2b30989cebee7",
+    "src/health/UdpProbeChecker.cpp": "f7d3214fa6548cf59fa145be85fb52c128eb507f3f60d50d88803860459e775b",
+    "src/health/UdpProbeChecker.h": "725d49dcfe9fd5b35c52ab0dc27cc92447c3268f25af14e2c68388d816ae5601",
+    "src/xdp/RuntimeMapStore.cpp": "5f9556c3a3c3003e89e5c715fbfc1da0484eb1b67d24e663c33d493735f052c5",
+    "src/xdp/RuntimeMapStore.h": "fc8382bac39166e78857a3f50d8cdb75ae3497d4bbd44b64359df083aa67c37c",
+    "src/xdp/UdpRuntimeSchema.h": "c67d6eab883ea2441604ed2383a76a03dba35c1e00293c80c2b2a2a75b0e4237",
+    "src/xdp/loader.cpp": "79a8226c582dbc7f44435be3d2f54d0f63e13a18251252edc60622ad7d349d62",
+    "src/xdp/loader.h": "61ecbe8d70ec250a24555b5126c4a9b7de96a7253028b9fa386f3632a94d2041",
+    "src/xdp/main.cpp": "a03b7aa3f0731093338d32e565e6bc171e969a18baa751a665aa34467733a070",
+    "src/xdp/xdp_udp_runtime.bpf.c": "5d7231573c253131fa82b3cac84c53bde54fa75a20ef49e2fc8395a40fe70fb7",
+    "tests/RuntimeDsrConfig_test.cpp": "6b804fca25cae1e1b1ff3f79db1e6a7389cee6379bc7247ff9aaae8a4b67e1b9",
+    "tests/RuntimeMapFaults.c": "163b60afb417a1c4de556928ec491cd74b201c6879e525c49a0dce6607b5e3a8",
+    "tests/RuntimeMapStoreKernel_test.cpp": "243f29845e49541a73d37321d8d0fe789a0d29ef1a60854610b828f503c8f271",
+    "tests/RuntimeObject_test.cpp": "20f0d2e506cc602fbb6721c85bb0c00bbb33d71f53bb6d3299b45da2251d1cdc",
+    "tests/RuntimeOutputFaults.c": "49c9afaa2ad9b25873806dfad19d5a50ab221c4efb71ed3fa47a99edd0453d49",
+    "tests/UdpProbeChecker_test.cpp": "7e774dc20f4cd07ef43b669781ad26aa1a6f64c4e2da4b3ccc8a8fa3fd9dc736",
+    "tests/build_runtime_fixtures.py": "8e7117ca91de28bf8cb2e920d4a7a3cc8279f636195f18fbded3078dd4158bd3",
+    "tests/runtime_cli_test.py": "b1a720121bc43c498ca3cc226320d600197f47405b355f5a95237359592eb909",
+    "tests/runtime_output_privileged.py": "1ac372061df3cbb8594408c6e07ed538c9a5aaad83824ff6b1ea4688c4579834",
+    "tests/xdp_runtime_privileged.py": "009e6693b4a0d0b11f9cec7e0bf7ff94e86cb1d421e2b2b582b66aa43839b3a2"
+  },
+  "build_matrix": [
+    "OFF Release",
+    "OFF Debug",
+    "BPF-only",
+    "ON Release",
+    "production ON BUILD_TESTING=OFF without Python",
+    "independent Reviewer ON Debug"
+  ],
+  "ctest": {
+    "builder": {
+      "ON": {
+        "passed": 42,
+        "seconds": 63.19
+      },
+      "OFF_Release": {
+        "passed": 31,
+        "seconds": 61.1
+      },
+      "strict_object_validator_recheck": {
+        "passed": 1,
+        "seconds": 0.54
+      }
+    },
+    "reviewer": {
+      "ON_Debug": {
+        "passed": 42,
+        "seconds": 62.97
+      },
+      "strict_object_validator_recheck": {
+        "passed": 1,
+        "seconds": 0.55
+      }
+    }
+  },
+  "runs": {
+    "builder_output": {
+      "modes": {
+        "generic": [
+          {
+            "case": "actual_full_pipe_health_and_bounded_stop",
+            "pipe_capacity": 65536,
+            "stop_seconds": 1.1162178220110945
+          },
+          {
+            "case": "injected_eagain_queue_overflow",
+            "largest_pending_bytes": 65490,
+            "hup_signals_sent": 1429
+          },
+          {
+            "case": "unchanged_one_shot_stdout_eio_fatal",
+            "generation_before": 3
+          }
+        ],
+        "native": [
+          {
+            "case": "actual_full_pipe_health_and_bounded_stop",
+            "pipe_capacity": 65536,
+            "stop_seconds": 1.0660330380196683
+          },
+          {
+            "case": "injected_eagain_queue_overflow",
+            "largest_pending_bytes": 65490,
+            "hup_signals_sent": 1425
+          },
+          {
+            "case": "unchanged_one_shot_stdout_eio_fatal",
+            "generation_before": 3
+          }
+        ]
+      },
+      "host_network_unchanged": true,
+      "sha256": {
+        "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v1.2-s3/leader/on/bin/l4lb-xdp": "7c2b4929653094fed33fe99ca905bb1d1bd964d580023d9176011d921f2957d1",
+        "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v1.2-s3/leader/on/xdp/xdp_udp_runtime.bpf.o": "c1fd9cf0916743e1b91c1d94ecf3f4c4a8ed220f831f15aaaa00aad9d972906c",
+        "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v1.2-s3/health/build/runtime-output-faults.so": "62221feb51d68493353afd02e5e2a6ac6cdd996b40b7bda8482c4df30afc0240",
+        "/home/power/projects/L4-LoadBalancer-withXDP/tests/runtime_output_privileged.py": "1ac372061df3cbb8594408c6e07ed538c9a5aaad83824ff6b1ea4688c4579834",
+        "/home/power/projects/L4-LoadBalancer-withXDP/tests/RuntimeOutputFaults.c": "49c9afaa2ad9b25873806dfad19d5a50ab221c4efb71ed3fa47a99edd0453d49"
+      }
+    },
+    "reviewer_output": {
+      "modes": {
+        "generic": [
+          {
+            "case": "actual_full_pipe_health_and_bounded_stop",
+            "pipe_capacity": 65536,
+            "stop_seconds": 1.0668341699929442
+          },
+          {
+            "case": "injected_eagain_queue_overflow",
+            "largest_pending_bytes": 65490,
+            "hup_signals_sent": 1417
+          },
+          {
+            "case": "unchanged_one_shot_stdout_eio_fatal",
+            "generation_before": 2
+          }
+        ],
+        "native": [
+          {
+            "case": "actual_full_pipe_health_and_bounded_stop",
+            "pipe_capacity": 65536,
+            "stop_seconds": 1.066139040980488
+          },
+          {
+            "case": "injected_eagain_queue_overflow",
+            "largest_pending_bytes": 65490,
+            "hup_signals_sent": 1421
+          },
+          {
+            "case": "unchanged_one_shot_stdout_eio_fatal",
+            "generation_before": 2
+          }
+        ]
+      },
+      "host_network_unchanged": true,
+      "sha256": {
+        "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v1.2-s3/reviewer/on/bin/l4lb-xdp": "9e47e41fb8e2dafea50fff856927058f970a49da989a73093a80ac6ace0e9e19",
+        "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v1.2-s3/reviewer/on/xdp/xdp_udp_runtime.bpf.o": "53e150f4cdeda8fae8a600812c057a10cc10b3d66bd16fe39a109f76b1846bc0",
+        "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v1.2-s3/reviewer/fixtures/runtime-output-faults.so": "62221feb51d68493353afd02e5e2a6ac6cdd996b40b7bda8482c4df30afc0240",
+        "/home/power/projects/L4-LoadBalancer-withXDP/tests/runtime_output_privileged.py": "1ac372061df3cbb8594408c6e07ed538c9a5aaad83824ff6b1ea4688c4579834",
+        "/home/power/projects/L4-LoadBalancer-withXDP/tests/RuntimeOutputFaults.c": "49c9afaa2ad9b25873806dfad19d5a50ab221c4efb71ed3fa47a99edd0453d49"
+      }
+    },
+    "reviewer_legacy": {
+      "kernel": "Linux 6.6.87.2-microsoft-standard-WSL2 x86_64 GNU/Linux",
+      "scope": "V1.1/S2 product loader; no physical NIC or performance claim",
+      "sha256": {
+        "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v1.2-s3/reviewer/on/bin/l4lb-xdp": "9e47e41fb8e2dafea50fff856927058f970a49da989a73093a80ac6ace0e9e19",
+        "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v1.2-s3/reviewer/on/xdp/xdp_pass.bpf.o": "170570aa20924824d9305fc94ab1500ae0b99118d313c215ef6f93b7347a948c",
+        "/home/power/projects/L4-LoadBalancer-withXDP/tests/xdp_loader_privileged.py": "28ed27f82bb20090365aa145c6013726b95d47cfcf9291530c00d28e5acd1893"
+      },
+      "modes": {
+        "generic": {
+          "status": "PASS",
+          "checks": [
+            "attach_id",
+            "udp_pass",
+            "duplicate_preserved",
+            "wrong_id_preserved",
+            "sigterm_detach",
+            "udp_after_detach",
+            "sigint_detach",
+            "explicit_detach",
+            "idempotent_detach",
+            "replacement_preserved",
+            "ready_output_failure_cleanup",
+            "sigkill_explicit_recovery",
+            "closed_stdin_detach_and_cleanup",
+            "device_removed_cleanup"
+          ]
+        },
+        "native": {
+          "status": "PASS",
+          "checks": [
+            "attach_id",
+            "udp_pass",
+            "duplicate_preserved",
+            "wrong_id_preserved",
+            "sigterm_detach",
+            "udp_after_detach",
+            "sigint_detach",
+            "explicit_detach",
+            "idempotent_detach",
+            "replacement_preserved",
+            "ready_output_failure_cleanup",
+            "sigkill_explicit_recovery",
+            "closed_stdin_detach_and_cleanup",
+            "device_removed_cleanup"
+          ]
+        }
+      }
+    },
+    "reviewer_maps": {
+      "scope": "V1.2/S1 maps; no forwarding or performance claim",
+      "kernel": "Linux 6.6.87.2-microsoft-standard-WSL2 x86_64 GNU/Linux",
+      "sha256": {
+        "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v1.2-s3/reviewer/on/bin/l4lb-xdp": "9e47e41fb8e2dafea50fff856927058f970a49da989a73093a80ac6ace0e9e19",
+        "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v1.2-s3/reviewer/on/xdp/xdp_maps.bpf.o": "00b2131c80e93630eb45a6655c8b9bad2a1e30bf726da207659f89ff65505906",
+        "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v1.2-s3/reviewer/fixtures/MapFaults.so": "877c921c94c6a6233891f2110f955e69c90d42114904c9305b082b171a35378d",
+        "/home/power/projects/L4-LoadBalancer-withXDP/tests/xdp_maps_privileged.py": "2fa10020b6f3caed48b7888086be45091949516731a9c5abbd8278be8f345233",
+        "/home/power/projects/L4-LoadBalancer-withXDP/tests/XdpMapFaults.c": "30262a702247da1a1c968585d6d3276198bdf60024cab083e6f3547cbb1e5dae"
+      },
+      "modes": {
+        "generic": {
+          "status": "PASS",
+          "checks": [
+            "backends_0_readback_freeze_count_cleanup",
+            "backends_1_readback_freeze_count_cleanup",
+            "backends_64_readback_freeze_count_cleanup",
+            "detached_test_run_exact_count_and_frame_unchanged",
+            "backend-write_no_attach",
+            "config-write_no_attach",
+            "config-read-error_no_attach",
+            "config-mismatch_no_attach",
+            "backend-mismatch_no_attach",
+            "backend-freeze_no_attach",
+            "config-freeze_no_attach",
+            "stats_read_failure_still_detaches",
+            "duplicate_and_wrong_id_preserved",
+            "sigint_detach",
+            "closed_stdin_explicit_idempotent_detach_replacement_protection",
+            "ready_output_failure_cleanup",
+            "stop_output_failure_cleanup",
+            "sigkill_explicit_recovery_and_map_cleanup",
+            "device_removed_cleanup"
+          ]
+        },
+        "native": {
+          "status": "PASS",
+          "checks": [
+            "backends_0_readback_freeze_count_cleanup",
+            "backends_1_readback_freeze_count_cleanup",
+            "backends_64_readback_freeze_count_cleanup",
+            "detached_test_run_exact_count_and_frame_unchanged",
+            "backend-write_no_attach",
+            "config-write_no_attach",
+            "config-read-error_no_attach",
+            "config-mismatch_no_attach",
+            "backend-mismatch_no_attach",
+            "backend-freeze_no_attach",
+            "config-freeze_no_attach",
+            "stats_read_failure_still_detaches",
+            "duplicate_and_wrong_id_preserved",
+            "sigint_detach",
+            "closed_stdin_explicit_idempotent_detach_replacement_protection",
+            "ready_output_failure_cleanup",
+            "stop_output_failure_cleanup",
+            "sigkill_explicit_recovery_and_map_cleanup",
+            "device_removed_cleanup"
+          ]
+        }
+      }
+    },
+    "reviewer_static_dsr": {
+      "kernel": "Linux 6.6.87.2-microsoft-standard-WSL2 x86_64 GNU/Linux",
+      "scope": "functional veth only; no performance or physical NIC claim",
+      "sha256": {
+        "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v1.2-s3/reviewer/on/bin/l4lb-xdp": "9e47e41fb8e2dafea50fff856927058f970a49da989a73093a80ac6ace0e9e19",
+        "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v1.2-s3/reviewer/on/xdp/xdp_udp_dsr.bpf.o": "8cdca64c1ef46b4d7cab49be6e5ced3214bbc395141c6fc2a525ccfdea6c4b00",
+        "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v1.2-s3/reviewer/on/xdp/xdp_pass.bpf.o": "170570aa20924824d9305fc94ab1500ae0b99118d313c215ef6f93b7347a948c",
+        "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v1.2-s3/reviewer/fixtures/helper-error.bpf.o": "9dd35e06df4c2c55d22244872c164a2e370efb8acce4f339c7686eb3344db0b4",
+        "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v1.2-s3/reviewer/fixtures/short-bound.bpf.o": "466a8996a7ea474d7197b5c799967839b52886957af7d7ebad3d0bb9208dd700",
+        "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v1.2-s3/reviewer/fixtures/libdsr-faults.so": "181449bb1e5698d02c9b39a440f85d0d51856c384ae6ddcb58b8572e82ed575d",
+        "/home/power/projects/L4-LoadBalancer-withXDP/tests/xdp_udp_dsr_privileged.py": "8520662556d9f91ee73fd205930f2349815d4b0e0b46a5994e33511aa987151e",
+        "/home/power/projects/L4-LoadBalancer-withXDP/tests/build_xdp_dsr_fixtures.py": "feaebce333a382ba7a6d48e11001b68938827eb63be239ad0ab6f1721c451795",
+        "/home/power/projects/L4-LoadBalancer-withXDP/tests/XdpDsrFaults.c": "e1716c32a6e3b987fed88c6c3981f204827bacf7081024d12679cc761aa9114e"
+      },
+      "kernel_cases": {
+        "test_run_cases": 1077,
+        "short_logical_bound_fixture_cases": 14,
+        "ethernet_shorter_than_14": "kernel test-run API rejects before execution"
+      },
+      "modes": {
+        "generic": [
+          "real_full_map_readback_freeze_metadata",
+          "interface_validation_negatives",
+          "two_backend_request_response_and_mac_capture",
+          "stable_hash_and_reply_source",
+          "host_pass_delivery",
+          "stop_stats_equal_independent_kernel_sum",
+          "duplicate_wrong_id_preserved",
+          "egress_down_no_delivery_recovery",
+          "sigint_cleanup",
+          "closed_stdin_replacement_protection",
+          "output_failure_cleanup",
+          "sigkill_recovery",
+          "sync_readback_freeze_failures_no_attach",
+          "stats_failure_detaches",
+          "egress_deleted_no_delivery_cleanup",
+          "ingress_deleted_cleanup"
+        ],
+        "native": [
+          "real_full_map_readback_freeze_metadata",
+          "interface_validation_negatives",
+          "two_backend_request_response_and_mac_capture",
+          "stable_hash_and_reply_source",
+          "host_pass_delivery",
+          "stop_stats_equal_independent_kernel_sum",
+          "duplicate_wrong_id_preserved",
+          "egress_down_no_delivery_recovery",
+          "sigint_cleanup",
+          "closed_stdin_replacement_protection",
+          "output_failure_cleanup",
+          "sigkill_recovery",
+          "sync_readback_freeze_failures_no_attach",
+          "stats_failure_detaches",
+          "egress_deleted_no_delivery_cleanup",
+          "ingress_deleted_cleanup"
+        ]
+      }
+    },
+    "builder_runtime": {
+      "modes": {
+        "generic": [
+          "startup_unknown_drop",
+          "two_backend_actual_echo_health_and_roundtrip",
+          "shared_vip_probe_rejected",
+          {
+            "100_live_publications_complete_mac_and_reply": {
+              "received": 40961,
+              "timeouts": 0
+            }
+          },
+          "unchanged_retains_generation",
+          "bad_file_keeps_old_flow",
+          "precommit_fault_keeps_old_flow",
+          "delete_add_reorder_live",
+          "health_publish_failure_keeps_applied_and_bounded_retry",
+          "single_probe_failure_evict_recover",
+          "all_unhealthy_drop_recover",
+          "duplicate_wrong_id_preserved",
+          "hup_storm_term_priority",
+          "postcommit_failure_terminates_and_detaches",
+          "empty_config_closed_stdout_terminates",
+          "sigint_cleanup",
+          "closed_stdin_replacement_protection",
+          "sigkill_explicit_recovery",
+          "egress_down_delete_health_conservative_cleanup",
+          "ingress_removed_cleanup"
+        ],
+        "native": [
+          "startup_unknown_drop",
+          "two_backend_actual_echo_health_and_roundtrip",
+          "shared_vip_probe_rejected",
+          "unchanged_retains_generation",
+          "bad_file_keeps_old_flow",
+          "precommit_fault_keeps_old_flow",
+          "delete_add_reorder_live",
+          "health_publish_failure_keeps_applied_and_bounded_retry",
+          "single_probe_failure_evict_recover",
+          "all_unhealthy_drop_recover",
+          "duplicate_wrong_id_preserved",
+          "hup_storm_term_priority",
+          "postcommit_failure_terminates_and_detaches",
+          "empty_config_closed_stdout_terminates",
+          "sigint_cleanup",
+          "closed_stdin_replacement_protection",
+          "sigkill_explicit_recovery",
+          "egress_down_delete_health_conservative_cleanup",
+          "ingress_removed_cleanup"
+        ]
+      },
+      "sha256": {
+        "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v1.2-s3/kernel/final-products/l4lb-xdp": "7c2b4929653094fed33fe99ca905bb1d1bd964d580023d9176011d921f2957d1",
+        "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v1.2-s3/kernel/final-products/xdp_udp_runtime.bpf.o": "c1fd9cf0916743e1b91c1d94ecf3f4c4a8ed220f831f15aaaa00aad9d972906c",
+        "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v1.2-s3/kernel/final-products/xdp_pass.bpf.o": "998accd3661f8762256dc1e73d36b4b83e53b67f3717908a8afef1187dd1a708",
+        "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v1.2-s3/kernel/build/libRuntimeMapFaults.so": "a13b510ce96f7c05b3b61114149d1207c7e8e02215aa8a1da5f4a32c1102bc70",
+        "/home/power/projects/L4-LoadBalancer-withXDP/tests/xdp_runtime_privileged.py": "009e6693b4a0d0b11f9cec7e0bf7ff94e86cb1d421e2b2b582b66aa43839b3a2"
+      }
+    },
+    "reviewer_stop_stats": {
+      "generic": {
+        "independent_stop_stats": [
+          17,
+          1,
+          16,
+          0,
+          1,
+          0,
+          0,
+          0
+        ],
+        "stats_failure_exit": 1,
+        "detached": true
+      },
+      "native": {
+        "independent_stop_stats": [
+          16,
+          0,
+          16,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "stats_failure_exit": 1,
+        "detached": true
+      }
+    },
+    "reviewer_timeout_cleanup": {
+      "pgid": 19744,
+      "live_non_zombie": []
+    },
+    "reviewer_runtime": {
+      "modes": {
+        "generic": [
+          "startup_unknown_drop",
+          "two_backend_actual_echo_health_and_roundtrip",
+          "shared_vip_probe_rejected",
+          {
+            "100_live_publications_complete_mac_and_reply": {
+              "received": 39761,
+              "timeouts": 0
+            }
+          },
+          "unchanged_retains_generation",
+          "bad_file_keeps_old_flow",
+          "precommit_fault_keeps_old_flow",
+          "delete_add_reorder_live",
+          "health_publish_failure_keeps_applied_and_bounded_retry",
+          "single_probe_failure_evict_recover",
+          "all_unhealthy_drop_recover",
+          "duplicate_wrong_id_preserved",
+          "hup_storm_term_priority",
+          "postcommit_failure_terminates_and_detaches",
+          "empty_config_closed_stdout_terminates",
+          "sigint_cleanup",
+          "closed_stdin_replacement_protection",
+          "sigkill_explicit_recovery",
+          "egress_down_delete_health_conservative_cleanup",
+          "ingress_removed_cleanup"
+        ],
+        "native": [
+          "startup_unknown_drop",
+          "two_backend_actual_echo_health_and_roundtrip",
+          "shared_vip_probe_rejected",
+          "unchanged_retains_generation",
+          "bad_file_keeps_old_flow",
+          "precommit_fault_keeps_old_flow",
+          "delete_add_reorder_live",
+          "health_publish_failure_keeps_applied_and_bounded_retry",
+          "single_probe_failure_evict_recover",
+          "all_unhealthy_drop_recover",
+          "duplicate_wrong_id_preserved",
+          "hup_storm_term_priority",
+          "postcommit_failure_terminates_and_detaches",
+          "empty_config_closed_stdout_terminates",
+          "sigint_cleanup",
+          "closed_stdin_replacement_protection",
+          "sigkill_explicit_recovery",
+          "egress_down_delete_health_conservative_cleanup",
+          "ingress_removed_cleanup"
+        ]
+      },
+      "sha256": {
+        "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v1.2-s3/reviewer/on/bin/l4lb-xdp": "9e47e41fb8e2dafea50fff856927058f970a49da989a73093a80ac6ace0e9e19",
+        "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v1.2-s3/reviewer/on/xdp/xdp_udp_runtime.bpf.o": "53e150f4cdeda8fae8a600812c057a10cc10b3d66bd16fe39a109f76b1846bc0",
+        "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v1.2-s3/reviewer/on/xdp/xdp_pass.bpf.o": "170570aa20924824d9305fc94ab1500ae0b99118d313c215ef6f93b7347a948c",
+        "/home/power/projects/L4-LoadBalancer-withXDP/.stage-tmp/v1.2-s3/reviewer/fixtures/libRuntimeMapFaults.so": "a13b510ce96f7c05b3b61114149d1207c7e8e02215aa8a1da5f4a32c1102bc70",
+        "/home/power/projects/L4-LoadBalancer-withXDP/tests/xdp_runtime_privileged.py": "009e6693b4a0d0b11f9cec7e0bf7ff94e86cb1d421e2b2b582b66aa43839b3a2"
+      }
+    }
+  },
+  "m1": {
+    "builder": [
+      "kernel_object=.stage-tmp/v1.2-s3/kernel/final-products/xdp_udp_runtime.bpf.o publishes=104 concurrent_packets=8419400 precommit_failures=7 postcommit_failures=2 PASS",
+      "kernel_object=.stage-tmp/v1.2-s3/kernel/build/runtime-diagnostic.bpf.o publishes=104 concurrent_packets=8507037 precommit_failures=7 postcommit_failures=2 PASS"
+    ],
+    "reviewer": [
+      "kernel_object=.stage-tmp/v1.2-s3/reviewer/on/xdp/xdp_udp_runtime.bpf.o publishes=104 concurrent_packets=6463184 precommit_failures=7 postcommit_failures=2 PASS",
+      "kernel_object=.stage-tmp/v1.2-s3/reviewer/fixtures/runtime-diagnostic.bpf.o publishes=104 concurrent_packets=5696934 precommit_failures=7 postcommit_failures=2 PASS"
+    ]
+  },
+  "logs": {
+    ".stage-tmp/v1.2-s3/health/logs/output-run-002.log": "7a0914bac6594172f7fa4316010df53c50dc1b1837ded4a0cbac45182b6428fc",
+    ".stage-tmp/v1.2-s3/reviewer/logs/output-real.log": "12b8eefa6d92cbeaae176b880bbe457d056d1f9881b3982a949de5404efb6911",
+    ".stage-tmp/v1.2-s3/reviewer/logs/legacy-real.log": "d27736296b3f9e9a19a1533cbfa29f4988963d36ce99a8f31ad0434e060eb9a1",
+    ".stage-tmp/v1.2-s3/reviewer/logs/maps-real.log": "e28d519102b45465e9a675ec6a1df0c50baa0567894a646ed55b25b10569a5de",
+    ".stage-tmp/v1.2-s3/reviewer/logs/static-dsr-real.log": "3fd414a92ee181392576e9b50b9962d3a30301ef845757539c142ae2c5f2dcd5",
+    ".stage-tmp/v1.2-s3/kernel/logs/m1-final-frozen.log": "60ad6460403866eadc13f23696370c317e098f39a5f10d629abbfe9e62a97b72",
+    ".stage-tmp/v1.2-s3/reviewer/logs/m1-real-final.log": "f84d50bdc43a82d3d898c650fe6ae7968cf9cbcb689d16252b78868257aa9ecf",
+    ".stage-tmp/v1.2-s3/leader/on-full-final.log": "c336c9b9942c243f07f68b67d4f4a203b1d2a2f76cdb9b3b130697e22234eb45",
+    ".stage-tmp/v1.2-s3/leader/off-full-final.log": "f42893da33557ae84ea18703daf49490161ea39cbaf770524666e1a5b95216da",
+    ".stage-tmp/v1.2-s3/leader/object-validator-final.log": "6b8a031439bd5beb0821499cab0ce9cae6d09844297f0ff718a0bd336a29239c",
+    ".stage-tmp/v1.2-s3/reviewer/logs/regression.log": "52a91bbae599595a6b7d083007bed7a852d8daf16fff582efd7a66aa79f43fe3",
+    ".stage-tmp/v1.2-s3/reviewer/logs/m1-negative.log": "f677992df778bf8058f7a0f14eb262c9957c371652c655f80d50ab56e490571f",
+    ".stage-tmp/v1.2-s3/health/logs/unit.log": "c92437c96678b94b600b87ddd0048a887547f73e182bc5924976b696a7cbeca6",
+    ".stage-tmp/v1.2-s3/health/logs/socket.log": "6800e09068e0a8bd2f9c9c286e081fd0c845b88e1115188e787c97df8e2b1c77",
+    ".stage-tmp/v1.2-s3/kernel/logs/product-final2-summary.json": "69d80d78118e957f4b8c9c61e2c92b72e7f0823585102371282ab848355b77ea",
+    ".stage-tmp/v1.2-s3/reviewer/logs/stats-final2.log": "fd33135111deecf938515b0cb245e3271b67a3b50fc45be8c1b4f0a876b6b8e2",
+    ".stage-tmp/v1.2-s3/reviewer/logs/runtime-timeout-cleanup.json": "f02323d550140408a56c3a09930e55a99de27dd2b6b5523ad5aa0492408c23f4",
+    ".stage-tmp/v1.2-s3/kernel/logs/timeout-cleanup.log": "0e293f150ad60ea1d0c3bc28a671bad6cb35e037b7ba56572809a918f8cc1289",
+    ".stage-tmp/v1.2-s3/health/logs/random-failure.log": "b41338ebec9836076402121046be6a03e265a3cc0fe2d8c8535d258afd182b4d",
+    ".stage-tmp/v1.2-s3/reviewer/logs/stats-final.log": "cd04ca1938d47062ad7b717dab2d4266182b27d06c158db7e72b664526503851",
+    ".stage-tmp/v1.2-s3/reviewer/stats.py": "cf9fed070dcee87eefa883070f1fa639c1c6da9ec57e71754129dcc6c923cbb4",
+    ".stage-tmp/v1.2-s3/reviewer/stats-tests.sh": "536504f789f61dc1959169758d07277a6423545684ced9d7740328eff7267ddd",
+    ".stage-tmp/v1.2-s3/reviewer/fixtures/StatsFault.c": "79407a834e2c0a518772be14a317c489e9af1d9446f1b721b73dd88b0025a74e",
+    ".stage-tmp/v1.2-s3/reviewer/logs/runtime-real-final.log": "ff901bc245ff6aaabe8f79a3f1499085bff4f1551bb947374d7ef0e0e7d7797b"
+  },
+  "artifacts": {
+    ".stage-tmp/v1.2-s3/leader/on/bin/l4lb-xdp": "7c2b4929653094fed33fe99ca905bb1d1bd964d580023d9176011d921f2957d1",
+    ".stage-tmp/v1.2-s3/leader/on/xdp/xdp_udp_runtime.bpf.o": "c1fd9cf0916743e1b91c1d94ecf3f4c4a8ed220f831f15aaaa00aad9d972906c",
+    ".stage-tmp/v1.2-s3/reviewer/on/bin/l4lb-xdp": "9e47e41fb8e2dafea50fff856927058f970a49da989a73093a80ac6ace0e9e19",
+    ".stage-tmp/v1.2-s3/reviewer/on/xdp/xdp_udp_runtime.bpf.o": "53e150f4cdeda8fae8a600812c057a10cc10b3d66bd16fe39a109f76b1846bc0",
+    ".stage-tmp/v1.2-s3/kernel/build/RuntimeMapStoreKernel_test": "8d9d0712d85e3d96ad11ace8b47b6067357dbeb925443067304fd720d13768f4",
+    ".stage-tmp/v1.2-s3/kernel/build/runtime-diagnostic.bpf.o": "1487d3fdb9136c69062b396088a0e739920272d9ecedb0e4a07a32fc3e056193",
+    ".stage-tmp/v1.2-s3/kernel/build/libRuntimeMapFaults.so": "a13b510ce96f7c05b3b61114149d1207c7e8e02215aa8a1da5f4a32c1102bc70"
+  },
+  "corrections": [
+    "Initial inner BTF required a single-element Snapshot array to retain complete type on Clang18; ABI size unchanged",
+    "Verifier required an explicit bounded index after modulo; no change to hash selection",
+    "Completion-clock test dependency was incomplete during integration; final injected-clock and real socket tests pass",
+    "Sample placed among old user-space configs broke historical example glob; moved to configs/xdp/runtime.conf, historical tests unchanged, final OFF31 and ON42 pass",
+    "Runtime observer retried a just-retired inner ID; no product publication failure",
+    "Runtime subprocess timeout cleanup changed to process-group termination/finally; explicit timeout negative and final runner reruns retained",
+    "Static review corrected fatal output classification, output poll errors, stop priority, shared-VIP probe rejection and strict malformed-object rejection reason",
+    "Independent supplemental stats fixture initially reused a namespace across modes (File exists); separated namespaces and retained initial failure, both final modes pass"
+  ],
+  "limitations": [
+    "Local WSL2 6.6.87.2 generic/native-veth functional validation only; no physical NIC or throughput conclusion",
+    "Backend must provide UDP echo endpoint associated with application health; standalone echo survival does not prove arbitrary business logic health",
+    "A rejected precommit update preserves old applied targets, including unhealthy targets whose removal could not be published",
+    "Target-set changes may remap existing UDP flows; no connection draining, NAT, or session migration",
+    "Map ID disappearance proves reference/id retirement, not immediate physical RCU memory reclamation",
+    "Client TX offload, backend return neighbors and native-veth PASS/NAPI are isolated fixture prerequisites, not product network changes",
+    "Raw logs stay local under .stage-tmp/v1.2-s3; this tracked summary is not a bundled raw archive"
+  ]
+}
