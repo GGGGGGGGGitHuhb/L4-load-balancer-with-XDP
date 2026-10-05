@@ -721,3 +721,7 @@ S3复用S1/S2构建和测试，不新增运行时层。默认OFF、BPF-only、�
 `RuntimeDsrConfig`负责严格有界文件读取、纯文本解析及接口/目标身份解析；`UdpProbeChecker`负责单线程非阻塞UDP echo、deadline/nonce和2success/3failure状态，不读取BPF或输出日志；`RuntimeDsrService`串行编排HUP事务、desired健康集合和已应用generation，至多每秒尝试一次发布。候选探测资源和状态在提交前准备，提交后只做无抛出所有权替换；后续致命观测/日志失败终止卸载，不假称回滚。
 
 runtime用signalfd和20ms有界轮询收割响应，优先消费停止信号；输出以64KiB非阻塞队列限制背压。全部不可用时仅新profile对有效匹配报文DROP；配置/健康改变可能重映射既有UDP流，不引入会话或draining。部署方提供UDP echo端点、VIP和回程，产品不配置网络。ABI、探测与提交点语义见[运行期控制规格](docs/specs/xdp-runtime-control.md)。S4负责性能，本阶段不作吞吐或物理网卡结论。
+
+## V1.2/S4 性能验证工具边界
+
+新增 `tests/v12_benchmark*.py` 仅在测试侧构建固定S3 Release产品、建立自有隔离网络、按开放节拍生成UDP流量、采集原始计数/RTT/PID与全机资源并离线重算；CMake只在BUILD_TESTING内增加短schema测试。生产模块、ABI、历史测试及配置保持冻结，无新生产Python依赖。工具记录漏槽和超时，不以目标pps代替实际goodput；全机CPU含VM背景任务，loader CPU不是BPF数据面CPU。六路径与控制面测量的拓扑/语义和口径见[性能方法](docs/benchmarks/v1.2-methodology.md)，独立验收与九标准见[版本验收](docs/specs/v1.2-acceptance.md)。此段登记已批准S4落地，不变更产品架构或将后续平台纳入验收。
