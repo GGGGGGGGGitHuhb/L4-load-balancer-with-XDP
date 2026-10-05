@@ -6,7 +6,7 @@ C++20 用户态四层负载均衡实验项目：单线程 LT epoll TCP 双向字
 
 ## 当前状态
 
-V1.2/S2 已完成独立验收与收尾（2026-09-22）：Builder与Reviewer真实内核各1077用例，另有14项短包逻辑边界夹具；generic/native各16组真实转发与故障检查通过。ON完整37/37、默认OFF Release31/31通过，见[DSR验证摘要](docs/runbooks/xdp-dsr-validation-result.json)。S2已由PR #20合并为 `0c3de8e`，标签 `v1.2-s2` 已推送核验。当前分支 `codex/v1.2-s3`，S3运行期更新/健康联动已完成独立验收与收尾（2026-09-28）：ON 42/42、OFF 31/31，双方generic 20组/native 19组与100次在线发布通过，见[运行期验证摘要](docs/runbooks/xdp-runtime-validation-result.json)。S3尚未提交或推送；S4性能比较仍为计划，V1.2整体未完成，见[路线图](ROADMAP.md)。
+V1.2/S2 已完成独立验收与收尾（2026-09-22）：Builder与Reviewer真实内核各1077用例，另有14项短包逻辑边界夹具；generic/native各16组真实转发与故障检查通过。ON完整37/37、默认OFF Release31/31通过，见[DSR验证摘要](docs/runbooks/xdp-dsr-validation-result.json)。S2已由PR #20合并为 `0c3de8e`，标签 `v1.2-s2` 已推送核验。S3运行期更新/健康联动已完成独立验收与收尾（2026-09-28）：ON 42/42、OFF 31/31，双方generic 20组/native 19组与100次在线发布通过，见[运行期验证摘要](docs/runbooks/xdp-runtime-validation-result.json)。S3已由PR #21合并为 `2dd2c98`，附注标签 `v1.2-s3` 已推送核验。当前分支 `codex/v1.2-s4`；S4性能比较已完成（2026-10-05）：Builder与独立Reviewer各126/126，独立ON Debug43/43及公开包离线重算通过；[九标准验收](docs/specs/v1.2-acceptance.md)齐备，V1.2批准开发范围Completed。S4工作树尚未提交、推送、合并或打标签，V1.2未正式发布，见[路线图](ROADMAP.md)。
 
 V0.1—V0.4 用户态开发范围已完成；V1.0/S1 已冻结[用户可见行为](docs/specs/v1.0-user-visible-contract.md)。V1.0/S2 文档与验收补齐已完成（2026-09-10）：独立Debug快速30/30、Release完整31/31、最短示例与公开文档验证通过，Leader已收尾。S3独立发布前审查PASS且Leader已收尾，**S1/S2/S3及V1.0用户态开发范围Completed，本轮候选发布就绪，实际发布未执行**（2026-09-10）。S3独立Debug30/30、Release31/31含长expiry及原TCP/UDP示例通过，不自动启动未来XDP阶段。本轮候选及三种状态见[公开发布前审查](docs/specs/v1.0-release-review.md)。阶段证据与待验事项见[公开 V1.0 验收索引](docs/specs/v1.0-acceptance.md)；历史版本结果分别保留在[V0.1](docs/specs/v0.1-acceptance.md)、[V0.2](docs/specs/v0.2-acceptance.md)、[V0.3](docs/specs/v0.3-acceptance.md)、[V0.4](docs/specs/v0.4-acceptance.md)矩阵中，不是当前测试数量。
 
@@ -102,6 +102,8 @@ cmake --build build-production -j4
 
 ## Benchmark：当前smoke与历史报告
 
+[V1.2性能报告](docs/benchmarks/reports/v1.2-xdp.md)比较direct、用户态UDP代理、静态/运行期DSR的generic/native六路径，附控制面成本与可重算原始包；[方法与命令](docs/benchmarks/v1.2-methodology.md)说明独立复现、故障检测及离线重算。结论限本机WSL2/veth，50k目标大量漏槽，不能推出产品上限或物理NIC线速。
+
 当前binary短验证（每协议一组低负载direct/proxy，不作正式性能结论；每次使用不存在的输出目录）：
 
 ```bash
@@ -119,7 +121,7 @@ python3 tests/v04_benchmark_compare.py recompute --package docs/benchmarks/repor
 - [故障联合验证](docs/runbooks/local-v0.3-validation.md)、[资源与有界停止](docs/runbooks/local-v0.4-lifecycle-validation.md)、[历史开发环境](docs/runbooks/local-dev-env.md)。
 - [V1.0验收索引](docs/specs/v1.0-acceptance.md)区分S1历史组合证据、S2本轮验证和S3待验。
 
-仅支持静态IPv4，无DNS/IPv6/热加载/失败换后端重试或UDP可靠交付。容量默认1024，完整产品1024满载未经承诺；同步输出、内核缓冲等不包含在用户态pending容量中。UDP用于受控实验网络，无公网开放relay或源地址反欺骗防护。WSL/Python生成器/共享CPU测量不代表物理网卡或native XDP上限；XDP采用已预检的本地隔离网络，具体结果与边界见[本地XDP环境](docs/runbooks/linux-xdp-env.md)；TD-003继续跟踪阶段验收，主线不包含DPDK。
+仅支持静态IPv4，无DNS/IPv6/热加载/失败换后端重试或UDP可靠交付。容量默认1024，完整产品1024满载未经承诺；同步输出、内核缓冲等不包含在用户态pending容量中。UDP用于受控实验网络，无公网开放relay或源地址反欺骗防护。WSL/Python生成器/共享CPU测量不代表物理网卡或native XDP上限；XDP采用已预检的本地隔离网络，具体结果与边界见[本地XDP环境](docs/runbooks/linux-xdp-env.md)；TD-003的V1.2验收义务已满足，未来平台验证责任保留，主线不包含DPDK。
 
 `docs/leader/`、`docs/builder/`、`docs/reviewer/`及根AGENTS属于本地治理记录，不随普通clone分发；它们不是运行和公开验收的必读入口。ROADMAP中的未来设计路径是计划位置，不代表文件或能力已存在。公开链接检查可运行`python3 tests/docs_links.py .`，仅检查根与docs Markdown的本地链接和锚点，不联网扫外链。
 

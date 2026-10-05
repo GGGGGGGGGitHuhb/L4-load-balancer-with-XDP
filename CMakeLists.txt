@@ -181,3 +181,8 @@ if(BUILD_TESTING)
     "$<TARGET_FILE:l4lb>" "${CMAKE_BINARY_DIR}/v10-fixture")
   set_tests_properties(v10_fixture_pair PROPERTIES LABELS v10_contract TIMEOUT 10)
 endif()
+
+if(BUILD_TESTING)
+  add_test(NAME v12_benchmark_schema COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/tests/v12_benchmark_test.py")
+  set_tests_properties(v12_benchmark_schema PROPERTIES TIMEOUT 20)
+endif()
