@@ -2,8 +2,8 @@
 #include <iostream>
 #include <string_view>
 
-#include "config/config.h"
-#include "control/service.h"
+#include "config/Config.h"
+#include "control/Service.h"
 
 /** CLI 仅解释选项和展示配置模块结果。 */
 int main(int argc, char* argv[]) {
@@ -25,6 +25,7 @@ int main(int argc, char* argv[]) {
            "flows，不保证排空。同步输出阻塞时不保证进程按时退出。\n";
     return 0;
   }
+
   if (argc != 3 ||
       (std::string_view(argv[1]) != "--check-config" &&
        std::string_view(argv[1]) != "--run") ||
@@ -33,7 +34,8 @@ int main(int argc, char* argv[]) {
     std::cerr << "用法错误：请使用 l4lb --help 查看帮助\n";
     return 2;
   }
-  const auto result = l4lb::load_config(argv[2]);
+
+  const auto result = l4lb::loadConfig(argv[2]);
   if (const auto* error = std::get_if<l4lb::ConfigError>(&result)) {
     std::cerr << "配置错误：";
     if (error->eof)
@@ -43,14 +45,16 @@ int main(int argc, char* argv[]) {
     std::cerr << error->message << '\n';
     return 1;
   }
+
   if (std::string_view(argv[1]) == "--run") {
     try {
-      return l4lb::run_service(std::get<l4lb::Config>(result));
+      return l4lb::runConfiguredService(std::get<l4lb::Config>(result));
     } catch (const std::exception& error) {
       std::cerr << "服务错误：" << error.what() << '\n';
       return 1;
     }
   }
+
   std::cout << "配置有效："
             << (std::get<l4lb::Config>(result).protocol == l4lb::Protocol::kTcp
                     ? "TCP"

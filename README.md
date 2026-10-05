@@ -6,6 +6,8 @@ C++20 用户态四层负载均衡实验项目：单线程 LT epoll TCP 双向字
 
 ## 当前状态
 
+2026-10-05：编码规范重构R1已完成并独立验收PASS；用户态文件、名称与排版迁移落实，OFF/ON Debug与Release完整回归各150/150、六组构建及当前产品冒烟通过，原运行命令与行为契约保持。当前分支HEAD为`62c1e558b135da88c084c2e7a66b06281be06e5b`，R1改动尚未暂存、提交或发布；R2/R3/R4未启动。当前重构进度见[路线图](ROADMAP.md#编码规范重构当前状态)，历史S4记录保持其原时点事实。
+
 V1.2/S2 已完成独立验收与收尾（2026-09-22）：Builder与Reviewer真实内核各1077用例，另有14项短包逻辑边界夹具；generic/native各16组真实转发与故障检查通过。ON完整37/37、默认OFF Release31/31通过，见[DSR验证摘要](docs/runbooks/xdp-dsr-validation-result.json)。S2已由PR #20合并为 `0c3de8e`，标签 `v1.2-s2` 已推送核验。S3运行期更新/健康联动已完成独立验收与收尾（2026-09-28）：ON 42/42、OFF 31/31，双方generic 20组/native 19组与100次在线发布通过，见[运行期验证摘要](docs/runbooks/xdp-runtime-validation-result.json)。S3已由PR #21合并为 `2dd2c98`，附注标签 `v1.2-s3` 已推送核验。当前分支 `codex/v1.2-s4`；S4性能比较已完成（2026-10-05）：Builder与独立Reviewer各126/126，独立ON Debug43/43及公开包离线重算通过；[九标准验收](docs/specs/v1.2-acceptance.md)齐备，V1.2批准开发范围Completed。S4工作树尚未提交、推送、合并或打标签，V1.2未正式发布，见[路线图](ROADMAP.md)。
 
 V0.1—V0.4 用户态开发范围已完成；V1.0/S1 已冻结[用户可见行为](docs/specs/v1.0-user-visible-contract.md)。V1.0/S2 文档与验收补齐已完成（2026-09-10）：独立Debug快速30/30、Release完整31/31、最短示例与公开文档验证通过，Leader已收尾。S3独立发布前审查PASS且Leader已收尾，**S1/S2/S3及V1.0用户态开发范围Completed，本轮候选发布就绪，实际发布未执行**（2026-09-10）。S3独立Debug30/30、Release31/31含长expiry及原TCP/UDP示例通过，不自动启动未来XDP阶段。本轮候选及三种状态见[公开发布前审查](docs/specs/v1.0-release-review.md)。阶段证据与待验事项见[公开 V1.0 验收索引](docs/specs/v1.0-acceptance.md)；历史版本结果分别保留在[V0.1](docs/specs/v0.1-acceptance.md)、[V0.2](docs/specs/v0.2-acceptance.md)、[V0.3](docs/specs/v0.3-acceptance.md)、[V0.4](docs/specs/v0.4-acceptance.md)矩阵中，不是当前测试数量。

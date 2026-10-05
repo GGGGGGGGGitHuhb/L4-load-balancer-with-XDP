@@ -6,8 +6,8 @@
 #include <iostream>
 #include <thread>
 
-#include "core/round_robin.h"
-#include "net/udp_reactor.cpp"
+#include "core/RoundRobinScheduler.h"
+#include "net/UdpReactor.cpp"
 
 namespace l4lb::net {
 namespace {
@@ -35,15 +35,15 @@ Endpoint socket_endpoint(int fd) {
 
 Fd bound_udp(std::array<std::uint8_t, 4> ip = {127, 0, 0, 1}) {
   Fd fd(socket(AF_INET, SOCK_DGRAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0));
-  require_udp(fd.get() >= 0, "test UDP socket");
-  auto a = udp_address({ip, 0});
-  require_udp(bind(fd.get(), reinterpret_cast<sockaddr*>(&a), sizeof(a)) == 0,
+  require_udp(fd.fd() >= 0, "test UDP socket");
+  auto a = makeUdpSocketAddress({ip, 0});
+  require_udp(bind(fd.fd(), reinterpret_cast<sockaddr*>(&a), sizeof(a)) == 0,
               "test UDP bind");
   return fd;
 }
 
 void put(int fd, Endpoint e, const std::string& bytes) {
-  auto a = udp_address(e);
+  auto a = makeUdpSocketAddress(e);
   require_udp(
       sendto(fd, bytes.data(), bytes.size(), 0, reinterpret_cast<sockaddr*>(&a),
              sizeof(a)) == static_cast<ssize_t>(bytes.size()),
@@ -81,8 +81,8 @@ std::size_t fd_count() {
 struct UdpTestAccess {
   struct Rig {
     Fd a = bound_udp(), b = bound_udp();
-    UdpOptions opt;
-    UdpCallbacks cb;
+    UdpReactorOptions opt;
+    UdpReactorCallbacks cb;
     int selects = 0;
     std::vector<UdpObservation> observed;
     std::vector<UdpFlowEvent> lifecycle;
@@ -91,7 +91,7 @@ struct UdpTestAccess {
 
     Rig(bool wildcard = false) {
       cb.select_backend = [&] {
-        auto e = socket_endpoint(selects % 2 ? b.get() : a.get());
+        auto e = socket_endpoint(selects % 2 ? b.fd() : a.fd());
         ++selects;
         return e;
       };
@@ -113,17 +113,17 @@ struct UdpTestAccess {
                             : std::array<std::uint8_t, 4>{127, 0, 0, 1},
                    0},
           cb, opt);
-      listen = socket_endpoint(r->listener_.get());
+      listen = socket_endpoint(r->listenerFd_.fd());
       listen.address = {127, 0, 0, 1};
     }
 
     void pump(int ms = 20) {
       epoll_event events[128]{};
-      int n = epoll_wait(r->epoll_.get(), events, 128, ms);
+      int n = epoll_wait(r->epollFd_.fd(), events, 128, ms);
       require_udp(n >= 0, "test epoll_wait");
-      r->expire();
+      r->expireIdleFlows();
       for (int i = 0; i < n; ++i)
-        r->dispatch(events[i].data.u64, events[i].events);
+        r->dispatchFlowEvent(events[i].data.u64, events[i].events);
     }
 
     std::uint64_t token() {
@@ -139,7 +139,7 @@ struct UdpTestAccess {
     Datagram request(Fd& c, int backend, const std::string& value,
                      Endpoint dest = {}) {
       if (!dest.port) dest = listen;
-      put(c.get(), dest, value);
+      put(c.fd(), dest, value);
       pump();
       auto end = UClock::now() + 500ms;
       while (!readable(backend) && UClock::now() < end) pump(5);
@@ -153,8 +153,8 @@ struct UdpTestAccess {
       put(backend, d.from, value);
       pump();
       auto end = UClock::now() + 500ms;
-      while (!readable(c.get()) && UClock::now() < end) pump(5);
-      auto got = take(c.get());
+      while (!readable(c.fd()) && UClock::now() < end) pump(5);
+      auto got = take(c.fd());
       if (!source.port) source = listen;
       require_udp(got.bytes == value, "reply payload mismatch");
       require_udp(got.from == source, "reply source mismatch");
@@ -168,7 +168,7 @@ struct UdpTestAccess {
   };
 
   static void values() {
-    FlowKey base{{{127, 0, 0, 1}, 1234}, {127, 0, 0, 1}};
+    UdpFlowKey base{{{127, 0, 0, 1}, 1234}, {127, 0, 0, 1}};
     auto changed = base;
     changed.client.port++;
     require_udp(changed != base, "key port");
@@ -176,28 +176,28 @@ struct UdpTestAccess {
     changed.client.address[3]++;
     require_udp(changed != base, "key client IP");
     changed = base;
-    changed.local[3]++;
+    changed.localAddress[3]++;
     require_udp(changed != base, "key destination IP");
-    require_udp(FlowHash{}(base) == FlowHash{}(base), "key stable hash");
-    UdpDeadline deadline{UClock::time_point{}};
+    require_udp(UdpFlowHash{}(base) == UdpFlowHash{}(base), "key stable hash");
+    UdpIdleDeadline deadline{UClock::time_point{}};
     require_udp(!deadline.expired(UClock::time_point{} + 9ms, 10ms) &&
                     deadline.expired(UClock::time_point{} + 10ms, 10ms),
                 "equal timeout");
-    deadline.submitted(UClock::time_point{} + 10ms);
+    deadline.recordSubmission(UClock::time_point{} + 10ms);
     require_udp(!deadline.expired(UClock::time_point{} + 19ms, 10ms),
                 "zero success activity");
-    UdpCallbacks cb;
+    UdpReactorCallbacks cb;
     cb.select_backend = [] { return Endpoint{{127, 0, 0, 1}, 1}; };
     for (int which = 0; which < 5; ++which) {
-      UdpOptions o;
-      if (which == 0) o.max_flows = 0;
-      if (which == 1) o.idle_timeout = 0ms;
-      if (which == 2) o.poll_interval = 0ms;
-      if (which == 3) o.receive_size = 0;
-      if (which == 4) o.receive_size = 65508;
+      UdpReactorOptions o;
+      if (which == 0) o.maxFlows = 0;
+      if (which == 1) o.idleTimeout = 0ms;
+      if (which == 2) o.pollInterval = 0ms;
+      if (which == 3) o.receiveSize = 0;
+      if (which == 4) o.receiveSize = 65508;
       bool rejected = false;
       try {
-        run_udp({}, cb, o);
+        runUdpReactor({}, cb, o);
       } catch (const std::invalid_argument&) {
         rejected = true;
       }
@@ -209,32 +209,32 @@ struct UdpTestAccess {
   static void identity_and_boundaries() {
     Rig t;
     auto c = bound_udp(), d = bound_udp(), e = bound_udp({127, 0, 0, 2});
-    t.exchange(c, t.a.get(), "nonce-A");
-    t.exchange(c, t.a.get(), "nonce-A-stable");
-    t.exchange(d, t.b.get(), "nonce-B");
-    t.exchange(e, t.a.get(), "nonce-A2");
+    t.exchange(c, t.a.fd(), "nonce-A");
+    t.exchange(c, t.a.fd(), "nonce-A-stable");
+    t.exchange(d, t.b.fd(), "nonce-B");
+    t.exchange(e, t.a.fd(), "nonce-A2");
     require_udp(t.selects == 3, "new keys A/B/A, stable selection");
-    auto first = t.request(c, t.a.get(), "flow-one");
-    auto second = t.request(e, t.a.get(), "flow-two");
+    auto first = t.request(c, t.a.fd(), "flow-one");
+    auto second = t.request(e, t.a.fd(), "flow-two");
     require_udp(first.from != second.from, "distinct backend socket source");
     auto outsider = bound_udp();
-    put(outsider.get(), first.from, "forged");
+    put(outsider.fd(), first.from, "forged");
     t.pump();
-    require_udp(!readable(c.get()), "foreign backend port leaked");
-    t.reply(e, t.a.get(), second, "two-response");
-    t.reply(c, t.a.get(), first, "one-response");
+    require_udp(!readable(c.fd()), "foreign backend port leaked");
+    t.reply(e, t.a.fd(), second, "two-response");
+    t.reply(c, t.a.fd(), first, "one-response");
     for (std::size_t size : {0, 1, 4096, 65507}) {
       std::string value(size, '\0');
       for (std::size_t i = 0; i < size; ++i)
         value[i] = static_cast<char>(i % 251);
-      t.exchange(c, t.a.get(), value);
+      t.exchange(c, t.a.fd(), value);
     }
-    auto request = t.request(c, t.a.get(), "multiple");
+    auto request = t.request(c, t.a.fd(), "multiple");
     for (auto value : {std::string{}, std::string("x"), std::string("a\0b", 3)})
-      put(t.a.get(), request.from, value);
+      put(t.a.fd(), request.from, value);
     t.pump();
     for (auto value : {std::string{}, std::string("x"), std::string("a\0b", 3)})
-      require_udp(take(c.get()).bytes == value, "datagram boundary");
+      require_udp(take(c.fd()).bytes == value, "datagram boundary");
     require_udp(t.selects == 3, "0-length did not end flow");
     std::cout
         << "AC02/04 REAL A/B/A exact nonce bytes, peer filtering, same-backend "
@@ -243,9 +243,9 @@ struct UdpTestAccess {
     auto w = bound_udp();
     auto target = wild.listen;
     target.address = {127, 0, 0, 2};
-    wild.exchange(w, wild.a.get(), "local-one");
-    wild.exchange(w, wild.b.get(), "local-two", target);
-    wild.exchange(w, wild.a.get(), "local-one-again");
+    wild.exchange(w, wild.a.fd(), "local-one");
+    wild.exchange(w, wild.b.fd(), "local-two", target);
+    wild.exchange(w, wild.a.fd(), "local-one-again");
     require_udp(wild.selects == 2, "wildcard key");
     std::cout << "AC03 REAL wildcard same client 127.0.0.1/127.0.0.2 separate "
                  "flow and exact source IP PASS\n";
@@ -254,25 +254,25 @@ struct UdpTestAccess {
   static void truncation_metadata() {
     Rig t;
     auto c = bound_udp();
-    t.opt.receive_size = 4;
-    put(c.get(), t.listen, "oversize");
+    t.opt.receiveSize = 4;
+    put(c.fd(), t.listen, "oversize");
     t.pump();
     require_udp(t.selects == 0 && t.seen("listener-truncated"),
                 "real listener MSG_TRUNC");
-    auto d = t.request(c, t.a.get(), "abc");
-    put(t.a.get(), d.from, "oversize");
+    auto d = t.request(c, t.a.fd(), "abc");
+    put(t.a.fd(), d.from, "oversize");
     t.pump();
-    require_udp(!readable(c.get()) && t.seen("backend-truncated"),
+    require_udp(!readable(c.fd()) && t.seen("backend-truncated"),
                 "real backend MSG_TRUNC whole drop");
-    t.reply(c, t.a.get(), d, "ok");
-    t.exchange(c, t.a.get(), "");
+    t.reply(c, t.a.fd(), d, "ok");
+    t.exchange(c, t.a.fd(), "");
     require_udp(t.selects == 1, "truncation no reselection");
     std::cout << "AC04 REAL bidirectional MSG_TRUNC small recv buffer no "
                  "prefix; following normal/zero PASS\n";
     for (int mode = 0; mode < 7; ++mode) {
       Rig m;
       auto client = bound_udp();
-      m.opt.recvmsg_call = [&](int fd, msghdr* msg, int flags) -> ssize_t {
+      m.opt.recvmsgCall = [&](int fd, msghdr* msg, int flags) -> ssize_t {
         auto n = recvmsg(fd, msg, flags);
         if (n < 0) return n;
         if (mode == 0) msg->msg_controllen = 0;
@@ -293,7 +293,7 @@ struct UdpTestAccess {
           reinterpret_cast<sockaddr_in*>(msg->msg_name)->sin_port = 0;
         return n;
       };
-      put(client.get(), m.listen, "x");
+      put(client.fd(), m.listen, "x");
       m.pump();
       require_udp(
           m.selects == 0 && m.r->flows_.empty() && m.seen("metadata-drop"),
@@ -309,28 +309,28 @@ struct UdpTestAccess {
     auto c = bound_udp(), d = bound_udp(), e = bound_udp();
     auto clock = UClock::now();
     t.opt.now = [&] { return clock; };
-    t.opt.idle_timeout = 10ms;
-    t.opt.max_flows = 2;
-    t.exchange(c, t.a.get(), "one");
-    t.exchange(d, t.b.get(), "two");
-    put(e.get(), t.listen, "third");
+    t.opt.idleTimeout = 10ms;
+    t.opt.maxFlows = 2;
+    t.exchange(c, t.a.fd(), "one");
+    t.exchange(d, t.b.fd(), "two");
+    put(e.fd(), t.listen, "third");
     t.pump();
     require_udp(t.selects == 2 && t.r->flows_.size() == 2 &&
-                    !readable(t.a.get()) && !readable(t.b.get()),
+                    !readable(t.a.fd()) && !readable(t.b.fd()),
                 "capacity reject no selection");
     clock += 9ms;
-    t.exchange(c, t.a.get(), "");  // 零长双向成功刷新。
+    t.exchange(c, t.a.fd(), "");  // 零长双向成功刷新。
     clock += 1ms;
-    t.r->expire();
+    t.r->expireIdleFlows();
     require_udp(t.r->flows_.size() == 1, "equal expiry only idle other flow");
-    t.exchange(e, t.a.get(), "third-after-expiry");
+    t.exchange(e, t.a.fd(), "third-after-expiry");
     require_udp(t.selects == 3, "capacity release next scheduler");
     clock += 9ms;
-    t.r->expire();
+    t.r->expireIdleFlows();
     require_udp(t.r->flows_.size() == 1, "zero refresh exact deadline");
     clock += 1ms;
-    t.r->expire();
-    require_udp(t.r->flows_.empty() && t.r->keys_.empty(),
+    t.r->expireIdleFlows();
+    require_udp(t.r->flows_.empty() && t.r->flowTokensByKey_.empty(),
                 "expire all indexes");
     std::cout << "AC05 UNIT/REAL capacity2 no eviction/no selection; exact "
                  "timeout, zero refresh, reuse A PASS\n";
@@ -338,17 +338,17 @@ struct UdpTestAccess {
       Rig f;
       auto client = bound_udp();
       std::size_t before = fd_count();
-      f.opt.setup_error = [&](const char* operation, int) {
+      f.opt.setupError = [&](const char* operation, int) {
         return stage == operation ? (stage == "connect" ? EINPROGRESS : EMFILE)
                                   : 0;
       };
-      put(client.get(), f.listen, "failure");
+      put(client.fd(), f.listen, "failure");
       f.pump();
-      require_udp(f.selects == 1 && f.r->flows_.empty() && f.r->keys_.empty() &&
-                      fd_count() == before,
+      require_udp(f.selects == 1 && f.r->flows_.empty() &&
+                      f.r->flowTokensByKey_.empty() && fd_count() == before,
                   "setup transaction leak/selection");
-      f.opt.setup_error = {};
-      f.exchange(client, f.b.get(), "next-B");
+      f.opt.setupError = {};
+      f.exchange(client, f.b.fd(), "next-B");
       require_udp(f.selects == 2, "failed setup consumed exactly once");
     }
     std::cout << "AC05 INJECT socket/bind/connect(EINPROGRESS)/epoll failure: "
@@ -362,30 +362,32 @@ struct UdpTestAccess {
       auto c = bound_udp();
       auto clock = UClock::now();
       t.opt.now = [&] { return clock; };
-      t.opt.idle_timeout = 10ms;
-      t.opt.sendmsg_call = [](int, const msghdr*, int) -> ssize_t {
+      t.opt.idleTimeout = 10ms;
+      t.opt.sendmsgCall = [](int, const msghdr*, int) -> ssize_t {
         errno = EAGAIN;
         return -1;
       };
-      put(c.get(), t.listen, "first-drop");
+      put(c.fd(), t.listen, "first-drop");
       t.pump();
-      require_udp(t.selects == 1 && t.r->flows_.size() == 1 &&
-                      t.r->flows_.begin()->second->deadline.last == clock,
-                  "first EAGAIN bounded lifetime");
+      require_udp(
+          t.selects == 1 && t.r->flows_.size() == 1 &&
+              t.r->flows_.begin()->second->deadline.lastSubmissionTime == clock,
+          "first EAGAIN bounded lifetime");
       clock += 10ms;
-      t.r->expire();
+      t.r->expireIdleFlows();
       require_udp(t.r->flows_.empty(), "first drop expiry");
-      t.opt.sendmsg_call = {};
-      t.r->next_token_ = UINT64_MAX;
+      t.opt.sendmsgCall = {};
+      t.r->nextFlowToken_ = UINT64_MAX;
       bool exhausted = false;
-      put(c.get(), t.listen, "exhaust");
+      put(c.fd(), t.listen, "exhaust");
       try {
         t.pump();
       } catch (const std::overflow_error&) {
         exhausted = true;
       }
-      require_udp(exhausted && t.r->flows_.empty() && t.r->keys_.empty(),
-                  "token exhaustion no wrap");
+      require_udp(
+          exhausted && t.r->flows_.empty() && t.r->flowTokensByKey_.empty(),
+          "token exhaustion no wrap");
     }
     {
       Rig t;
@@ -393,7 +395,7 @@ struct UdpTestAccess {
       t.cb.select_backend = []() -> Endpoint {
         throw std::runtime_error("selection contract");
       };
-      put(c.get(), t.listen, "throw");
+      put(c.fd(), t.listen, "throw");
       bool thrown = false;
       try {
         t.pump();
@@ -416,15 +418,15 @@ struct UdpTestAccess {
         auto c = bound_udp();
         auto clock = UClock::now();
         t.opt.now = [&] { return clock; };
-        t.opt.idle_timeout = 10ms;
-        auto d = t.request(c, t.a.get(), "seed");
+        t.opt.idleTimeout = 10ms;
+        auto d = t.request(c, t.a.fd(), "seed");
         auto token = t.token();
-        auto last = t.r->flows_.at(token)->deadline.last;
+        auto last = t.r->flows_.at(token)->deadline.lastSubmissionTime;
         clock += 5ms;
         int attempts = 0;
-        t.opt.sendmsg_call = [&](int fd, const msghdr* msg,
-                                 int flags) -> ssize_t {
-          if ((fd == t.r->listener_.get()) == reply) {
+        t.opt.sendmsgCall = [&](int fd, const msghdr* msg,
+                                int flags) -> ssize_t {
+          if ((fd == t.r->listenerFd_.fd()) == reply) {
             ++attempts;
             if (injected) {
               errno = injected;
@@ -435,34 +437,35 @@ struct UdpTestAccess {
           return sendmsg(fd, msg, flags);
         };
         if (reply) {
-          put(t.a.get(), d.from, "drop");
+          put(t.a.fd(), d.from, "drop");
           t.pump();
-          require_udp(!readable(c.get()), "reply send drop");
+          require_udp(!readable(c.fd()), "reply send drop");
         } else {
-          put(c.get(), t.listen, "drop");
+          put(c.fd(), t.listen, "drop");
           t.pump();
-          require_udp(!readable(t.a.get()), "request send drop");
+          require_udp(!readable(t.a.fd()), "request send drop");
         }
-        require_udp(attempts == (injected == EINTR ? 4 : 1) && t.selects == 1 &&
-                        t.r->flows_.size() == 1 &&
-                        t.r->flows_.at(token)->deadline.last == last,
-                    "send classification/no activity/no retry");
+        require_udp(
+            attempts == (injected == EINTR ? 4 : 1) && t.selects == 1 &&
+                t.r->flows_.size() == 1 &&
+                t.r->flows_.at(token)->deadline.lastSubmissionTime == last,
+            "send classification/no activity/no retry");
         clock += 5ms;
-        t.r->expire();
+        t.r->expireIdleFlows();
         require_udp(t.r->flows_.empty(), "drop did not refresh timeout");
       }
     }
     Rig t;
     auto c = bound_udp();
     int attempts = 0;
-    t.opt.sendmsg_call = [&](int fd, const msghdr* msg, int flags) -> ssize_t {
+    t.opt.sendmsgCall = [&](int fd, const msghdr* msg, int flags) -> ssize_t {
       if (++attempts <= 3) {
         errno = EINTR;
         return -1;
       }
       return sendmsg(fd, msg, flags);
     };
-    t.exchange(c, t.a.get(), "fourth succeeds");
+    t.exchange(c, t.a.fd(), "fourth succeeds");
     require_udp(attempts == 5, "EINTR bounded then real success");
     std::cout
         << "AC04/05 INJECT both directions pressure/EMSGSIZE/short/EINTR=4 "
@@ -472,60 +475,60 @@ struct UdpTestAccess {
   static void identity_errors() {
     Rig t;
     auto c = bound_udp();
-    auto d = t.request(c, t.a.get(), "old");
+    auto d = t.request(c, t.a.fd(), "old");
     auto token = t.token();
-    int oldfd = t.r->flows_.at(token)->fd.get();
-    put(t.a.get(), d.from, "queued-old");
+    int oldfd = t.r->flows_.at(token)->fd.fd();
+    put(t.a.fd(), d.from, "queued-old");
     int receives = 0;
-    t.opt.recvmsg_call = [&](int fd, msghdr* m, int f) {
+    t.opt.recvmsgCall = [&](int fd, msghdr* m, int f) {
       ++receives;
       return recvmsg(fd, m, f);
     };
-    t.opt.socket_error_call = [](int, int* e) {
+    t.opt.socketErrorCall = [](int, int* e) {
       *e = ECONNREFUSED;
       return 0;
     };
-    t.r->dispatch(token, EPOLLERR | EPOLLIN);
-    require_udp(t.r->flows_.empty() && receives == 0 && !readable(c.get()),
+    t.r->dispatchFlowEvent(token, EPOLLERR | EPOLLIN);
+    require_udp(t.r->flows_.empty() && receives == 0 && !readable(c.fd()),
                 "ERR|IN read after close");
-    t.opt.socket_error_call = {};
-    t.opt.recvmsg_call = {};
-    auto next = t.request(c, t.b.get(), "new");
+    t.opt.socketErrorCall = {};
+    t.opt.recvmsgCall = {};
+    auto next = t.request(c, t.b.fd(), "new");
     auto fresh = t.token();
-    int newfd = t.r->flows_.at(fresh)->fd.get();
+    int newfd = t.r->flows_.at(fresh)->fd.fd();
     require_udp(newfd == oldfd && fresh != token, "actual fd reuse");
-    put(t.b.get(), next.from, "new-reply");
+    put(t.b.fd(), next.from, "new-reply");
     epoll_event batch[2]{};
     batch[0].data.u64 = token;
     batch[0].events = EPOLLIN;
     batch[1].data.u64 = fresh;
     batch[1].events = EPOLLIN;
-    t.r->dispatch(batch[0].data.u64, batch[0].events);
-    require_udp(!readable(c.get()), "old token misdelivery");
-    t.r->dispatch(batch[1].data.u64, batch[1].events);
-    require_udp(take(c.get()).bytes == "new-reply" && t.seen("stale-token"),
+    t.r->dispatchFlowEvent(batch[0].data.u64, batch[0].events);
+    require_udp(!readable(c.fd()), "old token misdelivery");
+    t.r->dispatchFlowEvent(batch[1].data.u64, batch[1].events);
+    require_udp(take(c.fd()).bytes == "new-reply" && t.seen("stale-token"),
                 "new token data");
     std::cout << "AC06 REAL fd reuse " << oldfd << " -> " << newfd
               << " INJECT old/new token same batch misdelivery=0; ERR|IN "
                  "close-before-read PASS\n";
     for (int code : {ECONNREFUSED, ECONNRESET, ENETUNREACH, EHOSTUNREACH,
                      EMSGSIZE, EACCES, ENOBUFS, ENOMEM}) {
-      t.opt.socket_error_call = [&](int, int* e) {
+      t.opt.socketErrorCall = [&](int, int* e) {
         *e = code;
         return 0;
       };
-      t.r->dispatch(1, EPOLLERR | EPOLLIN);
+      t.r->dispatchFlowEvent(1, EPOLLERR | EPOLLIN);
       require_udp(t.r->flows_.size() == 1, "shared error deleted flow");
     }
-    t.opt.socket_error_call = {};
-    t.exchange(c, t.b.get(), "shared-still-live");
-    t.opt.socket_error_call = [](int, int* e) {
+    t.opt.socketErrorCall = {};
+    t.exchange(c, t.b.fd(), "shared-still-live");
+    t.opt.socketErrorCall = [](int, int* e) {
       *e = EBADF;
       return 0;
     };
     bool fatal = false;
     try {
-      t.r->dispatch(1, EPOLLERR);
+      t.r->dispatchFlowEvent(1, EPOLLERR);
     } catch (const std::system_error&) {
       fatal = true;
     }
@@ -534,17 +537,17 @@ struct UdpTestAccess {
                  "subsequent data; EBADF fatal PASS\n";
     Rig icmp;
     auto healthy = bound_udp(), bad = bound_udp();
-    icmp.exchange(healthy, icmp.a.get(), "healthy-before");
+    icmp.exchange(healthy, icmp.a.fd(), "healthy-before");
     Endpoint dead;
     {
       auto vacant = bound_udp();
-      dead = socket_endpoint(vacant.get());
+      dead = socket_endpoint(vacant.fd());
     }
     icmp.cb.select_backend = [&] {
       ++icmp.selects;
       return dead;
     };
-    put(bad.get(), icmp.listen, "trigger ICMP");
+    put(bad.fd(), icmp.listen, "trigger ICMP");
     icmp.pump();
     auto until = UClock::now() + 1s;
     while (icmp.r->flows_.size() > 1 && UClock::now() < until) icmp.pump(20);
@@ -553,7 +556,7 @@ struct UdpTestAccess {
       if (event.error == ECONNREFUSED) refused = true;
     require_udp(refused && icmp.r->flows_.size() == 1,
                 "real ICMP/ECONNREFUSED required");
-    icmp.exchange(healthy, icmp.a.get(), "healthy-after");
+    icmp.exchange(healthy, icmp.a.fd(), "healthy-after");
     std::cout << "AC06 REAL connected UDP loopback ICMP ECONNREFUSED one-flow "
                  "cleanup other flow exact bytes PASS\n";
   }
@@ -563,16 +566,16 @@ struct UdpTestAccess {
       for (int code : {EAGAIN, EMSGSIZE, ECONNREFUSED}) {
         Rig t;
         auto c = bound_udp();
-        t.request(c, t.a.get(), "seed");
+        t.request(c, t.a.fd(), "seed");
         auto token = t.token();
-        t.opt.recvmsg_call = [&](int, msghdr*, int) -> ssize_t {
+        t.opt.recvmsgCall = [&](int, msghdr*, int) -> ssize_t {
           errno = code;
           return -1;
         };
         if (listener)
-          t.r->listener_read();
+          t.r->handleListenerRead();
         else
-          t.r->backend_read(token);
+          t.r->handleBackendRead(token);
         require_udp(t.r->flows_.size() == static_cast<std::size_t>(
                                               listener || code != ECONNREFUSED),
                     "recv scoped error classification");
@@ -580,43 +583,43 @@ struct UdpTestAccess {
     }
     Rig t;
     auto c = bound_udp();
-    auto d = t.request(c, t.a.get(), "seed");
+    auto d = t.request(c, t.a.fd(), "seed");
     auto token = t.token();
-    t.opt.sendmsg_call = [](int, const msghdr*, int) -> ssize_t {
+    t.opt.sendmsgCall = [](int, const msghdr*, int) -> ssize_t {
       errno = ECONNREFUSED;
       return -1;
     };
-    put(t.a.get(), d.from, "shared-send");
+    put(t.a.fd(), d.from, "shared-send");
     t.pump();
-    require_udp(t.r->flows_.size() == 1 && !readable(c.get()),
+    require_udp(t.r->flows_.size() == 1 && !readable(c.fd()),
                 "shared send doesn't close flow");
-    t.opt.sendmsg_call = {};
-    t.opt.socket_error_call = [](int, int* e) {
+    t.opt.sendmsgCall = {};
+    t.opt.socketErrorCall = [](int, int* e) {
       *e = 0;
       return 0;
     };
-    put(t.a.get(), d.from, "zero-error-readable");
-    t.r->dispatch(token, EPOLLERR | EPOLLIN);
-    require_udp(take(c.get()).bytes == "zero-error-readable",
+    put(t.a.fd(), d.from, "zero-error-readable");
+    t.r->dispatchFlowEvent(token, EPOLLERR | EPOLLIN);
+    require_udp(take(c.fd()).bytes == "zero-error-readable",
                 "SO_ERROR zero still reads");
-    t.opt.socket_error_call = [](int, int*) {
+    t.opt.socketErrorCall = [](int, int*) {
       errno = EIO;
       return -1;
     };
-    t.r->dispatch(token, EPOLLERR | EPOLLIN);
+    t.r->dispatchFlowEvent(token, EPOLLERR | EPOLLIN);
     require_udp(t.r->flows_.empty(), "SO_ERROR read failure closes flow");
-    t.opt.socket_error_call = {};
-    t.request(c, t.b.get(), "new");
-    t.r->dispatch(t.token(), EPOLLHUP);
+    t.opt.socketErrorCall = {};
+    t.request(c, t.b.fd(), "new");
+    t.r->dispatchFlowEvent(t.token(), EPOLLHUP);
     require_udp(t.r->flows_.empty(), "HUP closes flow");
     auto clock = UClock::now();
     t.opt.now = [&] { return clock; };
     int diagnostics = 0;
     t.cb.diagnostic = [&](const std::string&, int) { ++diagnostics; };
-    for (int i = 0; i < 20; ++i) t.r->diagnostic("rate-test", ENOBUFS);
+    for (int i = 0; i < 20; ++i) t.r->reportDiagnostic("rate-test", ENOBUFS);
     require_udp(diagnostics == 1, "diagnostic burst rate limit");
     clock += 1s;
-    t.r->diagnostic("rate-test", ENOBUFS);
+    t.r->reportDiagnostic("rate-test", ENOBUFS);
     require_udp(diagnostics == 2, "diagnostic window");
     std::cout
         << "AC04/06 INJECT recv pressure/fatal scoped, shared send refusal "
@@ -631,24 +634,24 @@ struct UdpTestAccess {
       Rig t;
       auto c = bound_udp();
       int attempts = 0;
-      t.opt.recvmsg_call = [&](int, msghdr*, int) -> ssize_t {
+      t.opt.recvmsgCall = [&](int, msghdr*, int) -> ssize_t {
         ++attempts;
         errno = EINTR;
         return -1;
       };
-      t.r->listener_read();
+      t.r->handleListenerRead();
       require_udp(attempts == 64 && t.seen("listener-budget"),
                   "listener attempt budget");
-      t.opt.recvmsg_call = {};
-      auto d = t.request(c, t.a.get(), "budget");
+      t.opt.recvmsgCall = {};
+      auto d = t.request(c, t.a.fd(), "budget");
       (void)d;
       attempts = 0;
-      t.opt.recvmsg_call = [&](int, msghdr*, int) -> ssize_t {
+      t.opt.recvmsgCall = [&](int, msghdr*, int) -> ssize_t {
         ++attempts;
         errno = EINTR;
         return -1;
       };
-      t.r->backend_read(t.token());
+      t.r->handleBackendRead(t.token());
       require_udp(attempts == 64 && t.seen("backend-budget"),
                   "backend attempt budget");
     }
@@ -661,23 +664,23 @@ struct UdpTestAccess {
     {
       Rig t;
       auto c = bound_udp(), idle = bound_udp();
-      t.opt.idle_timeout = 30ms;
-      t.opt.poll_interval = 5ms;
-      t.exchange(idle, t.a.get(), "idle");
+      t.opt.idleTimeout = 30ms;
+      t.opt.pollInterval = 5ms;
+      t.exchange(idle, t.a.fd(), "idle");
       auto parent = getpid();
       auto begin = UClock::now();
       pid_t child = fork();
       require_udp(child >= 0, "load child fork");
       if (child == 0) {
         auto end = UClock::now() + 150ms;
-        auto dest = udp_address(t.listen);
+        auto dest = makeUdpSocketAddress(t.listen);
         while (UClock::now() < end)
-          sendto(c.get(), "hot", 3, 0, reinterpret_cast<sockaddr*>(&dest),
+          sendto(c.fd(), "hot", 3, 0, reinterpret_cast<sockaddr*>(&dest),
                  sizeof(dest));
         kill(parent, SIGTERM);
         _exit(0);
       }
-      int code = t.r->loop();
+      int code = t.r->runUdpEventLoop();
       int status = 0;
       require_udp(waitpid(child, &status, 0) == child && WIFEXITED(status) &&
                       WEXITSTATUS(status) == 0,

@@ -4,16 +4,16 @@
 namespace l4lb::net {
 /** 数据面事实；不携带日志文字，不依赖诊断限频或测试Observation。 */
 enum class StatKind {
-  Created,
-  Closed,
-  BytesC2b,
-  BytesB2c,
-  DatagramC2b,
-  DatagramB2c,
-  Rejected,
-  Dropped,
-  Error,
-  Timeout
+  kCreated,
+  kClosed,
+  kBytesC2b,
+  kBytesB2c,
+  kDatagramC2b,
+  kDatagramB2c,
+  kRejected,
+  kDropped,
+  kError,
+  kTimeout
 };
 
 struct StatEvent {

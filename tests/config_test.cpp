@@ -1,4 +1,4 @@
-#include "config/config.h"
+#include "config/Config.h"
 
 #include <iostream>
 #include <string>
@@ -18,7 +18,7 @@ void check(bool condition, const std::string& name) {
 
 void invalid(const std::string& text, std::size_t line, bool eof,
              const std::string& name) {
-  const auto result = l4lb::parse_config(text);
+  const auto result = l4lb::parseConfig(text);
   const auto* error = std::get_if<l4lb::ConfigError>(&result);
   check(error != nullptr && error->line == line && error->eof == eof, name);
 }
@@ -35,7 +35,7 @@ int main(int argc, char**) {
   for (const std::string protocol : {"", "protocol=tcp\n", "protocol=udp\n"}) {
     for (const std::string scheduler : {"", "scheduler=round_robin\n"}) {
       for (bool reversed : {false, true}) {
-        auto result = l4lb::parse_config(
+        auto result = l4lb::parseConfig(
             reversed ? scheduler + backend + protocol + listen
                      : listen + protocol + backend + scheduler);
         auto* parsed = std::get_if<l4lb::Config>(&result);
@@ -67,7 +67,7 @@ int main(int argc, char**) {
                         " listen \t=\t0.0.0.0:1 " + newline +
                         " backend = 192.168.1.2:65535" + newline +
                         "backend=127.0.0.1:1" + (final_newline ? newline : "");
-      const auto result = l4lb::parse_config(text);
+      const auto result = l4lb::parseConfig(text);
       const auto* config = std::get_if<l4lb::Config>(&result);
       check(config && config->listen == l4lb::Endpoint{{0, 0, 0, 0}, 1} &&
                 config->backends ==
@@ -76,9 +76,9 @@ int main(int argc, char**) {
             "换行、空白、端口边界与端点顺序");
     }
   }
-  check(std::holds_alternative<l4lb::Config>(
-            l4lb::parse_config(backend + listen)),
-        "listen 可后置");
+  check(
+      std::holds_alternative<l4lb::Config>(l4lb::parseConfig(backend + listen)),
+      "listen 可后置");
   invalid("", 1, true, "空文件");
   invalid(" # 只有注释\n", 2, true, "仅注释");
   invalid(listen, 2, true, "缺 backend");
@@ -142,7 +142,7 @@ int main(int argc, char**) {
   for (const auto& ep :
        {"223.255.255.255:1", "240.0.0.0:1", "255.255.255.254:1"}) {
     check(std::holds_alternative<l4lb::Config>(
-              l4lb::parse_config(listen + "backend=" + ep)),
+              l4lb::parseConfig(listen + "backend=" + ep)),
           "多播和广播相邻边界");
   }
   invalid("\xEF\xBB\xBF" + listen + backend, 1, false, "UTF-8 BOM");
@@ -157,7 +157,7 @@ int main(int argc, char**) {
   std::string many = listen;
   for (int i = 1; i <= 256; ++i)
     many += "backend=127.0.0.1:" + std::to_string(i) + "\n";
-  const auto result = l4lb::parse_config(many);
+  const auto result = l4lb::parseConfig(many);
   const auto* config = std::get_if<l4lb::Config>(&result);
   check(config && config->backends.size() == 256, "256 个后端");
   if (config)
@@ -166,7 +166,7 @@ int main(int argc, char**) {
   invalid(many + "backend=127.0.0.1:257", 258, false, "257 个后端");
   auto bounded = listen + backend + "#";
   bounded.resize(65536, 'x');
-  check(std::holds_alternative<l4lb::Config>(l4lb::parse_config(bounded)),
+  check(std::holds_alternative<l4lb::Config>(l4lb::parseConfig(bounded)),
         "65536 字节");
   invalid(bounded + "x", 0, false, "65537 字节");
   std::cout << "检查数=" << checks << "，失败数=" << failures << '\n';

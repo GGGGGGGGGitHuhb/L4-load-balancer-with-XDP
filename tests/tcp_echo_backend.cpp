@@ -4,7 +4,7 @@
 #include <iostream>
 #include <string_view>
 
-#include "net/fd.h"
+#include "net/Fd.h"
 
 /** 前台演示 fixture；Ctrl+C 结束，不创建后台子进程。 */
 int main(int argc, char** argv) {
@@ -28,8 +28,8 @@ int main(int argc, char** argv) {
     return 2;
   l4lb::net::Fd listener(socket(AF_INET, SOCK_STREAM | SOCK_CLOEXEC, 0));
   int yes = 1;
-  if (listener.get() < 0 || setsockopt(listener.get(), SOL_SOCKET, SO_REUSEADDR,
-                                       &yes, sizeof(yes)) < 0) {
+  if (listener.fd() < 0 || setsockopt(listener.fd(), SOL_SOCKET, SO_REUSEADDR,
+                                      &yes, sizeof(yes)) < 0) {
     std::cerr << "echo socket/setsockopt errno=" << errno << '\n';
     return 1;
   }
@@ -37,14 +37,14 @@ int main(int argc, char** argv) {
   addr.sin_family = AF_INET;
   addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
   addr.sin_port = htons(port);
-  if (bind(listener.get(), reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) <
+  if (bind(listener.fd(), reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) <
           0 ||
-      listen(listener.get(), 128) < 0) {
+      listen(listener.fd(), 128) < 0) {
     std::cerr << "echo bind/listen errno=" << errno << '\n';
     return 1;
   }
   socklen_t length = sizeof(addr);
-  if (getsockname(listener.get(), reinterpret_cast<sockaddr*>(&addr), &length) <
+  if (getsockname(listener.fd(), reinterpret_cast<sockaddr*>(&addr), &length) <
       0) {
     std::cerr << "echo getsockname errno=" << errno << '\n';
     return 1;
@@ -53,26 +53,26 @@ int main(int argc, char** argv) {
   std::cout << "echo ready 127.0.0.1:" << port << std::endl;
   for (;;) {
     l4lb::net::Fd client(
-        accept4(listener.get(), nullptr, nullptr, SOCK_CLOEXEC));
-    if (client.get() < 0) {
+        accept4(listener.fd(), nullptr, nullptr, SOCK_CLOEXEC));
+    if (client.fd() < 0) {
       if (errno == EINTR) continue;
       return 1;
     }
     char bytes[65536];
     for (;;) {
-      auto n = recv(client.get(), bytes, sizeof(bytes), 0);
+      auto n = recv(client.fd(), bytes, sizeof(bytes), 0);
       if (n < 0 && errno == EINTR) continue;
       if (n <= 0) break;
       for (ssize_t i = 0; i < n; ++i) bytes[i] ^= mask;
       ssize_t sent = 0;
       while (sent < n) {
-        auto count = send(client.get(), bytes + sent, n - sent, MSG_NOSIGNAL);
+        auto count = send(client.fd(), bytes + sent, n - sent, MSG_NOSIGNAL);
         if (count < 0 && errno == EINTR) continue;
         if (count <= 0) break;
         sent += count;
       }
       if (sent < n) break;
     }
-    shutdown(client.get(), SHUT_WR);
+    shutdown(client.fd(), SHUT_WR);
   }
 }

@@ -6,9 +6,9 @@
 #include <optional>
 #include <string>
 
-#include "config/config.h"
-#include "net/state.h"
-#include "net/statistics.h"
+#include "config/Config.h"
+#include "net/Statistics.h"
+#include "net/TcpState.h"
 
 namespace l4lb::net {
 /** 结构化生命周期输出；net 不打印日志或载荷。 */
@@ -30,25 +30,27 @@ struct Observation {
   std::size_t sessions = 0, tokens = 0;
 };
 
-struct Options {
-  std::size_t max_sessions = 1024;
-  std::chrono::milliseconds connect_timeout{5000}, idle_timeout{60000};
-  std::chrono::milliseconds drain_timeout{1000};
+struct TcpReactorOptions {
+  std::size_t maxSessions = 1024;
+  std::chrono::milliseconds connectTimeout{5000}, idleTimeout{60000};
+  std::chrono::milliseconds drainTimeout{1000};
+
   std::function<void(const Observation&)> observe;
+
   // 故障注入仅用于内部测试；缺省始终调用真实系统接口。
-  std::function<int(int, const sockaddr*, socklen_t)> connect_call;
-  std::function<int(int, int*)> socket_error_call;
-  std::function<ssize_t(int, const void*, std::size_t, int)> send_call;
-  std::function<int(int, sockaddr*, socklen_t*, int)> accept_call;
+  std::function<int(int, const sockaddr*, socklen_t)> connectCall;
+  std::function<int(int, int*)> socketErrorCall;
+  std::function<ssize_t(int, const void*, std::size_t, int)> sendCall;
+  std::function<int(int, sockaddr*, socklen_t*, int)> acceptCall;
 };
 
 /** 停止屏障只报告已在用户态的队列，不代表内核中在途数据。 */
 struct StopEvent {
   std::uint64_t pending[2]{};
-  std::int64_t deadline_ns = 0;
+  std::int64_t deadlineNs = 0;
 };
 
-struct Callbacks {
+struct TcpReactorCallbacks {
   std::function<std::optional<Endpoint>()> select_backend;
   std::function<void()> maintenance;
   std::function<void(StatEvent)> statistics;
@@ -59,6 +61,6 @@ struct Callbacks {
 };
 
 /** 单线程 LT reactor，信号退出返回 0；不可恢复错误抛 system_error。 */
-int run(const Endpoint& listen, const Callbacks& callbacks,
-        const Options& options = {});
+int runTcpReactor(const Endpoint& listen, const TcpReactorCallbacks& callbacks,
+                  const TcpReactorOptions& options = {});
 }  // namespace l4lb::net

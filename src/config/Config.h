@@ -13,8 +13,10 @@ namespace l4lb {
 struct Endpoint {
   std::array<std::uint8_t, 4> address{};
   std::uint16_t port{};
+
   bool operator==(const Endpoint&) const = default;
 };
+
 enum class Protocol { kTcp, kUdp };
 enum class MetricsKind { kOff, kStderr };
 enum class HealthCheck { kOff, kTcpConnect };
@@ -26,9 +28,10 @@ struct Config {
   std::vector<Endpoint> backends;
   Protocol protocol = Protocol::kTcp;
   MetricsKind metrics = MetricsKind::kOff;
-  HealthCheck health_check = HealthCheck::kOff;
+  HealthCheck healthCheck = HealthCheck::kOff;
   SchedulerKind scheduler = SchedulerKind::kRoundRobin;
 };
+
 enum class ErrorKind { kFile, kSyntax, kField, kMissing };
 
 /** 文件错误 line=0；缺失字段 eof=true，其余错误定位实际行。 */
@@ -40,9 +43,12 @@ struct ConfigError {
 };
 
 using ConfigResult = std::variant<Config, ConfigError>;
+
 inline constexpr std::size_t kMaxConfigBytes = 65536;
+
 /** 纯解析，无打印或 I/O；失败不返回部分配置。 */
-ConfigResult parse_config(std::string_view text);
+ConfigResult parseConfig(std::string_view text);
+
 /** 只读普通文件（允许符号链接），最多读取上限加一字节以检测增长。 */
-ConfigResult load_config(const std::string& path);
+ConfigResult loadConfig(const std::string& path);
 }  // namespace l4lb

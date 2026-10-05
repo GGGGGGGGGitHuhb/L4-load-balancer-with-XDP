@@ -7,7 +7,7 @@
 #include <stdexcept>
 #include <thread>
 
-#include "control/health_selection.h"
+#include "control/HealthSelection.h"
 using namespace l4lb;
 using namespace l4lb::health;
 using namespace std::chrono_literals;
@@ -33,40 +33,45 @@ Endpoint endpoint{{127, 0, 0, 1}, 1};
 
 void state_tests() {
   for (unsigned bits = 0; bits < 4096; ++bits) {
-    State state;
-    Status expected = Status::Unknown;
+    HealthState state;
+    HealthStatus expected = HealthStatus::kUnknown;
     unsigned good = 0, bad = 0;
     for (unsigned j = 0; j < 12; ++j) {
       bool success = bits & (1u << j);
       if (success) {
         ++good;
         bad = 0;
-        if (good >= 2) expected = Status::Healthy;
+        if (good >= 2) expected = HealthStatus::kHealthy;
       } else {
         ++bad;
         good = 0;
-        if (bad >= 3) expected = Status::Unhealthy;
+        if (bad >= 3) expected = HealthStatus::kUnhealthy;
       }
       auto before = state.status;
-      check(state.complete(success) == (before != expected),
+      check(state.applyProbeResult(success) == (before != expected),
             "state transition");
       check(state.status == expected && state.successes == std::min(good, 2u) &&
                 state.failures == std::min(bad, 3u),
             "state oracle");
     }
-    State other;
-    check(other.status == Status::Unknown && other.successes == 0,
+    HealthState other;
+    check(other.status == HealthStatus::kUnknown && other.successes == 0,
           "restart/isolation");
   }
-  auto scheduler = make_scheduler(SchedulerKind::kRoundRobin, 3);
-  check(!eligible_next(*scheduler, {false, false, false}), "all bad");
-  check(eligible_next(*scheduler, {true, false, true}) == 0, "no advancement");
-  check(eligible_next(*scheduler, {true, false, true}) == 2, "skip");
-  check(eligible_next(*scheduler, {false, true, true}) == 1, "recovery cursor");
-  check(eligible_next(*scheduler, {true, true, true}) == 2, "normal cursor");
+  auto scheduler = createBackendScheduler(SchedulerKind::kRoundRobin, 3);
+  check(!selectEligibleBackendIndex(*scheduler, {false, false, false}),
+        "all bad");
+  check(selectEligibleBackendIndex(*scheduler, {true, false, true}) == 0,
+        "no advancement");
+  check(selectEligibleBackendIndex(*scheduler, {true, false, true}) == 2,
+        "skip");
+  check(selectEligibleBackendIndex(*scheduler, {false, true, true}) == 1,
+        "recovery cursor");
+  check(selectEligibleBackendIndex(*scheduler, {true, true, true}) == 2,
+        "normal cursor");
   Config c;
   c.backends = {endpoint};
-  c.health_check = static_cast<HealthCheck>(99);
+  c.healthCheck = static_cast<HealthCheck>(99);
   bool rejected = false;
   try {
     HealthSelection invalid(c);
@@ -74,11 +79,11 @@ void state_tests() {
     rejected = true;
   }
   check(rejected, "unknown internal enum");
-  c.health_check = HealthCheck::kOff;
+  c.healthCheck = HealthCheck::kOff;
   auto count = fds();
   {
     HealthSelection off(c);
-    check(!off.enabled() && off.next() == endpoint && fds() == count,
+    check(!off.enabled() && off.selectBackend() == endpoint && fds() == count,
           "off creates no checker fd");
   }
 }
@@ -90,24 +95,24 @@ void config_tests() {
                             ? ""
                             : std::string("health_check=") + value + "\n";
     for (bool first : {false, true}) {
-      auto r = parse_config(first ? field + base : base + field);
+      auto r = parseConfig(first ? field + base : base + field);
       auto* c = std::get_if<Config>(&r);
-      check(c && c->health_check == (std::string(value) == "tcp_connect"
-                                         ? HealthCheck::kTcpConnect
-                                         : HealthCheck::kOff),
+      check(c && c->healthCheck == (std::string(value) == "tcp_connect"
+                                        ? HealthCheck::kTcpConnect
+                                        : HealthCheck::kOff),
             "config health valid/order/default");
     }
   }
   for (auto field : {"health_check=", "health_check=OFF",
                      "health_check=TCP_CONNECT", "health_check=udp",
                      "Health_check=off", "health_check=bad\nprotocol=bad"}) {
-    auto r = parse_config(std::string(field) + "\n" + base);
+    auto r = parseConfig(std::string(field) + "\n" + base);
     auto* e = std::get_if<ConfigError>(&r);
     check(e && e->line == 1, "config health first error");
   }
   for (auto second : {"off", "tcp_connect", "invalid"}) {
-    auto r = parse_config(std::string("health_check=off\nhealth_check=") +
-                          second + "\n" + base);
+    auto r = parseConfig(std::string("health_check=off\nhealth_check=") +
+                         second + "\n" + base);
     auto* e = std::get_if<ConfigError>(&r);
     check(e && e->line == 2, "config health duplicate");
   }
@@ -116,9 +121,9 @@ void config_tests() {
 void injected_tests() {
   auto count = fds();
   Clock::time_point time{};
-  Options opt;
+  TcpHealthCheckOptions opt;
   opt.now = [&] { return time; };
-  opt.connect_call = [](int fd, const sockaddr*, socklen_t) {
+  opt.connectCall = [](int fd, const sockaddr*, socklen_t) {
     check(
         (fcntl(fd, F_GETFL) & O_NONBLOCK) && (fcntl(fd, F_GETFD) & FD_CLOEXEC),
         "probe flags");
@@ -127,109 +132,111 @@ void injected_tests() {
   };
   std::uint64_t latest = 0, event = 0;
   int first_fd = -1, last_fd = -1, error_reads = 0;
-  opt.ctl_call = [&](int, int, int fd, epoll_event* e) {
+  opt.epollControlCall = [&](int, int, int fd, epoll_event* e) {
     latest = e->data.u64;
     last_fd = fd;
     if (first_fd < 0) first_fd = fd;
     return 0;
   };
-  opt.poll_call = [&](int, epoll_event* e, int) {
+  opt.epollPollCall = [&](int, epoll_event* e, int) {
     if (!event) return 0;
     e[0].data.u64 = event;
     e[1] = e[0];
     return 2;
   };
-  opt.error_call = [&](int, int* error) {
+  opt.socketErrorCall = [&](int, int* error) {
     ++error_reads;
     *error = 0;
     return 0;
   };
   {
-    Checker c({endpoint}, {}, opt);
-    c.tick();
+    TcpHealthChecker c({endpoint}, {}, opt);
+    c.pollHealthProbes();
     auto old = latest;
-    check(c.active() == 1, "pending started");
-    c.tick();
-    check(latest == old && c.active() == 1, "no overlap same tick");
+    check(c.activeProbeCount() == 1, "pending started");
+    c.pollHealthProbes();
+    check(latest == old && c.activeProbeCount() == 1, "no overlap same tick");
     time += 1000ms;
     event = old;
-    c.tick();
-    check(c.state(0).failures == 1 && error_reads == 0 && c.active() == 0,
+    c.pollHealthProbes();
+    check(c.backendState(0).failures == 1 && error_reads == 0 &&
+              c.activeProbeCount() == 0,
           "exact timeout beats late success");
-    c.tick();
-    check(c.state(0).failures == 1, "duplicate timeout no completion");
+    c.pollHealthProbes();
+    check(c.backendState(0).failures == 1, "duplicate timeout no completion");
     time += 1000ms;
-    c.tick();
+    c.pollHealthProbes();
     check(latest != old && last_fd == first_fd, "real fd reuse new token");
-    c.tick();
-    check(error_reads == 0 && c.active() == 1, "stale token ignored");
+    c.pollHealthProbes();
+    check(error_reads == 0 && c.activeProbeCount() == 1, "stale token ignored");
     event = latest;
-    c.tick();
-    check(c.state(0).successes == 1 && c.state(0).failures == 0 &&
-              error_reads == 1 && !c.active(),
+    c.pollHealthProbes();
+    check(c.backendState(0).successes == 1 && c.backendState(0).failures == 0 &&
+              error_reads == 1 && !c.activeProbeCount(),
           "duplicate event counts once");
     time += 10s;
     event = 0;
-    c.tick();
-    check(c.active() == 1, "no catchup storm");
+    c.pollHealthProbes();
+    check(c.activeProbeCount() == 1, "no catchup storm");
   }
   check(fds() == count, "cancel reclaims pending fd epoll");
   {
-    Checker many(std::vector<Endpoint>(256, endpoint), {}, opt);
+    TcpHealthChecker many(std::vector<Endpoint>(256, endpoint), {}, opt);
     event = 0;
-    many.tick();
-    check(many.active() == 256, "256 upper bound");
-    many.tick();
-    check(many.active() == 256, "256 no overlap");
+    many.pollHealthProbes();
+    check(many.activeProbeCount() == 256, "256 upper bound");
+    many.pollHealthProbes();
+    check(many.activeProbeCount() == 256, "256 no overlap");
   }
   check(fds() == count, "256 cancel cleanup");
   for (int failure : {EMFILE, ENFILE, ENOMEM}) {
-    Options resource;
+    TcpHealthCheckOptions resource;
     resource.now = [&] { return time; };
-    resource.socket_call = [=] {
+    resource.socketCall = [=] {
       errno = failure;
       return -1;
     };
     std::string reason;
     int observed = 0;
-    Checker c(
+    TcpHealthChecker c(
         {endpoint},
-        [&](const Change& e) {
+        [&](const HealthChange& e) {
           reason = e.reason;
           observed = e.error;
         },
         resource);
     for (int n = 0; n < 3; ++n) {
-      c.tick();
+      c.pollHealthProbes();
       time += 1s;
     }
-    check(c.state(0).status == Status::Unhealthy && reason == "local_error" &&
-              observed == failure,
+    check(c.backendState(0).status == HealthStatus::kUnhealthy &&
+              reason == "local_error" && observed == failure,
           "resource classification");
   }
-  opt.ctl_call = [](int, int, int, epoll_event*) {
+  opt.epollControlCall = [](int, int, int, epoll_event*) {
     errno = ENOMEM;
     return -1;
   };
   {
     std::string reason;
-    Checker c({endpoint}, [&](const Change& e) { reason = e.reason; }, opt);
+    TcpHealthChecker c(
+        {endpoint}, [&](const HealthChange& e) { reason = e.reason; }, opt);
     for (int n = 0; n < 3; ++n) {
-      c.tick();
+      c.pollHealthProbes();
       time += 1s;
-      check(!c.active(), "registration failure cleanup");
+      check(!c.activeProbeCount(), "registration failure cleanup");
     }
     check(reason == "local_error", "registration classification");
   }
-  opt.poll_call = [](int, epoll_event*, int) {
+  opt.epollPollCall = [](int, epoll_event*, int) {
     errno = EIO;
     return -1;
   };
   {
-    Checker c({endpoint}, {}, opt);
+    TcpHealthChecker c({endpoint}, {}, opt);
     bool threw = false;
     try {
-      c.tick();
+      c.pollHealthProbes();
     } catch (const std::system_error&) {
       threw = true;
     }
@@ -249,39 +256,40 @@ void real_tests() {
     sockaddr_in addr{};
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-    check(bind(listener.get(), reinterpret_cast<sockaddr*>(&addr),
+    check(bind(listener.fd(), reinterpret_cast<sockaddr*>(&addr),
                sizeof(addr)) == 0 &&
-              listen(listener.get(), 32) == 0,
+              listen(listener.fd(), 32) == 0,
           "real listen");
     socklen_t n = sizeof(addr);
-    getsockname(listener.get(), reinterpret_cast<sockaddr*>(&addr), &n);
+    getsockname(listener.fd(), reinterpret_cast<sockaddr*>(&addr), &n);
     Endpoint target{{127, 0, 0, 1}, ntohs(addr.sin_port)};
-    Options opt;
+    TcpHealthCheckOptions opt;
     opt.interval = 5ms;
     opt.timeout = 200ms;
-    Checker c({target}, {}, opt);
-    auto wait = [&](Status expected) {
+    TcpHealthChecker c({target}, {}, opt);
+    auto wait = [&](HealthStatus expected) {
       auto deadline = Clock::now() + 2s;
-      while (Clock::now() < deadline && c.state(0).status != expected) {
-        c.tick();
+      while (Clock::now() < deadline && c.backendState(0).status != expected) {
+        c.pollHealthProbes();
         std::this_thread::sleep_for(1ms);
       }
-      check(c.state(0).status == expected, "real checker expected state");
+      check(c.backendState(0).status == expected,
+            "real checker expected state");
     };
-    wait(Status::Healthy);
+    wait(HealthStatus::kHealthy);
     unsigned empty = 0;
     for (;;) {
-      net::Fd accepted(accept4(listener.get(), nullptr, nullptr,
+      net::Fd accepted(accept4(listener.fd(), nullptr, nullptr,
                                SOCK_NONBLOCK | SOCK_CLOEXEC));
-      if (accepted.get() < 0) break;
+      if (accepted.fd() < 0) break;
       char byte;
-      check(recv(accepted.get(), &byte, 1, 0) == 0, "probe sends no payload");
+      check(recv(accepted.fd(), &byte, 1, 0) == 0, "probe sends no payload");
       ++empty;
     }
     check(empty == 2, "two empty connections");
-    listener.reset();
-    wait(Status::Unhealthy);
-    check(c.state(0).failures == 3, "real refused three failures");
+    listener.closeFd();
+    wait(HealthStatus::kUnhealthy);
+    check(c.backendState(0).failures == 3, "real refused three failures");
   }
   check(fds() == count, "real checker cleanup");
   std::cout << "PASS real TCP connect/refused with no probe payload\n";

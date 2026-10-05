@@ -17,7 +17,7 @@
 #include <thread>
 #include <vector>
 
-#include "net/fd.h"
+#include "net/Fd.h"
 
 using l4lb::net::Fd;
 using namespace std::chrono_literals;
@@ -62,13 +62,13 @@ int port_of(int fd) {
 
 Fd listener(int port = 0) {
   Fd fd(socket(AF_INET, SOCK_STREAM | SOCK_CLOEXEC, 0));
-  check(fd.get() >= 0, "socket");
+  check(fd.fd() >= 0, "socket");
   int yes = 1;
-  setsockopt(fd.get(), SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes));
+  setsockopt(fd.fd(), SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes));
   auto a = addr(port);
-  check(bind(fd.get(), reinterpret_cast<sockaddr*>(&a), sizeof(a)) == 0,
+  check(bind(fd.fd(), reinterpret_cast<sockaddr*>(&a), sizeof(a)) == 0,
         "bind fixture");
-  check(listen(fd.get(), 128) == 0, "listen fixture");
+  check(listen(fd.fd(), 128) == 0, "listen fixture");
   return fd;
 }
 
@@ -80,10 +80,10 @@ void timeout(int fd) {
 
 Fd client(int port) {
   Fd fd(socket(AF_INET, SOCK_STREAM | SOCK_CLOEXEC, 0));
-  check(fd.get() >= 0, "client socket");
-  timeout(fd.get());
+  check(fd.fd() >= 0, "client socket");
+  timeout(fd.fd());
   auto a = addr(port);
-  check(connect(fd.get(), reinterpret_cast<sockaddr*>(&a), sizeof(a)) == 0,
+  check(connect(fd.fd(), reinterpret_cast<sockaddr*>(&a), sizeof(a)) == 0,
         "client connect");
   return fd;
 }
@@ -202,7 +202,7 @@ struct Backend {
 
   explicit Backend(std::string mode = "echo", char label = 'A') {
     auto server = listener();
-    port = port_of(server.get());
+    port = port_of(server.fd());
     int channel[2];
     check(pipe2(channel, O_CLOEXEC | O_NONBLOCK) == 0,
           "backend completion pipe");
@@ -211,14 +211,14 @@ struct Backend {
     auto pid = fork();
     check(pid >= 0, "backend fork");
     if (!pid) {
-      completion.reset();
+      completion.closeFd();
       for (;;) {
-        int fd = accept4(server.get(), nullptr, nullptr, SOCK_CLOEXEC);
+        int fd = accept4(server.fd(), nullptr, nullptr, SOCK_CLOEXEC);
         if (fd < 0) {
           if (errno == EINTR) continue;
           _exit(3);
         }
-        std::thread([fd, mode, label, status_fd = completion_writer.get()] {
+        std::thread([fd, mode, label, status_fd = completion_writer.fd()] {
           // 反向 FIN 用例的最后数据只被后端消费，没有响应可以代替该断言。
           // 完成消息必须在检查全部字节成功后发送，父级显式等待。
           auto publish = [status_fd](const std::string& status) {
@@ -285,7 +285,7 @@ struct Backend {
     until(
         [&] {
           char bytes[256];
-          auto n = read(completion.get(), bytes, sizeof(bytes));
+          auto n = read(completion.fd(), bytes, sizeof(bytes));
           if (n > 0)
             status.append(bytes, n);
           else if (n == 0) {
@@ -322,7 +322,7 @@ struct Service {
         port = fixed_port;
       else {
         auto reservation = listener();
-        port = port_of(reservation.get());
+        port = port_of(reservation.fd());
       }
       std::ofstream cfg(config);
       cfg << "listen=127.0.0.1:" << port << '\n';
@@ -371,19 +371,19 @@ std::string roundtrip(int port, const std::string& payload,
   std::exception_ptr error;
   std::thread writer([&] {
     try {
-      send_all(fd.get(), payload);
-      check(shutdown(fd.get(), SHUT_WR) == 0, "client shutdown");
+      send_all(fd.fd(), payload);
+      check(shutdown(fd.fd(), SHUT_WR) == 0, "client shutdown");
     } catch (...) {
       error = std::current_exception();
-      shutdown(fd.get(), SHUT_RDWR);
+      shutdown(fd.fd(), SHUT_RDWR);
     }
   });
   std::string reply;
   try {
     if (slow.count()) std::this_thread::sleep_for(slow);
-    reply = receive(fd.get());
+    reply = receive(fd.fd());
   } catch (...) {
-    shutdown(fd.get(), SHUT_RDWR);
+    shutdown(fd.fd(), SHUT_RDWR);
     writer.join();
     throw;
   }
@@ -430,15 +430,15 @@ void cli_cases() {
             "ready contract");
       if (active) {
         connection = client(proxy.port);
-        send_all(connection.get(), "live");
-        check(exact(connection.get(), 4) == "live", "active exchange");
+        send_all(connection.fd(), "live");
+        check(exact(connection.fd(), 4) == "live", "active exchange");
       }
       proxy.stop(sig);
       check(read_file(proxy.err).find("TCP 服务已停止") != std::string::npos,
             "stop summary");
     }
   auto occupied = listener();
-  Service fail({backend.port}, "product", port_of(occupied.get()), false);
+  Service fail({backend.port}, "product", port_of(occupied.fd()), false);
   check(fail.child.finish() == 1 && read_file(fail.out).empty() &&
             read_file(fail.err).find("bind") != std::string::npos,
         "occupied startup");
@@ -470,16 +470,16 @@ void data_and_rr() {
   Backend a("label", 'A'), b("label", 'B'), c("label", 'C');
   Service proxy({a.port, b.port, c.port}, "observe");
   auto long_client = client(proxy.port);
-  check(exact(long_client.get(), 1) == "A", "long initial A");
+  check(exact(long_client.fd(), 1) == "A", "long initial A");
   auto payload = binary(100003);
   for (char expected : std::string("BCABC"))
     check(roundtrip(proxy.port, payload) == std::string(1, expected) + payload,
           "ABCABC exact");
-  send_all(long_client.get(), "still-A");
-  check(exact(long_client.get(), 7) == "still-A", "long binding");
-  shutdown(long_client.get(), SHUT_WR);
-  check(receive(long_client.get()).empty(), "long EOF");
-  long_client.reset();
+  send_all(long_client.fd(), "still-A");
+  check(exact(long_client.fd(), 7) == "still-A", "long binding");
+  shutdown(long_client.fd(), SHUT_WR);
+  check(receive(long_client.fd()).empty(), "long EOF");
+  long_client.closeFd();
   std::vector<std::thread> clients;
   std::vector<std::exception_ptr> errors(12);
   for (int i = 0; i < 12; ++i)
@@ -511,12 +511,12 @@ void data_and_rr() {
 void failures_and_timeouts() {
   Backend backend;
   auto unused = listener();
-  int refused = port_of(unused.get());
-  unused.reset();
+  int refused = port_of(unused.fd());
+  unused.closeFd();
   Service proxy({refused, backend.port}, "observe");
   auto bad = client(proxy.port);
   char c;
-  auto n = recv(bad.get(), &c, 1, 0);
+  auto n = recv(bad.fd(), &c, 1, 0);
   check(n <= 0, "refused closed");
   check(roundtrip(proxy.port, "survivor") == "survivor", "failure advances RR");
   proxy.drained();
@@ -527,8 +527,8 @@ void failures_and_timeouts() {
   proxy.stop();
   Service connecting({backend.port}, "connect-timeout");
   auto pending = client(connecting.port);
-  send_all(pending.get(), "unread");
-  shutdown(pending.get(), SHUT_WR);
+  send_all(pending.fd(), "unread");
+  shutdown(pending.fd(), SHUT_WR);
   until(
       [&] {
         return read_file(connecting.trace).find("connect-timeout 110") !=
@@ -538,9 +538,9 @@ void failures_and_timeouts() {
   connecting.stop();
   Service idle({backend.port}, "idle");
   auto idle_client = client(idle.port);
-  send_all(idle_client.get(), "ping");
-  check(exact(idle_client.get(), 4) == "ping", "idle establish");
-  check(receive(idle_client.get()).empty(), "idle closes");
+  send_all(idle_client.fd(), "ping");
+  check(exact(idle_client.fd(), 4) == "ping", "idle establish");
+  check(receive(idle_client.fd()).empty(), "idle closes");
   // Peer EOF can arrive before the service writes its close observation.
   until(
       [&] {
@@ -614,7 +614,7 @@ void backpressure() {
     std::exception_ptr writer_error;
     std::thread writer([&] {
       try {
-        send_all(busy.get(), binary(16 * 1024 * 1024));
+        send_all(busy.fd(), binary(16 * 1024 * 1024));
       } catch (...) {
         writer_error = std::current_exception();
       }
@@ -628,7 +628,7 @@ void backpressure() {
           "busy pause before signal");
       stopping.stop(SIGINT);
     } catch (...) {
-      shutdown(busy.get(), SHUT_RDWR);
+      shutdown(busy.fd(), SHUT_RDWR);
       writer.join();
       throw;
     }
@@ -659,10 +659,10 @@ void half_close() {
   Backend reverse("reverse-fin");
   Service reverse_proxy({reverse.port}, "observe");
   auto fd = client(reverse_proxy.port);
-  check(receive(fd.get()) == std::string("reply\0tail", 10),
+  check(receive(fd.fd()) == std::string("reply\0tail", 10),
         "backend first EOF");
-  send_all(fd.get(), std::string("after-eof\0data", 14));
-  shutdown(fd.get(), SHUT_WR);
+  send_all(fd.fd(), std::string("after-eof\0data", 14));
+  shutdown(fd.fd(), SHUT_WR);
   reverse.verify_reverse_fin();
   evidence(
       "AC-06 reverse-fin: parent verified backend exact 14 bytes after EOF");
@@ -672,7 +672,7 @@ void half_close() {
   Service reset_proxy({reset.port}, "observe");
   auto reset_client = client(reset_proxy.port);
   char c;
-  recv(reset_client.get(), &c, 1, 0);
+  recv(reset_client.fd(), &c, 1, 0);
   reset_proxy.drained();
   auto reset_trace = read_file(reset_proxy.trace);
   check(reset_trace.find("ended") != std::string::npos &&
@@ -683,7 +683,7 @@ void half_close() {
   Service closing({echo.port}, "observe");
   for (int i = 0; i < 20; ++i) {
     auto early = client(closing.port);
-    early.reset();
+    early.closeFd();
   }
   closing.drained();
   check(roundtrip(closing.port, "alive") == "alive",
@@ -698,12 +698,12 @@ void resources() {
   Backend a("label", 'A'), b("label", 'B');
   Service capped({a.port, b.port}, "capacity");
   auto first = client(capped.port);
-  check(exact(first.get(), 1) == "A", "capacity first A");
+  check(exact(first.fd(), 1) == "A", "capacity first A");
   auto rejected = client(capped.port);
-  check(receive(rejected.get()).empty(), "capacity reject closes");
-  shutdown(first.get(), SHUT_WR);
-  receive(first.get());
-  first.reset();
+  check(receive(rejected.fd()).empty(), "capacity reject closes");
+  shutdown(first.fd(), SHUT_WR);
+  receive(first.fd());
+  first.closeFd();
   capped.drained();
   check(roundtrip(capped.port, "next") == "Bnext",
         "capacity does not consume cursor");
