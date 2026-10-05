@@ -9,7 +9,7 @@ class Fd {
  public:
   explicit Fd(int fd = -1) : fd_(fd) {}
 
-  ~Fd() { reset(); }
+  ~Fd() { closeFd(); }
 
   Fd(const Fd&) = delete;
   Fd& operator=(const Fd&) = delete;
@@ -18,15 +18,15 @@ class Fd {
 
   Fd& operator=(Fd&& other) noexcept {
     if (this != &other) {
-      reset();
+      closeFd();
       fd_ = std::exchange(other.fd_, -1);
     }
     return *this;
   }
 
-  int get() const { return fd_; }
+  int fd() const { return fd_; }
 
-  void reset() {
+  void closeFd() {
     if (fd_ >= 0) ::close(std::exchange(fd_, -1));
   }
 

@@ -17,6 +17,12 @@
 - 用户可见文档使用中文，命令、路径和代码标识符保留原文。
 - 默认测试不依赖 root 权限、真实网卡或 XDP native mode。
 
+## 编码规范重构当前状态
+
+2026-10-05：R1 用户态命名、28个生产文件路径迁移及排版基线已完成（`Completed`）；Approved O1/D1/RV1及附件范围不变，Builder004完整自测、独立Reviewer001 PASS、Leader005收尾齐备。四配置完整回归各150/150、六构建及当前产品smoke通过；没有新增技术债或阻塞。R1工作树尚未暂存、提交或发布。
+
+R2事件回调、R3 XDP用户态规范、R4综合回归与当前文档收尾均未启动，保留串行顺序，每阶段分别设计和批准。本次仅同步R1当前状态，不以R1接受代表重构整体完成。详细治理记录仅本地：`docs/leader/designs/refactor/outline.md`、`docs/leader/reports/refactor/R1-report-005.md`。
+
 ## 范围边界
 
 长期范围：

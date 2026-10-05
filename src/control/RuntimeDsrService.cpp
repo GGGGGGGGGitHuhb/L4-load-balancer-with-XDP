@@ -16,7 +16,7 @@
 
 #include "RuntimeDsrConfig.h"
 #include "health/UdpProbeChecker.h"
-#include "net/fd.h"
+#include "net/Fd.h"
 
 namespace l4lb::control {
 namespace {
@@ -203,7 +203,7 @@ int runRuntimeDsr(xdp::Attachment& attachment, const std::string& object,
       std::make_unique<health::UdpProbeChecker>(probeTargets(configuration));
   auto applied = makeSnapshot(configuration, *checker, 1);
   net::Fd signalFd(signalfd(-1, &signals, SFD_NONBLOCK | SFD_CLOEXEC));
-  if (signalFd.get() < 0) throw std::runtime_error("无法创建 runtime signalfd");
+  if (signalFd.fd() < 0) throw std::runtime_error("无法创建 runtime signalfd");
   RuntimeOutput output;
   attachment.load(object, xdp::Profile::kUdpRuntimeV3, {}, {}, &applied);
   attachment.attach(xdp::interface_index(ingress), mode);
@@ -216,7 +216,7 @@ int runRuntimeDsr(xdp::Attachment& attachment, const std::string& object,
     SignalState signalState;
     auto nextPublish = Clock::now() + 1s;
     while (!signalState.stop) {
-      readSignals(signalFd.get(), signalState);
+      readSignals(signalFd.fd(), signalState);
       if (signalState.stop) break;
       const auto now = Clock::now();
       for (const auto& transition : checker->tick(now)) {
@@ -225,7 +225,7 @@ int runRuntimeDsr(xdp::Attachment& attachment, const std::string& object,
                       " to=" + health::probeStateName(transition.to) +
                       " reason=" + transition.reason);
       }
-      readSignals(signalFd.get(), signalState);
+      readSignals(signalFd.fd(), signalState);
       if (signalState.stop) break;
       if (signalState.reload && now >= nextPublish) {
         signalState.reload = false;
@@ -242,7 +242,7 @@ int runRuntimeDsr(xdp::Attachment& attachment, const std::string& object,
                 probeTargets(candidate), checker->snapshots());
             auto snapshot = makeSnapshot(candidate, *candidateChecker,
                                          nextGeneration(applied));
-            readSignals(signalFd.get(), signalState);
+            readSignals(signalFd.fd(), signalState);
             if (signalState.stop) break;
             nextPublish = Clock::now() + 1s;
             publishAttempted = true;
@@ -278,7 +278,7 @@ int runRuntimeDsr(xdp::Attachment& attachment, const std::string& object,
         auto snapshot =
             makeSnapshot(configuration, *checker, nextGeneration(applied));
         if (!sameActiveTargets(snapshot, applied)) {
-          readSignals(signalFd.get(), signalState);
+          readSignals(signalFd.fd(), signalState);
           if (signalState.stop) break;
           nextPublish = Clock::now() + 1s;
           bool committed = false;
@@ -303,7 +303,7 @@ int runRuntimeDsr(xdp::Attachment& attachment, const std::string& object,
       }
       output.flush();
       pollfd descriptors[2]{
-          {signalFd.get(), POLLIN, 0},
+          {signalFd.fd(), POLLIN, 0},
           {STDOUT_FILENO, static_cast<short>(output.pending() ? POLLOUT : 0),
            0}};
       if (poll(descriptors, 2, 20) < 0 && errno != EINTR)

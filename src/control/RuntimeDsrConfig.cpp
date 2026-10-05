@@ -14,7 +14,7 @@
 
 #include "DsrConfigSync.h"
 #include "XdpConfigSync.h"
-#include "net/fd.h"
+#include "net/Fd.h"
 
 namespace l4lb::control {
 namespace {
@@ -115,20 +115,20 @@ std::vector<RuntimeTargetText> parseRuntimeConfigText(std::string_view text) {
 std::string readRuntimeConfigFile(const std::string& path) {
   net::Fd file(
       open(path.c_str(), O_RDONLY | O_CLOEXEC | O_NONBLOCK | O_NOFOLLOW));
-  if (file.get() < 0)
+  if (file.fd() < 0)
     throw std::invalid_argument("无法打开 runtime 配置：" +
                                 std::string(std::strerror(errno)));
 
   struct stat before {
   }, after{};
 
-  if (fstat(file.get(), &before) || !S_ISREG(before.st_mode) ||
+  if (fstat(file.fd(), &before) || !S_ISREG(before.st_mode) ||
       before.st_size < 0 || before.st_size > static_cast<off_t>(kMaxFileBytes))
     throw std::invalid_argument("runtime 配置必须为不超过64KiB的普通文件");
   std::string bytes;
   char buffer[4096];
   for (;;) {
-    const auto count = read(file.get(), buffer, sizeof(buffer));
+    const auto count = read(file.fd(), buffer, sizeof(buffer));
     if (count < 0 && errno == EINTR) continue;
     if (count < 0) throw std::invalid_argument("读取 runtime 配置失败");
     if (!count) break;
@@ -136,7 +136,7 @@ std::string readRuntimeConfigFile(const std::string& path) {
     if (bytes.size() > kMaxFileBytes)
       throw std::invalid_argument("runtime 配置读取时超过64KiB");
   }
-  if (fstat(file.get(), &after) || !sameFileVersion(before, after) ||
+  if (fstat(file.fd(), &after) || !sameFileVersion(before, after) ||
       bytes.size() != static_cast<size_t>(before.st_size))
     throw std::invalid_argument("runtime 配置读取期间变化，请原子替换后重试");
   return bytes;

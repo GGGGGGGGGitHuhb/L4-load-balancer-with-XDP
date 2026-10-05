@@ -1,8 +1,8 @@
 #include <filesystem>
 #include <iostream>
 
-#include "metrics/metrics.h"
-#include "net/udp_reactor.cpp"
+#include "metrics/Metrics.h"
+#include "net/UdpReactor.cpp"
 
 namespace l4lb::net {
 namespace {
@@ -14,20 +14,20 @@ struct UdpTestAccess {
   static void received_failures() {
     // 真实接收nonce，再注入本地事务故障；不宣称自然网络异常。
     for (int mode = 0; mode < 5; ++mode) {
-      metrics::Collector counts(Protocol::kUdp, 1);
-      UdpCallbacks cb;
+      metrics::MetricsCollector counts(Protocol::kUdp, 1);
+      UdpReactorCallbacks cb;
       cb.statistics = [&](StatEvent e) {
-        check(counts.update(e), "received packet lifecycle");
+        check(counts.recordStatEvent(e), "received packet lifecycle");
       };
       cb.select_backend = [&]() -> std::optional<Endpoint> {
         if (mode == 2) throw std::runtime_error("selection-original");
         if (mode == 3) return std::nullopt;
         return Endpoint{{127, 0, 0, 1}, 1234};
       };
-      UdpOptions opt;
-      if (mode == 1) opt.setup_error = [](const char*, int) { return ENOMEM; };
+      UdpReactorOptions opt;
+      if (mode == 1) opt.setupError = [](const char*, int) { return ENOMEM; };
       if (mode == 4)
-        opt.sendmsg_call = [](int, const msghdr* msg, int) {
+        opt.sendmsgCall = [](int, const msghdr* msg, int) {
           return static_cast<ssize_t>(msg->msg_iov[0].iov_len);
         };
       bool threw = false;
@@ -35,151 +35,152 @@ struct UdpTestAccess {
         UdpReactor reactor({{127, 0, 0, 1}, 0}, cb, opt);
         sockaddr_in destination{};
         socklen_t length = sizeof(destination);
-        check(getsockname(reactor.listener_.get(),
+        check(getsockname(reactor.listenerFd_.fd(),
                           reinterpret_cast<sockaddr*>(&destination),
                           &length) == 0,
               "received test listener address");
         Fd sender(socket(AF_INET, SOCK_DGRAM | SOCK_CLOEXEC, 0));
-        check(sendto(sender.get(), "nonce", 5, 0,
+        check(sendto(sender.fd(), "nonce", 5, 0,
                      reinterpret_cast<sockaddr*>(&destination), length) == 5,
               "real nonce send");
-        if (mode == 0) reactor.epoll_.reset();
+        if (mode == 0) reactor.epollFd_.closeFd();
         try {
-          reactor.listener_read();
+          reactor.handleListenerRead();
         } catch (const std::system_error& error) {
           check(mode == 0 && error.code().value() == EBADF,
                 "original registration exception");
           threw = true;
-          counts.update({StatKind::Error});  // control统一计一次的边界。
+          counts.recordStatEvent(
+              {StatKind::kError});  // control统一计一次的边界。
         } catch (const std::runtime_error& error) {
           check(mode == 2 && std::string(error.what()) == "selection-original",
                 "original selection exception");
           threw = true;
-          counts.update({StatKind::Error});
+          counts.recordStatEvent({StatKind::kError});
         }
         check(threw == (mode == 0 || mode == 2), "expected exception path");
         if (mode == 4)
-          check(counts.snapshot().sessions_active == 1,
+          check(counts.snapshot().sessionsActive == 1,
                 "success created before cleanup");
       }
       auto s = counts.snapshot();
-      check(s.sessions_active == 0 &&
-                s.sessions_created_total == (mode == 4 ? 1u : 0u) &&
-                s.sessions_closed_total == s.sessions_created_total,
+      check(s.sessionsActive == 0 &&
+                s.sessionsCreatedTotal == (mode == 4 ? 1u : 0u) &&
+                s.sessionsClosedTotal == s.sessionsCreatedTotal,
             "received packet no phantom lifecycle");
-      check(s.errors_total == (mode <= 2 ? 1u : 0u),
+      check(s.errorsTotal == (mode <= 2 ? 1u : 0u),
             "received packet error once at proper boundary");
-      check(s.dropped_datagrams_total == (mode == 4 ? 0u : 1u),
+      check(s.droppedDatagramsTotal == (mode == 4 ? 0u : 1u),
             "received packet exactly one drop including exception");
-      check(s.rejected_total == (mode == 3 ? 1u : 0u),
+      check(s.rejectedTotal == (mode == 3 ? 1u : 0u),
             "received packet rejected classification");
-      check(s.bytes_c2b_total == (mode == 4 ? 5u : 0u) &&
-                s.datagrams_c2b_total == (mode == 4 ? 1u : 0u),
+      check(s.bytesC2bTotal == (mode == 4 ? 5u : 0u) &&
+                s.datagramsC2bTotal == (mode == 4 ? 1u : 0u),
             "received packet success control");
     }
   }
 
   static void run() {
-    metrics::Collector counts(Protocol::kUdp, 1);
-    UdpCallbacks cb;
+    metrics::MetricsCollector counts(Protocol::kUdp, 1);
+    UdpReactorCallbacks cb;
     unsigned logs = 0;
     cb.statistics = [&](StatEvent e) {
-      check(counts.update(e), "UDP model lifecycle");
+      check(counts.recordStatEvent(e), "UDP model lifecycle");
     };
     cb.select_backend = [] { return Endpoint{{127, 0, 0, 1}, 1234}; };
     cb.diagnostic = [&](const std::string&, int) { ++logs; };
-    UdpOptions opt;
+    UdpReactorOptions opt;
     auto time = UClock::time_point{};
     opt.now = [&] { return time; };
-    opt.sendmsg_call = [](int, const msghdr* msg, int) {
+    opt.sendmsgCall = [](int, const msghdr* msg, int) {
       return static_cast<ssize_t>(msg->msg_iov[0].iov_len);
     };
-    FlowKey key{{{127, 0, 0, 1}, 9999}, {127, 0, 0, 1}};
+    UdpFlowKey key{{{127, 0, 0, 1}, 9999}, {127, 0, 0, 1}};
     {
       UdpReactor reactor({{127, 0, 0, 1}, 0}, cb, opt);
-      auto token = reactor.create(key);
-      check(token != 0 && counts.snapshot().sessions_active == 1,
+      auto token = reactor.createFlow(key);
+      check(token != 0 && counts.snapshot().sessionsActive == 1,
             "UDP committed creation");
       auto& flow = *reactor.flows_.at(token);
-      reactor.send_packet(flow, 0, false);
-      reactor.send_packet(flow, 0, true);
-      check(counts.snapshot().datagrams_c2b_total == 1 &&
-                counts.snapshot().datagrams_b2c_total == 1 &&
-                counts.snapshot().bytes_c2b_total == 0,
+      reactor.sendFlowDatagram(flow, 0, false);
+      reactor.sendFlowDatagram(flow, 0, true);
+      check(counts.snapshot().datagramsC2bTotal == 1 &&
+                counts.snapshot().datagramsB2cTotal == 1 &&
+                counts.snapshot().bytesC2bTotal == 0,
             "UDP zero datagram must count");
-      reactor.send_packet(flow, 9, false);
-      reactor.send_packet(flow, 5, true);
-      check(counts.snapshot().bytes_c2b_total == 9 &&
-                counts.snapshot().bytes_b2c_total == 5,
+      reactor.sendFlowDatagram(flow, 9, false);
+      reactor.sendFlowDatagram(flow, 5, true);
+      check(counts.snapshot().bytesC2bTotal == 9 &&
+                counts.snapshot().bytesB2cTotal == 5,
             "UDP successful bytes");
-      opt.sendmsg_call = [](int, const msghdr*, int) {
+      opt.sendmsgCall = [](int, const msghdr*, int) {
         errno = EAGAIN;
         return -1;
       };
-      reactor.send_packet(flow, 9, false);
-      check(counts.snapshot().dropped_datagrams_total == 1 &&
-                counts.snapshot().errors_total == 0,
+      reactor.sendFlowDatagram(flow, 9, false);
+      check(counts.snapshot().droppedDatagramsTotal == 1 &&
+                counts.snapshot().errorsTotal == 0,
             "EAGAIN drop not error");
-      opt.sendmsg_call = [](int, const msghdr*, int) {
+      opt.sendmsgCall = [](int, const msghdr*, int) {
         errno = ENOBUFS;
         return -1;
       };
       logs = 0;
-      for (int i = 0; i < 3; ++i) reactor.send_packet(flow, 9, false);
-      check(counts.snapshot().errors_total == 3 &&
-                counts.snapshot().dropped_datagrams_total == 4 && logs <= 1,
+      for (int i = 0; i < 3; ++i) reactor.sendFlowDatagram(flow, 9, false);
+      check(counts.snapshot().errorsTotal == 3 &&
+                counts.snapshot().droppedDatagramsTotal == 4 && logs <= 1,
             "UDP errors before diagnostic rate limit");
-      opt.sendmsg_call = [](int, const msghdr*, int) { return 2; };
-      reactor.send_packet(flow, 9, true);
-      check(counts.snapshot().errors_total == 4 &&
-                counts.snapshot().dropped_datagrams_total == 5 &&
-                counts.snapshot().bytes_b2c_total == 5,
+      opt.sendmsgCall = [](int, const msghdr*, int) { return 2; };
+      reactor.sendFlowDatagram(flow, 9, true);
+      check(counts.snapshot().errorsTotal == 4 &&
+                counts.snapshot().droppedDatagramsTotal == 5 &&
+                counts.snapshot().bytesB2cTotal == 5,
             "short send no successful bytes");
       int attempts = 0;
-      opt.sendmsg_call = [&](int, const msghdr*, int) {
+      opt.sendmsgCall = [&](int, const msghdr*, int) {
         ++attempts;
         errno = EINTR;
         return -1;
       };
-      reactor.send_packet(flow, 9, false);
-      check(attempts == 4 && counts.snapshot().errors_total == 4 &&
-                counts.snapshot().dropped_datagrams_total == 6,
+      reactor.sendFlowDatagram(flow, 9, false);
+      check(attempts == 4 && counts.snapshot().errorsTotal == 4 &&
+                counts.snapshot().droppedDatagramsTotal == 6,
             "EINTR exhausted drop only");
-      opt.recvmsg_call = [](int, msghdr*, int) {
+      opt.recvmsgCall = [](int, msghdr*, int) {
         errno = ENOBUFS;
         return -1;
       };
-      for (int i = 0; i < 3; ++i) reactor.backend_read(token);
-      check(counts.snapshot().errors_total == 7 &&
-                counts.snapshot().dropped_datagrams_total == 6,
+      for (int i = 0; i < 3; ++i) reactor.handleBackendRead(token);
+      check(counts.snapshot().errorsTotal == 7 &&
+                counts.snapshot().droppedDatagramsTotal == 6,
             "recv errors no fictional drop");
-      opt.socket_error_call = [](int, int*) {
+      opt.socketErrorCall = [](int, int*) {
         errno = EIO;
         return -1;
       };
-      reactor.dispatch(token, EPOLLERR);
-      check(counts.snapshot().errors_total == 8 &&
-                counts.snapshot().sessions_closed_total == 1,
+      reactor.dispatchFlowEvent(token, EPOLLERR);
+      check(counts.snapshot().errorsTotal == 8 &&
+                counts.snapshot().sessionsClosedTotal == 1,
             "SO_ERROR failure once");
-      opt.setup_error = [](const char*, int) { return ENOMEM; };
-      check(!reactor.create(key) && counts.snapshot().errors_total == 9 &&
-                counts.snapshot().sessions_created_total == 1,
+      opt.setupError = [](const char*, int) { return ENOMEM; };
+      check(!reactor.createFlow(key) && counts.snapshot().errorsTotal == 9 &&
+                counts.snapshot().sessionsCreatedTotal == 1,
             "setup rollback no created");
-      opt.setup_error = {};
-      token = reactor.create(key);
-      time += opt.idle_timeout;
-      reactor.expire();
-      check(counts.snapshot().timeouts_total == 1 &&
-                counts.snapshot().errors_total == 9 &&
-                counts.snapshot().sessions_active == 0,
+      opt.setupError = {};
+      token = reactor.createFlow(key);
+      time += opt.idleTimeout;
+      reactor.expireIdleFlows();
+      check(counts.snapshot().timeoutsTotal == 1 &&
+                counts.snapshot().errorsTotal == 9 &&
+                counts.snapshot().sessionsActive == 0,
             "UDP idle only timeout");
-      token = reactor.create(key);
-      reactor.dispatch(token, EPOLLHUP);
-      check(counts.snapshot().errors_total == 10, "backend HUP error");
-      token = reactor.create(key);
+      token = reactor.createFlow(key);
+      reactor.dispatchFlowEvent(token, EPOLLHUP);
+      check(counts.snapshot().errorsTotal == 10, "backend HUP error");
+      token = reactor.createFlow(key);
       // 输入已取得的数据报，故障注入仍走listener_read/create的生产落点。
       int supplied = 0;
-      opt.recvmsg_call = [&](int, msghdr* msg, int) -> ssize_t {
+      opt.recvmsgCall = [&](int, msghdr* msg, int) -> ssize_t {
         if (supplied++) {
           errno = EAGAIN;
           return -1;
@@ -187,11 +188,11 @@ struct UdpTestAccess {
         msg->msg_flags = MSG_TRUNC;
         return 9;
       };
-      reactor.listener_read();
-      check(counts.snapshot().dropped_datagrams_total == 7,
+      reactor.handleListenerRead();
+      check(counts.snapshot().droppedDatagramsTotal == 7,
             "truncated acquired packet drop");
       supplied = 0;
-      opt.recvmsg_call = [&](int, msghdr* msg, int) -> ssize_t {
+      opt.recvmsgCall = [&](int, msghdr* msg, int) -> ssize_t {
         if (supplied++) {
           errno = EAGAIN;
           return -1;
@@ -199,13 +200,13 @@ struct UdpTestAccess {
         msg->msg_namelen = 0;
         return 9;
       };
-      reactor.listener_read();
-      check(counts.snapshot().dropped_datagrams_total == 8,
+      reactor.handleListenerRead();
+      check(counts.snapshot().droppedDatagramsTotal == 8,
             "invalid metadata drop");
     }
-    check(counts.snapshot().sessions_active == 0 &&
-              counts.snapshot().sessions_created_total ==
-                  counts.snapshot().sessions_closed_total,
+    check(counts.snapshot().sessionsActive == 0 &&
+              counts.snapshot().sessionsCreatedTotal ==
+                  counts.snapshot().sessionsClosedTotal,
           "UDP stop cleanup");
   }
 };

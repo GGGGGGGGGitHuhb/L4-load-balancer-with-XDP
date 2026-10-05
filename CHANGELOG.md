@@ -1,5 +1,12 @@
 # Changelog
 
+### 2026-10-05 重构 R1 完成（未发布）
+
+- 用户态28个生产文件路径、具体类型/函数/成员名称及调用者迁移完成；29个主改文件职责分组、44个受影响C++文件格式检查通过。原CLI/config/metrics/网络语义、注释、历史测试断言与共享ABI保持。
+- Builder与独立Reviewer分别完成六组构建、OFF/ON Debug与Release完整CTest各150/150（含long expiry）、无Python Production构建及当前CLI/TCP/UDP/paired短smoke；Reviewer正式PASS，Leader完成R1收尾，无新增债或阻塞。
+- R2/R3/R4尚未启动，回调机制、XDP用户态全面迁移及综合文档校正留后续阶段；未运行正式性能重测，本次不新增性能结论。R1尚未暂存、提交、推送、合并或打标签。
+- 详细批准与角色证据属于本地治理记录，公开阶段状态见[路线图](ROADMAP.md)。
+
 ### 2026-10-05 V1.2/S4与V1.2开发范围完成（未发布）
 
 - 新增独立UDP性能工具及固定六路径/控制面矩阵，Builder与Reviewer各126/126；独立ON Debug43/43，Builder ON Release43/43、OFF Release32/32，生产无Python边界通过。

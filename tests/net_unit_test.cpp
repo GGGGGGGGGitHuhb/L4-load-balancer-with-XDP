@@ -5,10 +5,10 @@
 #include <stdexcept>
 #include <type_traits>
 
-#include "core/round_robin.h"
-#include "net/fd.h"
-#include "net/reactor.h"
-#include "net/state.h"
+#include "core/RoundRobinScheduler.h"
+#include "net/Fd.h"
+#include "net/TcpReactor.h"
+#include "net/TcpState.h"
 using namespace l4lb;
 using namespace l4lb::net;
 
@@ -20,72 +20,72 @@ int main() {
   try {
     bool rejected = false;
     try {
-      RoundRobin empty(0);
+      RoundRobinScheduler empty(0);
     } catch (const std::invalid_argument&) {
       rejected = true;
     }
     check(rejected, "empty pool");
-    RoundRobin rr(3);
+    RoundRobinScheduler rr(3);
     for (int i = 0; i < 100; ++i)
-      check(rr.next() == std::size_t(i % 3), "RR order");
-    Buffer buffer;
+      check(rr.selectNextBackendIndex() == std::size_t(i % 3), "RR order");
+    TcpPendingBuffer buffer;
     for (int cycle = 0; cycle < 1000; ++cycle) {
       auto* out = buffer.writable();
-      const auto contiguous = buffer.writable_size();
+      const auto contiguous = buffer.writableBytes();
       for (std::size_t i = 0; i < contiguous; ++i) out[i] = char(i % 251);
-      buffer.append(contiguous);
+      buffer.commitWrittenBytes(contiguous);
       check(buffer.size() == kBufferLimit, "high water");
-      buffer.consume(7);  // 确定性短写消费保留原始尾部。
+      buffer.consumeReadableBytes(7);  // 确定性短写消费保留原始尾部。
       check(buffer.data()[0] == char(7), "short write tail");
       const auto left = buffer.size();
       buffer.writable();
       check(buffer.size() == left && buffer.data()[0] == char(7),
             "writable preserves unread tail");
-      buffer.consume(buffer.size());
+      buffer.consumeReadableBytes(buffer.size());
       check(buffer.room() == kBufferLimit, "reusable capacity");
     }
     rejected = false;
     try {
-      buffer.consume(1);
+      buffer.consumeReadableBytes(1);
     } catch (const std::logic_error&) {
       rejected = true;
     }
     check(rejected, "underflow");
-    Tokens tokens;
-    auto old = tokens.add(1, 0);
-    auto peer = tokens.add(1, 1);
-    tokens.erase(old);
-    tokens.erase(peer);
-    tokens.erase(old);
-    auto fresh = tokens.add(2, 0);
-    check(!tokens.find(old) && tokens.find(fresh)->session == 2 &&
-              tokens.size() == 1,
+    EndpointTokens tokens;
+    auto old = tokens.registerEndpoint(1, 0);
+    auto peer = tokens.registerEndpoint(1, 1);
+    tokens.unregisterEndpoint(old);
+    tokens.unregisterEndpoint(peer);
+    tokens.unregisterEndpoint(old);
+    auto fresh = tokens.registerEndpoint(2, 0);
+    check(!tokens.findEndpoint(old) &&
+              tokens.findEndpoint(fresh)->session == 2 && tokens.size() == 1,
           "stale batch token");
-    tokens.erase(fresh);
+    tokens.unregisterEndpoint(fresh);
     check(tokens.size() == 0, "tokens empty");
     auto start = Clock::time_point{};
-    Deadline deadline{start};
-    Options defaults;
-    check(defaults.max_sessions == 1024 &&
-              defaults.connect_timeout.count() == 5000 &&
-              defaults.idle_timeout.count() == 60000,
+    TcpIdleDeadline deadline{start};
+    TcpReactorOptions defaults;
+    check(defaults.maxSessions == 1024 &&
+              defaults.connectTimeout.count() == 5000 &&
+              defaults.idleTimeout.count() == 60000,
           "production constants");
     check(!deadline.expired(start + std::chrono::milliseconds(4999),
-                            defaults.connect_timeout),
+                            defaults.connectTimeout),
           "connect before");
     check(deadline.expired(start + std::chrono::seconds(5),
-                           defaults.connect_timeout),
+                           defaults.connectTimeout),
           "connect at");
-    deadline.progress(start + std::chrono::seconds(59), 0);
+    deadline.recordIoProgress(start + std::chrono::seconds(59), 0);
     check(deadline.expired(start + std::chrono::seconds(60),
-                           defaults.idle_timeout),
+                           defaults.idleTimeout),
           "no progress cannot refresh");
-    deadline.progress(start + std::chrono::seconds(59), 1);
+    deadline.recordIoProgress(start + std::chrono::seconds(59), 1);
     check(!deadline.expired(start + std::chrono::seconds(60),
-                            defaults.idle_timeout),
+                            defaults.idleTimeout),
           "positive refresh");
     check(deadline.expired(start + std::chrono::seconds(119),
-                           defaults.idle_timeout),
+                           defaults.idleTimeout),
           "idle at");
     static_assert(!std::is_copy_constructible_v<Fd>);
     int raw = socket(AF_INET, SOCK_STREAM, 0);
@@ -93,7 +93,7 @@ int main() {
     {
       Fd first(raw);
       Fd next(std::move(first));
-      check(first.get() == -1 && next.get() == raw, "move");
+      check(first.fd() == -1 && next.fd() == raw, "move");
       next = std::move(next);
     }
     check(fcntl(raw, F_GETFD) == -1, "owner close");

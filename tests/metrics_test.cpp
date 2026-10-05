@@ -1,4 +1,4 @@
-#include "metrics/metrics.h"
+#include "metrics/Metrics.h"
 
 #include <fcntl.h>
 #include <unistd.h>
@@ -8,13 +8,15 @@
 #include <stdexcept>
 #include <vector>
 
-#include "control/metrics_service.h"
+#include "control/MetricsService.h"
 
 namespace l4lb::metrics {
 struct TestAccess {
-  static void seed(Collector& c, Snapshot s) { c.data_ = s; }
+  static void seed(MetricsCollector& c, MetricsSnapshot s) { c.data_ = s; }
 
-  static void sequence(Output& output, std::uint64_t n) { output.seq_ = n; }
+  static void sequence(MetricsOutput& output, std::uint64_t n) {
+    output.seq_ = n;
+  }
 };
 }  // namespace l4lb::metrics
 
@@ -38,7 +40,7 @@ void config() {
       for (bool first : {true, false}) {
         auto field = std::string("metrics=") + metric +
                      "\nhealth_check=" + health + "\n";
-        auto result = parse_config(first ? field + base : base + field);
+        auto result = parseConfig(first ? field + base : base + field);
         auto* c = std::get_if<Config>(&result);
         check(c && c->metrics == (std::string(metric) == "off"
                                       ? MetricsKind::kOff
@@ -47,17 +49,17 @@ void config() {
       }
   for (auto bad : {"metrics=", "metrics=STDERR", "metrics=OFF", "Metrics=off",
                    "metrics=unknown\nhealth_check=bad"}) {
-    auto result = parse_config(std::string(bad) + "\n" + base);
+    auto result = parseConfig(std::string(bad) + "\n" + base);
     auto* e = std::get_if<ConfigError>(&result);
     check(e && e->line == 1, "config first error");
   }
   for (auto second : {"off", "stderr", "bad"}) {
-    auto result = parse_config(std::string("metrics=off\nmetrics=") + second +
-                               "\n" + base);
+    auto result = parseConfig(std::string("metrics=off\nmetrics=") + second +
+                              "\n" + base);
     auto* e = std::get_if<ConfigError>(&result);
     check(e && e->line == 2, "config duplicate");
   }
-  auto result = parse_config(base);
+  auto result = parseConfig(base);
   check(std::get<Config>(result).metrics == MetricsKind::kOff, "default off");
   Config c = std::get<Config>(result);
   std::unique_ptr<HealthSelection> selection;
@@ -74,173 +76,182 @@ void config() {
 }
 
 void model() {
-  Collector c(Protocol::kUdp, 2), other(Protocol::kTcp, 1);
+  MetricsCollector c(Protocol::kUdp, 2), other(Protocol::kTcp, 1);
   auto zero = c.snapshot();
-  check(zero.sessions_active == 0 && zero.errors_total == 0 &&
-            !zero.counter_saturated,
+  check(zero.sessionsActive == 0 && zero.errorsTotal == 0 &&
+            !zero.counterSaturated,
         "initial");
-  check(!c.update({StatKind::Closed}) && c.snapshot().sessions_active == 0,
+  check(!c.recordStatEvent({StatKind::kClosed}) &&
+            c.snapshot().sessionsActive == 0,
         "duplicate close detected");
-  check(c.update({StatKind::Created}) && c.update({StatKind::Created}),
+  check(c.recordStatEvent({StatKind::kCreated}) &&
+            c.recordStatEvent({StatKind::kCreated}),
         "created");
-  for (auto event : {net::StatEvent{StatKind::BytesC2b, 7},
-                     {StatKind::BytesC2b, 3},
-                     {StatKind::BytesB2c, 4},
-                     {StatKind::DatagramC2b},
-                     {StatKind::DatagramC2b},
-                     {StatKind::DatagramB2c},
-                     {StatKind::Rejected},
-                     {StatKind::Dropped},
-                     {StatKind::Error, 3},
-                     {StatKind::Timeout, 2}})
-    check(c.update(event), "event accepted");
+  for (auto event : {net::StatEvent{StatKind::kBytesC2b, 7},
+                     {StatKind::kBytesC2b, 3},
+                     {StatKind::kBytesB2c, 4},
+                     {StatKind::kDatagramC2b},
+                     {StatKind::kDatagramC2b},
+                     {StatKind::kDatagramB2c},
+                     {StatKind::kRejected},
+                     {StatKind::kDropped},
+                     {StatKind::kError, 3},
+                     {StatKind::kTimeout, 2}})
+    check(c.recordStatEvent(event), "event accepted");
   auto s = c.snapshot();
-  check(s.sessions_created_total == 2 && s.sessions_active == 2 &&
-            s.bytes_c2b_total == 10 && s.bytes_b2c_total == 4 &&
-            s.datagrams_c2b_total == 2 && s.datagrams_b2c_total == 1 &&
-            s.rejected_total == 1 && s.dropped_datagrams_total == 1 &&
-            s.errors_total == 3 && s.timeouts_total == 2,
+  check(s.sessionsCreatedTotal == 2 && s.sessionsActive == 2 &&
+            s.bytesC2bTotal == 10 && s.bytesB2cTotal == 4 &&
+            s.datagramsC2bTotal == 2 && s.datagramsB2cTotal == 1 &&
+            s.rejectedTotal == 1 && s.droppedDatagramsTotal == 1 &&
+            s.errorsTotal == 3 && s.timeoutsTotal == 2,
         "every counter");
-  check(c.update({StatKind::Closed}) && c.update({StatKind::Closed}), "close");
-  check(c.snapshot().sessions_closed_total == 2 &&
-            c.snapshot().sessions_active == 0 &&
-            c.snapshot().bytes_c2b_total == 10,
+  check(c.recordStatEvent({StatKind::kClosed}) &&
+            c.recordStatEvent({StatKind::kClosed}),
+        "close");
+  check(c.snapshot().sessionsClosedTotal == 2 &&
+            c.snapshot().sessionsActive == 0 &&
+            c.snapshot().bytesC2bTotal == 10,
         "close does not duplicate bytes");
-  check(other.snapshot().bytes_c2b_total == 0 &&
-            !other.update({StatKind::DatagramC2b}),
+  check(other.snapshot().bytesC2bTotal == 0 &&
+            !other.recordStatEvent({StatKind::kDatagramC2b}),
         "isolation/TCP packets zero");
   auto max = std::numeric_limits<std::uint64_t>::max();
   for (auto member :
-       {&Snapshot::sessions_created_total, &Snapshot::sessions_closed_total,
-        &Snapshot::bytes_c2b_total, &Snapshot::bytes_b2c_total,
-        &Snapshot::datagrams_c2b_total, &Snapshot::datagrams_b2c_total,
-        &Snapshot::rejected_total, &Snapshot::dropped_datagrams_total,
-        &Snapshot::errors_total, &Snapshot::timeouts_total}) {
-    Snapshot seeded = zero;
+       {&MetricsSnapshot::sessionsCreatedTotal,
+        &MetricsSnapshot::sessionsClosedTotal, &MetricsSnapshot::bytesC2bTotal,
+        &MetricsSnapshot::bytesB2cTotal, &MetricsSnapshot::datagramsC2bTotal,
+        &MetricsSnapshot::datagramsB2cTotal, &MetricsSnapshot::rejectedTotal,
+        &MetricsSnapshot::droppedDatagramsTotal, &MetricsSnapshot::errorsTotal,
+        &MetricsSnapshot::timeoutsTotal}) {
+    MetricsSnapshot seeded = zero;
     seeded.*member = max - 1;
-    seeded.sessions_active = 1;
+    seeded.sessionsActive = 1;
     TestAccess::seed(c, seeded);
-    for (auto kind : {StatKind::Created, StatKind::Closed, StatKind::BytesC2b,
-                      StatKind::BytesB2c, StatKind::DatagramC2b,
-                      StatKind::DatagramB2c, StatKind::Rejected,
-                      StatKind::Dropped, StatKind::Error, StatKind::Timeout})
-      check(c.update({kind}), "saturating event");
-    check(c.snapshot().*member == max && c.snapshot().counter_saturated,
+    for (auto kind :
+         {StatKind::kCreated, StatKind::kClosed, StatKind::kBytesC2b,
+          StatKind::kBytesB2c, StatKind::kDatagramC2b, StatKind::kDatagramB2c,
+          StatKind::kRejected, StatKind::kDropped, StatKind::kError,
+          StatKind::kTimeout})
+      check(c.recordStatEvent({kind}), "saturating event");
+    check(c.snapshot().*member == max && c.snapshot().counterSaturated,
           "exact saturation");
   }
-  Snapshot seeded = zero;
-  seeded.sessions_active = 1024;
+  MetricsSnapshot seeded = zero;
+  seeded.sessionsActive = 1024;
   TestAccess::seed(c, seeded);
-  check(!c.update({StatKind::Created}) && c.snapshot().sessions_active == 1024,
+  check(!c.recordStatEvent({StatKind::kCreated}) &&
+            c.snapshot().sessionsActive == 1024,
         "active cap invariant");
   TestAccess::seed(c, zero);
-  c.update({StatKind::BytesC2b, max});
-  c.update({StatKind::BytesC2b, max});
-  check(c.snapshot().bytes_c2b_total == max, "no wrap");
-  Collector restart(Protocol::kUdp, 1);
-  check(restart.snapshot().bytes_c2b_total == 0, "restart zero");
+  c.recordStatEvent({StatKind::kBytesC2b, max});
+  c.recordStatEvent({StatKind::kBytesC2b, max});
+  check(c.snapshot().bytesC2bTotal == max, "no wrap");
+  MetricsCollector restart(Protocol::kUdp, 1);
+  check(restart.snapshot().bytesC2bTotal == 0, "restart zero");
   s = c.snapshot();
   for (auto member :
-       {&Snapshot::sessions_created_total, &Snapshot::sessions_closed_total,
-        &Snapshot::sessions_active, &Snapshot::bytes_c2b_total,
-        &Snapshot::bytes_b2c_total, &Snapshot::datagrams_c2b_total,
-        &Snapshot::datagrams_b2c_total, &Snapshot::rejected_total,
-        &Snapshot::dropped_datagrams_total, &Snapshot::errors_total,
-        &Snapshot::timeouts_total})
+       {&MetricsSnapshot::sessionsCreatedTotal,
+        &MetricsSnapshot::sessionsClosedTotal, &MetricsSnapshot::sessionsActive,
+        &MetricsSnapshot::bytesC2bTotal, &MetricsSnapshot::bytesB2cTotal,
+        &MetricsSnapshot::datagramsC2bTotal,
+        &MetricsSnapshot::datagramsB2cTotal, &MetricsSnapshot::rejectedTotal,
+        &MetricsSnapshot::droppedDatagramsTotal, &MetricsSnapshot::errorsTotal,
+        &MetricsSnapshot::timeoutsTotal})
     s.*member = max;
-  s.backend_count = 256;
+  s.backendCount = 256;
   s.seq = max;
-  s.uptime_ms = max;
-  for (auto& b : s.backends) b = {Health::Unhealthy, false};
-  auto line = format(s, "periodic");
+  s.uptimeMs = max;
+  for (auto& b : s.backends) b = {BackendHealth::kUnhealthy, false};
+  auto line = formatMetricsSnapshot(s, "periodic");
   check(line.size() <= 32768 && line.ends_with("}\n"), "maximum line");
   std::cout << "max-line-bytes=" << line.size() << '\n';
 }
 
 void output() {
-  Collector c(Protocol::kTcp, 1);
+  MetricsCollector c(Protocol::kTcp, 1);
   Clock::time_point time{};
   std::vector<std::string> lines;
-  OutputOptions opt;
+  MetricsOutputOptions opt;
   opt.now = [&] { return time; };
   opt.writer = [&](std::string_view line) {
     lines.emplace_back(line);
     return std::ptrdiff_t(line.size());
   };
-  auto backend = [](std::span<Backend> values) {
-    values[0] = {Health::Unknown, false};
+  auto backend = [](std::span<BackendHealthSnapshot> values) {
+    values[0] = {BackendHealth::kUnknown, false};
   };
-  Output out(c, backend, opt);
-  out.maintenance();
+  MetricsOutput out(c, backend, opt);
+  out.emitPeriodicSnapshotIfDue();
   check(lines.empty(), "no periodic before ready");
-  out.ready();
-  out.ready();
+  out.emitReadySnapshot();
+  out.emitReadySnapshot();
   check(lines.size() == 1 &&
             lines[0].find("\"phase\":\"ready\"") != std::string::npos,
         "ready exactly once");
   time += 999ms;
-  out.maintenance();
+  out.emitPeriodicSnapshotIfDue();
   check(lines.size() == 1, "before deadline");
   time += 1ms;
-  out.maintenance();
+  out.emitPeriodicSnapshotIfDue();
   check(lines.size() == 2, "exact deadline");
-  out.maintenance();
+  out.emitPeriodicSnapshotIfDue();
   check(lines.size() == 2, "same clock idempotent");
   time += 30s;
-  out.maintenance();
+  out.emitPeriodicSnapshotIfDue();
   check(lines.size() == 3, "no catchup");
   TestAccess::sequence(out, std::numeric_limits<std::uint64_t>::max() - 1);
   time += 1s;
-  out.maintenance();
+  out.emitPeriodicSnapshotIfDue();
   check(lines.back().find("\"counter_saturated\":true") != std::string::npos,
         "seq saturation");
-  out.finish(false);
-  out.finish(true);
-  out.maintenance();
+  out.emitFinalSnapshot(false);
+  out.emitFinalSnapshot(true);
+  out.emitPeriodicSnapshotIfDue();
   check(lines.size() == 5 &&
             lines.back().find("\"phase\":\"final\"") != std::string::npos,
         "one final");
   for (int mode = 0; mode < 3; ++mode) {
     int attempts = 0;
-    OutputOptions failure = opt;
+    MetricsOutputOptions failure = opt;
     failure.writer = [&](std::string_view line) {
       ++attempts;
       return mode == 0 ? -1 : std::ptrdiff_t(line.size() - 1);
     };
     if (mode == 2)
-      failure.formatter = [](const Snapshot&, std::string_view) -> std::string {
+      failure.formatter = [](const MetricsSnapshot&,
+                             std::string_view) -> std::string {
         throw std::bad_alloc();
       };
-    Output failing(c, backend, failure);
-    failing.ready();
-    failing.maintenance();
-    failing.finish(true);
+    MetricsOutput failing(c, backend, failure);
+    failing.emitReadySnapshot();
+    failing.emitPeriodicSnapshotIfDue();
+    failing.emitFinalSnapshot(true);
     check(!failing.enabled() && attempts == (mode == 2 ? 0 : 1),
           "failure disables no retries");
   }
   int fd = open("/dev/full", O_WRONLY | O_CLOEXEC);
   check(fd >= 0, "dev full opened");
   int attempts = 0;
-  OutputOptions full = opt;
+  MetricsOutputOptions full = opt;
   full.writer = [&](std::string_view line) {
     ++attempts;
     return write(fd, line.data(), line.size());
   };
-  Output failing(c, backend, full);
-  failing.ready();
-  failing.finish(true);
+  MetricsOutput failing(c, backend, full);
+  failing.emitReadySnapshot();
+  failing.emitFinalSnapshot(true);
   close(fd);
   check(!failing.enabled() && attempts == 1, "real dev full disables");
-  OutputOptions exception = opt;
+  MetricsOutputOptions exception = opt;
   exception.writer = [](std::string_view) -> std::ptrdiff_t {
     throw std::runtime_error("sink");
   };
-  Output error(c, backend, exception);
+  MetricsOutput error(c, backend, exception);
   bool original = false;
   try {
     throw std::runtime_error("service");
   } catch (...) {
-    error.finish(true);
+    error.emitFinalSnapshot(true);
     try {
       throw;
     } catch (const std::runtime_error& e) {
