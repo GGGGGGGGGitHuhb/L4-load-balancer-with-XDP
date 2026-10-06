@@ -1,5 +1,7 @@
 # 项目技术概览
 
+2026-10-06 当前：R1..R4编码规范重构开发范围4/4 Completed，独立Reviewer PASS及Leader收尾完成；技术职责与下述当前实现保持。R4未提交/推送/tag；旧测试夹具释放端口后复用的可靠性限制保留，当前有效输入接受不等于长期修复或性能/NIC/offload认证。
+
 本文角色报告/设计路径为本地治理记录（或未来计划位置），不随普通clone分发；公开复核使用README和规格/运行手册。
 
 本项目是一个面向高性能网络方向的四层负载均衡器。系统以 C++20 用户态实现为基础，使用 Linux socket 与 `epoll` 构建 TCP/UDP 转发能力；在用户态语义稳定后，引入 XDP/eBPF fast path 作为可选数据面，用于探索 Linux 网络栈中的高性能包处理。
@@ -10,8 +12,8 @@
 - 构建系统：CMake + Ninja
 - 编译器：LLVM/Clang++
 - 用户态网络能力：Linux socket、non-blocking I/O、`epoll`
-- 后续 XDP/eBPF 能力：受限 C、Clang BPF target、eBPF maps、libbpf 或等价加载接口
-- 测试方式：CTest、独立 C++ 检查程序、CMake CLI 集成脚本和 Python3 标准库真实产品fixture；生产关闭BUILD_TESTING不依赖Python。当前31项，快速30项，历史章节数字只描述当时版本。
+- 当前可选 XDP/eBPF：受限 C、Clang BPF target、eBPF maps 和 libbpf，独立 `l4lb-xdp`
+- 测试方式：CTest、独立 C++ 检查程序、CMake CLI 集成脚本和 Python3 标准库真实产品fixture；生产关闭BUILD_TESTING不依赖Python。当前默认 OFF 33 项、ON 44 项，Debug/Release 四配置完整合计154项，历史章节数字只描述当时版本。
 
 依赖原则：
 
@@ -67,7 +69,7 @@
 
 ### 用户态数据面层
 
-用户态数据面层负责实际 TCP/UDP 转发。它是项目的基础数据路径，即使后续引入 XDP/eBPF，也必须保持可独立运行。
+用户态数据面层负责实际 TCP/UDP 转发。它是项目的基础数据路径，启用可选 XDP/eBPF 时，也必须保持可独立运行。
 
 职责：
 
@@ -86,12 +88,12 @@
 
 ### XDP/eBPF 数据面层
 
-XDP/eBPF 数据面层是后续用于包级 fast path 的可选数据路径。它适合处理可在包级表达的 L3/L4 逻辑，例如解析包头、查询 eBPF map、更新统计、执行简单转发或重定向。
+XDP/eBPF 数据面层是当前独立可选的包级数据路径。它适合处理可在包级表达的 L3/L4 逻辑，例如解析包头、查询 eBPF map、更新统计、执行简单转发或重定向。
 
 职责：
 
-- 在 XDP hook 中解析 Ethernet、IP、TCP 和 UDP 头部。
-- 根据 eBPF maps 查询后端、会话或统计信息。
+- pass profile 返回 XDP_PASS；maps profile 记录统计；静态/运行期 DSR 仅解析受限 Ethernet/IPv4/UDP。
+- 根据固定 schema maps 查询 VIP、后端或单包持有的 runtime inner snapshot，并更新统计；没有 TCP 会话 map。
 - 在 verifier 允许的范围内执行包头改写、转发或重定向。
 - 将复杂策略留给用户态控制面。
 
@@ -204,7 +206,7 @@ XDP/eBPF 数据面层是后续用于包级 fast path 的可选数据路径。它
 
 - 协调配置、健康检查、调度策略、数据面和运行状态。
 - 管理服务生命周期。
-- 为不同数据面提供统一控制入口。
+- 分别装配用户态 TCP/UDP 服务和独立 XDP 加载/运行期控制；两个产品入口不合并。
 
 不应承担：
 
@@ -267,7 +269,7 @@ XDP/eBPF 数据面层是后续用于包级 fast path 的可选数据路径。它
 
 重要输入与输出：
 
-- 输入：控制面下发的后端表、会话表或策略表。
+- 输入：控制面同步的固定后端槽、VIP、不可变 runtime snapshot 和统计 maps。
 - 输出：包处理结果、统计计数、错误状态。
 
 ### `tests/`
@@ -330,15 +332,15 @@ XDP fast path 只处理适合包级表达的逻辑。典型流程：
 
 1. 包进入网卡驱动附近的 XDP hook。
 2. eBPF 程序解析 L2/L3/L4 头部并进行边界检查。
-3. 程序查询 eBPF maps，获取后端、会话或策略信息。
+3. 程序按 profile 查询固定 map 或单包持有的 runtime snapshot；没有用户态会话表。
 4. 程序在允许范围内执行统计更新、包头改写或重定向。
-5. 无法处理或需要复杂控制面决策的流量回退到内核网络栈或用户态路径。
+5. 不适用包按各 profile 的既有 PASS/DROP 规则处理；PASS 进入正常内核栈，不保证进入 l4lb，不存在自动用户态 fallback。
 
 控制面负责维护 eBPF maps。XDP 程序不得反向依赖用户态对象或复杂配置结构。
 
 ## 依赖方向
 
-当前control装配core/net/health/metrics；以下涉及control到xdp的依赖仍为后续约束；当前XDP对象及加载器独立构建，不链接到原l4lb。
+当前 control 装配 core/net/health/metrics；XDP 配置同步与 RuntimeDsrService 调用 xdp store/attachment。XDP 加载器独立构建，不链接到原 l4lb。
 
 允许的依赖方向：
 
@@ -360,24 +362,14 @@ XDP fast path 只处理适合包级表达的逻辑。典型流程：
 
 持久化和输出边界：
 
-- 只有配置模块可以读取配置文件。
+- Config 读取普通用户态配置；RuntimeDsrConfig 为独立 runtime 产品读取并校验其配置，两条有界只读路径各自负责格式。
 - 只有用户入口层负责用户可见启动错误。
 - control输出生命周期/健康/业务诊断，metrics模块格式化schema=1快照，CLI呈现顶层错误；没有独立公共日志框架。
 - 任何外部系统调用应封装在边界模块中，避免散落在核心逻辑里。
 
 ## 数据模型与持久化
 
-核心数据对象包括：
-
-- `Listener`：监听地址、协议类型和绑定参数。
-- `Backend`：后端地址、权重、健康状态和统计信息。
-- `BackendPool`：一组可被同一监听器使用的后端。
-- `Scheduler`：根据策略从后端池中选择目标后端。
-- `Connection`：TCP 前端或后端连接的运行时对象。
-- `Session`：一组前后端连接或 UDP flow 映射。
-- `FlowKey`：用于标识 UDP 或包级会话的地址、端口和协议组合。
-- `MetricsSnapshot`：某一时刻的运行指标快照。
-
+当前实体为 `Config`/`Endpoint`、`BackendScheduler`/`RoundRobinScheduler`、TcpReactor 内部 `Session`/`EndpointState`、`TcpPendingBuffer` 与 core 的 `UdpFlowKey`/`UdpIdleDeadline`，UdpReactor 内部 `UdpFlow`、健康快照及 `Metrics`。不存在另一个通用 Listener/BackendPool 持久模型。XDP v1/v2/v3 使用独立共享 C ABI，不采用 C++ 对象布局。
 持久化原则：
 
 - 当前主要运行状态保存在内存中。
@@ -396,13 +388,13 @@ XDP fast path 只处理适合包级表达的逻辑。典型流程：
 
 ### 命令行接口
 
-命令行接口是项目的主要用户入口。它负责启动服务、指定配置文件、打印版本信息和输出启动失败原因。
+命令行接口是项目的主要用户入口。用户态 CLI 提供 help/check-config/run，独立 XDP CLI 提供 profile/object/interface/mode 与相应配置参数；不承诺不存在的版本打印接口。
 
 输入：
 
 - 命令行参数。
 - 配置文件路径。
-- 必要的环境变量。
+- 显式 CLI 参数；用户态配置不读环境覆盖。
 
 输出：
 
@@ -443,7 +435,7 @@ XDP fast path 只处理适合包级表达的逻辑。典型流程：
 
 原则：
 
-- 配置读取只在config模块启动加载时发生；当前无reload。
+- 普通用户态配置只在启动由 Config 读取；独立 udp-runtime 由 RuntimeDsrConfig 启动读取，并在 SIGHUP 准备候选配置后原子发布，失败边界见下文。
 - 自动生成文件必须进入明确的构建、日志或报告目录。
 - 不得自动覆盖手写设计文档、报告和源码。
 
@@ -454,7 +446,7 @@ XDP/eBPF 集成通过用户态加载器和 eBPF maps 完成。
 输入：
 
 - 编译后的 eBPF object。
-- 控制面下发的后端、会话或统计 map 数据。
+- 控制面下发的固定后端槽、VIP、runtime snapshot 或统计 map 数据。
 - 网络设备名和 attach mode。
 
 输出：
@@ -606,6 +598,28 @@ XDP/eBPF 状态：
 - 架构变更落地后必须更新 `ARCHITECTURE.md`。
 - 如果变更带来暂时无法解决的问题，应同步记录到 `TECH-DEBT-TRACKER.md`。
 - 如果变更影响用户可见行为或命令，应同步更新 `README.md` 和 `CHANGELOG.md`。
+
+<a id="current-source-index"></a>
+## 当前源码索引与同步生命周期
+
+- 配置：[Config.h](src/config/Config.h)、[Config.cpp](src/config/Config.cpp)；调度：[BackendScheduler](src/core/BackendScheduler.h)、[RoundRobinScheduler](src/core/RoundRobinScheduler.h)。
+- 用户态网络：[TcpReactor](src/net/TcpReactor.h)、[UdpReactor](src/net/UdpReactor.h)、[Fd](src/net/Fd.h)、[TcpState](src/net/TcpState.h)、[UdpFlow](src/core/UdpFlow.h)。
+- 装配：[Service](src/control/Service.cpp)、[TcpService](src/control/TcpService.cpp)、[UdpService](src/control/UdpService.cpp)、[HealthSelection](src/control/HealthSelection.h)、[TcpHealthChecker](src/health/TcpHealthChecker.h)、[MetricsService](src/control/MetricsService.h)、[Metrics](src/metrics/Metrics.h)。
+- XDP：[main](src/xdp/main.cpp)、[XdpAttachment](src/xdp/XdpAttachment.h)、[MapStore](src/xdp/MapStore.h)、[DsrMapStore](src/xdp/DsrMapStore.h)、[RuntimeMapStore](src/xdp/RuntimeMapStore.h)。
+- 同步与 runtime：[XdpConfigSync](src/control/XdpConfigSync.h)、[DsrConfigSync](src/control/DsrConfigSync.h)、[RuntimeDsrConfig](src/control/RuntimeDsrConfig.h)、[RuntimeDsrService](src/control/RuntimeDsrService.cpp)、[UdpProbeChecker](src/health/UdpProbeChecker.h)。
+- ABI：[MapSchema](src/xdp/MapSchema.h)、[UdpDsrSchema](src/xdp/UdpDsrSchema.h)、[UdpRuntimeSchema](src/xdp/UdpRuntimeSchema.h)；四 profile BPF 位于同目录，size/align/offset、字节序、map/program/object 名称冻结。v3 snapshot 1048 字节、align8、backend@24。
+
+普通启动：CLI 有界加载 Config，`runConfiguredService` 分派 `runTcpService`/`runUdpService`。局部 TcpServiceRuntime/UdpServiceRuntime 借用 config，拥有 selection 与 MetricsService；selection 成员声明在 metrics 前，metrics 借用其 owner 槽，在 selection 使用期间存活并先析构。metrics 构造仍在 lifecycle try 外，selection 在 try 内构造。先完成 callback 容器的类内 `setXxxCallback` 保存装配，再运行 `runTcpReactor`/`runUdpReactor`。短 lambda 同步转发具名 on 响应；BackendSelector/BackendHealthProvider 与 syscall 注入是同步策略/替代接口，不机械事件化。reactor 借用容器，仅在同一调用线程执行维护、statistics 与业务事件，返回后不保存 callback；没有跨线程投递。
+
+正常停止：TCP 冻结新 recv/maintenance，已有 pending 在原1秒预算内尝试 drain，半关闭/背压保持；UDP 立即关闭 flows。reactor 清理资源后 control 输出停止说明/metrics.final 并返回 CLI。异常时每个原清理步骤都尝试，保存首异常；metrics.error 后仍传播原失败退出1。metrics 输出可能阻塞，reactor 预算不是整个进程墙钟上限；UDP 异常分支的停止日志顺序也保持。
+
+XDP 普通加载：独立入口选择 pass/maps/udp-dsr/udp-runtime，XdpAttachment 拥有读入 object bytes、libbpf object/program 引用及相应 store。原普通有界文件与 ELF 白名单校验后，ConfigSync 全槽写/readback/freeze，再 attach；store 中的 object/map FD 只借用，在 libbpf object 仍存活时才可调用使用它们的接口；store 对象本身不要求先析构。XdpAttachment 析构函数体关闭 object 后，runtimeMaps_ 成员随后析构，仅关闭自有 activeFd，不再访问借用 FD。停止 conditional detach 使用比较 FD（>=3）与当前 program 身份，不卸载 foreign program；ENODEV 与 cleanup 错误沿原语义处理。DSR 仅一个 VIP、最多64后端、受限 IPv4/UDP 二层转发，不提供 TCP XDP 或透明 fallback。
+
+runtime 初始：`runRuntimeDsrControlLoop` 持 configuration、checker、applied；Unknown 后端形成 generation1 空 active snapshot，真实 attach 后 READY。循环先消费停止，再 `pollProbeTransitions` 返回 transitions，control 同步输出 health；这不是持久 callback。HUP 准备 candidate config/sockets/state，再构造完整 candidate map，write/readback/freeze，唯一 outer 更新为 commit，随后替换 owner/gen 与 applied/config/checker。precommit 保旧、rejected 和每秒至多一次重试；postcommit 观测或输出失败 fatal 并卸载，不伪 rollback。健康 desired 与 applied generation 分离，generation 不回绕，每包持有一个 inner，旧引用由内核/RCU 退休，ID 消失不代表同步物理回收。
+
+probe/output：connected UDP 校验精确24byte magic、随机 epoch 和全进程 sequence，500ms deadline 到达即失败，完成时刻复核，每轮最多256接收；2 success/3 fail 转态，candidate 与取消 token/socket owner保持。runtime output 64KiB、每轮64 writes 非阻塞，EINTR/EAGAIN/短写遵循原处理；永久错误/queue超限沿首异常 cleanup。停止先 detach、取消 probe、统计、DETACHED，后最多1秒 output drain，最终恢复原 flags，不承诺绝对进程截止。
+
+以下从 V0.1/S2 起全部章节为原日期的历史落地/验证记录，旧内部路径、数量和“当前”标题只表示当时状态；现行入口见[当前源码索引](#current-source-index)。
 
 ## V0.1/S2 历史落地边界
 

@@ -2,9 +2,11 @@
 
 C++20 用户态四层负载均衡实验项目：单线程 LT epoll TCP 双向字节流、UDP flow 固定绑定、轮询、可选 TCP 握手健康检查与 stderr 指标。另提供可选的最小XDP/eBPF对象及独立加载器；默认用户态运行无需内核模块、数据库或外部服务。
 
-可选XDP：提供[BPF对象构建](docs/runbooks/xdp-build.md)和独立的[l4lb-xdp加载工具](docs/runbooks/xdp-loader.md)，默认均关闭。V1.2/S1提供[启动map同步与统计](docs/specs/xdp-map-schema.md)，S2新增[IPv4/UDP二层DSR](docs/specs/xdp-udp-dsr.md)：一个VIP、最多64个静态目标，按五元组转发到后端并直接回包。配置挂载前同步、回读并冻结，修改需停止重启。复现见[XDP验证](docs/runbooks/xdp-validation.md)。
+可选XDP：提供[BPF对象构建](docs/runbooks/xdp-build.md)和独立的[l4lb-xdp加载工具](docs/runbooks/xdp-loader.md)，默认均关闭。V1.2/S1提供[启动map同步与统计](docs/specs/xdp-map-schema.md)，S2新增[IPv4/UDP二层DSR](docs/specs/xdp-udp-dsr.md)：一个VIP、最多64个静态目标，按五元组转发到后端并直接回包。配置挂载前同步、回读并冻结，修改需停止重启。复现见[XDP验证](docs/runbooks/xdp-validation.md)。另有[运行期 DSR](docs/specs/xdp-runtime-control.md)，支持不可变快照发布、SIGHUP 重载和 UDP nonce 探测健康联动；[运行期部署](docs/specs/xdp-runtime-control.md#启动和重载)与[验证](docs/runbooks/xdp-runtime-validation-result.json)说明限制。四个 profile 为 pass、maps、udp-dsr、udp-runtime；加载器是独立 `l4lb-xdp` 进程，不是用户态代理的透明 fallback，也不提供 TCP XDP 转发。
 
 ## 当前状态
+
+2026-10-06 当前：R1..R4 四阶段全部 `Completed`，编码规范重构开发范围完成4/4。R4独立Reviewer正式PASS、Leader收尾完成，无未解决finding或mandatory缺项；双方各七构建、四完整CTest合计154/154（OFF Debug/Release各33，ON各44）、六真实内核组和当前普通UID产品smoke通过。R1/R2/R3附注标签已推送核验；HEAD `cf21b2efa13e751841a47e8a36ae1dca57f6ea2c`，R4尚未提交、推送或打标签，不等于版本正式发布。旧夹具仍存在释放端口后复用导致假失败的限制，首次失败与有界有效复验保留，长期测试维护须另授权；不新增物理NIC/offload或正式性能声明。以下日期条目保留原时点事实。
 
 2026-10-06 R3：XDP用户态规范与ABI防守重构已完成，独立Reviewer002 PASS、Leader003收尾，无新增债或阻塞。Builder与Reviewer各自七构建、四配置合计154/154完整CTest（OFF Debug/Release各33，ON Debug/Release各44）、当前UID1000产品smoke及六组真实内核验证通过。加载/条件卸载、不可变发布、健康与有界输出行为和C/BPF ABI保持；用户态`src/xdp/loader.{h,cpp}`迁为`XdpAttachment.{h,cpp}`，公共`l4lb-xdp`命令和对象路径保持。R1/R2标签已推送核验；当前HEAD `ac23fb78c7c24722c2a910971281801dad0795ab`，R3改动未提交/发布，R4未启动，重构完成3/4。见[路线图](ROADMAP.md#编码规范重构当前状态)，以下为原时点历史记录。
 
@@ -104,7 +106,7 @@ cmake --build build-production -j4
 
 `s2`/`s3`标签来自历史V0.1 TCP阶段，不是当前V1.0的全套；`udp_fast`/`udp_long`来自V0.2；`v03_health`、`v03_metrics`可作为`-R`筛选；`v03_system`为故障联合验证，`v04_lifecycle`为停止/资源，`v04_bench_smoke`为短benchmark，`v04_compare`为离线比较工具，`v10_contract`为稳定契约及成对端口夹具。
 
-普通UID会测试不可读文件，root会明确跳过。如果受限Agent或WSL路由阻止回环测试，可在**独立**`unshare --user --map-root-user --net bash`中先`ip link set lo up`再运行网络命令；这是受限环境的执行路线，可能需要执行器窄授权，不是产品root要求。不修改宿主接口/代理/sysctl。该namespace的UID0不算权限证据，另在原普通UID执行`ctest --test-dir build -R '^cli_integration$' --output-on-failure`。
+普通 UID 会测试不可读文件，root 会明确跳过。本轮受限 WSL 验证使用角色独立匿名 network namespace：必要 root 只执行 `unshare --net` 和 `ip link set lo up`，随后 `setpriv --reuid 1000 --regid 1000 --init-groups` 运行完整 CTest 与产品示例。产品和普通权限用例实际 UID 1000；user namespace 内 UID 0 不能代替这一证据。正常 Linux 回环直接以普通用户执行即可，不依赖私有角色 wrapper；隔离路线不修改宿主接口、路由或 sysctl。
 
 ## Benchmark：当前smoke与历史报告
 
@@ -116,11 +118,15 @@ cmake --build build-production -j4
 python3 tests/benchmark_runner.py --program ./build-production/bin/l4lb --protocol tcp --mode paired --warmup 0 --duration 1 --repeats 1 --rate 100 --output .stage-tmp/readme/tcp-smoke
 python3 tests/benchmark_runner.py --program ./build-production/bin/l4lb --protocol udp --mode paired --warmup 0 --duration 1 --repeats 1 --rate 100 --output .stage-tmp/readme/udp-smoke
 python3 tests/v04_benchmark_compare.py recompute --package docs/benchmarks/reports/v0.4-user-space.raw.json.gz --output .stage-tmp/readme/published-recomputed
+python3 tests/v12_benchmark.py recompute docs/benchmarks/reports/v1.2-xdp.raw.json.gz --summary .stage-tmp/readme/v12-recomputed.json
+python3 tests/v12_benchmark_test.py --package docs/benchmarks/reports/v1.2-xdp.raw.json.gz
 ```
 
 [正式V0.4报告](docs/benchmarks/reports/v0.4-user-space.md)比较固定历史v0.4-s1与v0.4-s2的48run；[机器摘要](docs/benchmarks/reports/v0.4-user-space.json)可由上面公开包离线重算，当前smoke不能更新或替代它。recompute不需要产品build或私有角色目录；重新构建历史产品则需要完整clone中的对应Git标签/对象，不能用缺历史对象的源文件导出冒充完整clone。详细统计口径、环境/采样边界及可选正式复现见[测量方法](docs/benchmarks/methodology.md)。
 
 ## 公开文档与限制
+
+当前实现路径见[架构源索引](ARCHITECTURE.md#current-source-index)。长期 scheduler/UDP flow 规格中的 `core/scheduler.h`、`core/udp_flow.h` 是历史内部路径，当前对应 `BackendScheduler.h`/`RoundRobinScheduler.h` 与 `UdpFlow.h`；稳定行为不随内部命名迁移变化。固定历史性能包内产品 SHA、标签和原路径保持原 provenance，离线重算只核旧数据与现工具契约。
 
 - [架构](ARCHITECTURE.md)、[路线](ROADMAP.md)、[变更记录](CHANGELOG.md)、[技术债](TECH-DEBT-TRACKER.md)。
 - [TCP语义](docs/specs/tcp-forwarding-semantics.md)、[UDP flow](docs/specs/udp-flow-table.md)、[调度](docs/specs/scheduler.md)、[稳定行为契约](docs/specs/v1.0-user-visible-contract.md)。
