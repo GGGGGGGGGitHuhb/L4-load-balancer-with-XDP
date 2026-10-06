@@ -23,18 +23,18 @@ struct ReactorTestAccess {
   static void runTcpReactor() {
     metrics::MetricsCollector counts(Protocol::kTcp, 1);
     TcpReactorCallbacks cb;
-    cb.statistics = [&](StatEvent e) {
+    cb.setStatisticsCallback([&](StatEvent e) {
       check(counts.recordStatEvent(e), "TCP model lifecycle");
-    };
-    cb.ready = [] {};
-    cb.session = [](const SessionEvent&) {};
-    cb.diagnostic = [](const std::string&, int) {};
+    });
+    cb.setReadyCallback([] {});
+    cb.setSessionCallback([](const SessionEvent&) {});
+    cb.setDiagnosticCallback([](const std::string&, int) {});
     Fd backend(socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0));
     auto a = makeSocketAddress({{127, 0, 0, 1}, 0});
     check(bind(backend.fd(), reinterpret_cast<sockaddr*>(&a), sizeof(a)) == 0 &&
               listen(backend.fd(), 8) == 0,
           "backend");
-    cb.select_backend = [&] { return local(backend.fd()); };
+    cb.setBackendSelector([&] { return local(backend.fd()); });
     TcpReactorOptions opt;
     opt.sendCall = [](int fd, const void* data, std::size_t n, int flags) {
       return send(fd, data, std::min(n, std::size_t(7)), flags);
@@ -79,7 +79,7 @@ struct ReactorTestAccess {
             "each ignored accept failure counts");
       attempts = 0;
       unsigned logged = 0;
-      cb.diagnostic = [&](const std::string&, int) { ++logged; };
+      cb.setDiagnosticCallback([&](const std::string&, int) { ++logged; });
       opt.acceptCall = [&](int, sockaddr*, socklen_t*, int) {
         errno = EMFILE;
         ++attempts;

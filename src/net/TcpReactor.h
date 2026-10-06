@@ -5,6 +5,7 @@
 #include <functional>
 #include <optional>
 #include <string>
+#include <utility>
 
 #include "config/Config.h"
 #include "net/Statistics.h"
@@ -35,13 +36,24 @@ struct TcpReactorOptions {
   std::chrono::milliseconds connectTimeout{5000}, idleTimeout{60000};
   std::chrono::milliseconds drainTimeout{1000};
 
-  std::function<void(const Observation&)> observe;
+  using ObservationCallback = std::function<void(const Observation&)>;
+
+  void setObservationCallback(ObservationCallback observationCallback) {
+    observationCallback_ = std::move(observationCallback);
+  }
+
+  const ObservationCallback& observationCallback() const {
+    return observationCallback_;
+  }
 
   // 故障注入仅用于内部测试；缺省始终调用真实系统接口。
   std::function<int(int, const sockaddr*, socklen_t)> connectCall;
   std::function<int(int, int*)> socketErrorCall;
   std::function<ssize_t(int, const void*, std::size_t, int)> sendCall;
   std::function<int(int, sockaddr*, socklen_t*, int)> acceptCall;
+
+ private:
+  ObservationCallback observationCallback_;
 };
 
 /** 停止屏障只报告已在用户态的队列，不代表内核中在途数据。 */
@@ -50,14 +62,74 @@ struct StopEvent {
   std::int64_t deadlineNs = 0;
 };
 
-struct TcpReactorCallbacks {
-  std::function<std::optional<Endpoint>()> select_backend;
-  std::function<void()> maintenance;
-  std::function<void(StatEvent)> statistics;
-  std::function<void()> ready;
-  std::function<void(const StopEvent&)> stopping;
-  std::function<void(const SessionEvent&)> session;
-  std::function<void(const std::string&, int)> diagnostic;
+class TcpReactorCallbacks {
+ public:
+  using BackendSelector = std::function<std::optional<Endpoint>()>;
+
+  using MaintenanceCallback = std::function<void()>;
+  using StatisticsCallback = std::function<void(StatEvent)>;
+  using ReadyCallback = std::function<void()>;
+  using StoppingCallback = std::function<void(const StopEvent&)>;
+  using SessionCallback = std::function<void(const SessionEvent&)>;
+  using DiagnosticCallback = std::function<void(const std::string&, int)>;
+
+  void setBackendSelector(BackendSelector backendSelector) {
+    backendSelector_ = std::move(backendSelector);
+  }
+
+  const BackendSelector& backendSelector() const { return backendSelector_; }
+
+  void setMaintenanceCallback(MaintenanceCallback maintenanceCallback) {
+    maintenanceCallback_ = std::move(maintenanceCallback);
+  }
+
+  const MaintenanceCallback& maintenanceCallback() const {
+    return maintenanceCallback_;
+  }
+
+  void setStatisticsCallback(StatisticsCallback statisticsCallback) {
+    statisticsCallback_ = std::move(statisticsCallback);
+  }
+
+  const StatisticsCallback& statisticsCallback() const {
+    return statisticsCallback_;
+  }
+
+  void setReadyCallback(ReadyCallback readyCallback) {
+    readyCallback_ = std::move(readyCallback);
+  }
+
+  const ReadyCallback& readyCallback() const { return readyCallback_; }
+
+  void setStoppingCallback(StoppingCallback stoppingCallback) {
+    stoppingCallback_ = std::move(stoppingCallback);
+  }
+
+  const StoppingCallback& stoppingCallback() const { return stoppingCallback_; }
+
+  void setSessionCallback(SessionCallback sessionCallback) {
+    sessionCallback_ = std::move(sessionCallback);
+  }
+
+  const SessionCallback& sessionCallback() const { return sessionCallback_; }
+
+  void setDiagnosticCallback(DiagnosticCallback diagnosticCallback) {
+    diagnosticCallback_ = std::move(diagnosticCallback);
+  }
+
+  const DiagnosticCallback& diagnosticCallback() const {
+    return diagnosticCallback_;
+  }
+
+ private:
+  BackendSelector backendSelector_;
+
+  MaintenanceCallback maintenanceCallback_;
+  StatisticsCallback statisticsCallback_;
+  ReadyCallback readyCallback_;
+  StoppingCallback stoppingCallback_;
+  SessionCallback sessionCallback_;
+  DiagnosticCallback diagnosticCallback_;
 };
 
 /** 单线程 LT reactor，信号退出返回 0；不可恢复错误抛 system_error。 */

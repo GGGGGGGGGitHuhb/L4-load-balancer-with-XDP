@@ -26,6 +26,8 @@ class HealthSelection {
       std::span<metrics::BackendHealthSnapshot> backends) const;
 
  private:
+  void onHealthChange(const health::HealthChange& healthChange);
+
   const Config& config_;
 
   std::unique_ptr<BackendScheduler> scheduler_;

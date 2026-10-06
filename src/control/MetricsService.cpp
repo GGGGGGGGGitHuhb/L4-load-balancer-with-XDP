@@ -4,7 +4,8 @@
 
 namespace l4lb {
 MetricsService::MetricsService(
-    const Config& config, const std::unique_ptr<HealthSelection>& selection) {
+    const Config& config, const std::unique_ptr<HealthSelection>& selection)
+    : config_(config), selection_(selection) {
   if (config.metrics == MetricsKind::kOff) return;
   if (config.metrics != MetricsKind::kStderr)
     throw std::invalid_argument("invalid metrics");
@@ -13,17 +14,21 @@ MetricsService::MetricsService(
       config.protocol, config.backends.size());
 
   output_ = std::make_unique<metrics::MetricsOutput>(
-      *collector_, [&config, &selection](
-                       std::span<metrics::BackendHealthSnapshot> backends) {
-        if (selection)
-          selection->copyBackendHealth(backends);
-        else
-          for (auto& backend : backends)
-            backend = config.healthCheck == HealthCheck::kOff
-                          ? metrics::BackendHealthSnapshot{}
-                          : metrics::BackendHealthSnapshot{
-                                metrics::BackendHealth::kUnknown, false};
+      *collector_, [this](std::span<metrics::BackendHealthSnapshot> backends) {
+        copyBackendHealthSnapshot(backends);
       });
+}
+
+void MetricsService::copyBackendHealthSnapshot(
+    std::span<metrics::BackendHealthSnapshot> backends) const {
+  if (selection_)
+    selection_->copyBackendHealth(backends);
+  else
+    for (auto& backend : backends)
+      backend = config_.healthCheck == HealthCheck::kOff
+                    ? metrics::BackendHealthSnapshot{}
+                    : metrics::BackendHealthSnapshot{
+                          metrics::BackendHealth::kUnknown, false};
 }
 
 void MetricsService::finishMetrics(bool error) noexcept {

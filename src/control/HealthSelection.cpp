@@ -5,10 +5,13 @@
 #include <stdexcept>
 
 namespace l4lb {
+namespace {
+bool isBackendEligible(bool value) { return value; }
+}  // namespace
+
 std::optional<std::size_t> selectEligibleBackendIndex(
     BackendScheduler& scheduler, const std::vector<bool>& eligible) {
-  if (std::none_of(eligible.begin(), eligible.end(),
-                   [](bool value) { return value; }))
+  if (std::none_of(eligible.begin(), eligible.end(), isBackendEligible))
     return std::nullopt;
 
   for (std::size_t selectionAttempt = 0; selectionAttempt < eligible.size();
@@ -27,20 +30,11 @@ HealthSelection::HealthSelection(const Config& config)
   if (config.healthCheck != HealthCheck::kTcpConnect)
     throw std::invalid_argument("invalid health_check");
 
-  checker_ = std::make_unique<health::TcpHealthChecker>(
-      config.backends, [&](const health::HealthChange& healthChange) {
-        const auto& endpoint = config_.backends[healthChange.backend];
-        std::cerr << "health backend=" << unsigned(endpoint.address[0]) << '.'
-                  << unsigned(endpoint.address[1]) << '.'
-                  << unsigned(endpoint.address[2]) << '.'
-                  << unsigned(endpoint.address[3]) << ':' << endpoint.port
-                  << " from=" << health::healthStatusName(healthChange.from)
-                  << " to=" << health::healthStatusName(healthChange.to)
-                  << " reason=" << healthChange.reason;
-        if (healthChange.error) std::cerr << " errno=" << healthChange.error;
-        std::cerr << '\n';
+  checker_ = std::make_unique<health::TcpHealthChecker>(config.backends);
+  checker_->setHealthChangeCallback(
+      [this](const health::HealthChange& healthChange) {
+        onHealthChange(healthChange);
       });
-
   if (config.protocol == Protocol::kUdp)
     std::cerr << "UDP health_check=tcp_connect：相同 IP/端口的 TCP "
                  "健康端点必须代表 UDP 服务；TCP 握手不是 UDP 协议健康证明。\n";
@@ -89,4 +83,16 @@ void HealthSelection::copyBackendHealth(
   }
 }
 
+void HealthSelection::onHealthChange(const health::HealthChange& healthChange) {
+  const auto& endpoint = config_.backends[healthChange.backend];
+  std::cerr << "health backend=" << unsigned(endpoint.address[0]) << '.'
+            << unsigned(endpoint.address[1]) << '.'
+            << unsigned(endpoint.address[2]) << '.'
+            << unsigned(endpoint.address[3]) << ':' << endpoint.port
+            << " from=" << health::healthStatusName(healthChange.from)
+            << " to=" << health::healthStatusName(healthChange.to)
+            << " reason=" << healthChange.reason;
+  if (healthChange.error) std::cerr << " errno=" << healthChange.error;
+  std::cerr << '\n';
+}
 }  // namespace l4lb

@@ -31,12 +31,14 @@ struct ReactorTestAccess {
       }
       return send(fd, data, n, flags);
     };
-    options.observe = [&](const Observation& o) { observations.push_back(o); };
+    options.setObservationCallback(
+        [&](const Observation& o) { observations.push_back(o); });
     TcpReactorCallbacks callbacks;
-    callbacks.select_backend = [] { return Endpoint{{127, 0, 0, 1}, 1}; };
-    callbacks.ready = [] {};
-    callbacks.session = [&](const SessionEvent& e) { closed.push_back(e); };
-    callbacks.diagnostic = [](const std::string&, int) {};
+    callbacks.setBackendSelector([] { return Endpoint{{127, 0, 0, 1}, 1}; });
+    callbacks.setReadyCallback([] {});
+    callbacks.setSessionCallback(
+        [&](const SessionEvent& e) { closed.push_back(e); });
+    callbacks.setDiagnosticCallback([](const std::string&, int) {});
     TcpReactor reactor(listen, callbacks, options);
     int pair0[2], pair1[2];
     require(socketpair(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0,

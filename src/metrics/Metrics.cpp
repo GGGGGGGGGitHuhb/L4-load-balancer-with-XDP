@@ -30,6 +30,14 @@ const char* backendHealthName(BackendHealth state) {
   }
   throw std::invalid_argument("invalid metrics health");
 }
+
+void appendCounterField(std::string& line, const char* key,
+                        std::uint64_t value) {
+  line += ",\"";
+  line += key;
+  line += "\":";
+  line += std::to_string(value);
+}
 }  // namespace
 
 MetricsCollector::MetricsCollector(Protocol protocol,
@@ -42,49 +50,51 @@ MetricsCollector::MetricsCollector(Protocol protocol,
   data_.backendCount = backendCount;
 }
 
+void MetricsCollector::incrementCounter(
+    std::uint64_t& value, std::uint64_t incrementAmount) noexcept {
+  addSaturatingCounter(value, incrementAmount, data_.counterSaturated);
+}
+
 bool MetricsCollector::recordStatEvent(net::StatEvent event) noexcept {
   using net::StatKind;
-  auto increment = [&](std::uint64_t& value) {
-    addSaturatingCounter(value, event.amount, data_.counterSaturated);
-  };
 
   switch (event.kind) {
     case StatKind::kCreated:
       if (event.amount != 1 || data_.sessionsActive >= 1024) return false;
       ++data_.sessionsActive;
-      increment(data_.sessionsCreatedTotal);
+      incrementCounter(data_.sessionsCreatedTotal, event.amount);
       break;
     case StatKind::kClosed:
       if (event.amount != 1 || data_.sessionsActive == 0) return false;
       --data_.sessionsActive;
-      increment(data_.sessionsClosedTotal);
+      incrementCounter(data_.sessionsClosedTotal, event.amount);
       break;
     case StatKind::kBytesC2b:
-      increment(data_.bytesC2bTotal);
+      incrementCounter(data_.bytesC2bTotal, event.amount);
       break;
     case StatKind::kBytesB2c:
-      increment(data_.bytesB2cTotal);
+      incrementCounter(data_.bytesB2cTotal, event.amount);
       break;
     case StatKind::kDatagramC2b:
       if (data_.protocol != Protocol::kUdp) return false;
-      increment(data_.datagramsC2bTotal);
+      incrementCounter(data_.datagramsC2bTotal, event.amount);
       break;
     case StatKind::kDatagramB2c:
       if (data_.protocol != Protocol::kUdp) return false;
-      increment(data_.datagramsB2cTotal);
+      incrementCounter(data_.datagramsB2cTotal, event.amount);
       break;
     case StatKind::kRejected:
-      increment(data_.rejectedTotal);
+      incrementCounter(data_.rejectedTotal, event.amount);
       break;
     case StatKind::kDropped:
       if (data_.protocol != Protocol::kUdp) return false;
-      increment(data_.droppedDatagramsTotal);
+      incrementCounter(data_.droppedDatagramsTotal, event.amount);
       break;
     case StatKind::kError:
-      increment(data_.errorsTotal);
+      incrementCounter(data_.errorsTotal, event.amount);
       break;
     case StatKind::kTimeout:
-      increment(data_.timeoutsTotal);
+      incrementCounter(data_.timeoutsTotal, event.amount);
       break;
     default:
       return false;
@@ -105,24 +115,20 @@ std::string formatMetricsSnapshot(const MetricsSnapshot& snapshot,
          (snapshot.protocol == Protocol::kTcp ? "tcp" : "udp") +
          "\",\"uptime_ms\":" + std::to_string(snapshot.uptimeMs);
 
-  auto field = [&](const char* key, std::uint64_t value) {
-    line += ",\"";
-    line += key;
-    line += "\":";
-    line += std::to_string(value);
-  };
-
-  field("sessions_created_total", snapshot.sessionsCreatedTotal);
-  field("sessions_closed_total", snapshot.sessionsClosedTotal);
-  field("sessions_active", snapshot.sessionsActive);
-  field("bytes_c2b_total", snapshot.bytesC2bTotal);
-  field("bytes_b2c_total", snapshot.bytesB2cTotal);
-  field("datagrams_c2b_total", snapshot.datagramsC2bTotal);
-  field("datagrams_b2c_total", snapshot.datagramsB2cTotal);
-  field("rejected_total", snapshot.rejectedTotal);
-  field("dropped_datagrams_total", snapshot.droppedDatagramsTotal);
-  field("errors_total", snapshot.errorsTotal);
-  field("timeouts_total", snapshot.timeoutsTotal);
+  appendCounterField(line, "sessions_created_total",
+                     snapshot.sessionsCreatedTotal);
+  appendCounterField(line, "sessions_closed_total",
+                     snapshot.sessionsClosedTotal);
+  appendCounterField(line, "sessions_active", snapshot.sessionsActive);
+  appendCounterField(line, "bytes_c2b_total", snapshot.bytesC2bTotal);
+  appendCounterField(line, "bytes_b2c_total", snapshot.bytesB2cTotal);
+  appendCounterField(line, "datagrams_c2b_total", snapshot.datagramsC2bTotal);
+  appendCounterField(line, "datagrams_b2c_total", snapshot.datagramsB2cTotal);
+  appendCounterField(line, "rejected_total", snapshot.rejectedTotal);
+  appendCounterField(line, "dropped_datagrams_total",
+                     snapshot.droppedDatagramsTotal);
+  appendCounterField(line, "errors_total", snapshot.errorsTotal);
+  appendCounterField(line, "timeouts_total", snapshot.timeoutsTotal);
   line += snapshot.counterSaturated ? ",\"counter_saturated\":true"
                                     : ",\"counter_saturated\":false";
 
@@ -141,12 +147,11 @@ std::string formatMetricsSnapshot(const MetricsSnapshot& snapshot,
   return line;
 }
 
-MetricsOutput::MetricsOutput(
-    MetricsCollector& collector,
-    std::function<void(std::span<BackendHealthSnapshot>)> backends,
-    MetricsOutputOptions options)
+MetricsOutput::MetricsOutput(MetricsCollector& collector,
+                             BackendHealthProvider backends,
+                             MetricsOutputOptions options)
     : collector_(collector),
-      copyBackendHealth_(std::move(backends)),
+      backendHealthProvider_(std::move(backends)),
       options_(std::move(options)),
       startTime_(currentTime()) {}
 
@@ -166,7 +171,7 @@ void MetricsOutput::emitSnapshot(std::string_view phase) noexcept {
     snapshot.uptimeMs = std::chrono::duration_cast<std::chrono::milliseconds>(
                             currentTime() - startTime_)
                             .count();
-    copyBackendHealth_(
+    backendHealthProvider_(
         std::span(snapshot.backends.data(), snapshot.backendCount));
 
     auto line = options_.formatter ? options_.formatter(snapshot, phase)

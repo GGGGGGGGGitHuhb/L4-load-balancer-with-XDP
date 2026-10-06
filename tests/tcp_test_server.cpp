@@ -20,23 +20,22 @@ int main(int argc, char** argv) {
   std::string mode(argv[3]);
   l4lb::RoundRobinScheduler rr(config->backends.size());
   l4lb::net::TcpReactorCallbacks cb;
-  cb.select_backend = [&] {
-    return config->backends[rr.selectNextBackendIndex()];
-  };
-  cb.ready = [] { std::cout << "READY" << std::endl; };
-  cb.session = [&](const l4lb::net::SessionEvent& e) {
+  cb.setBackendSelector(
+      [&] { return config->backends[rr.selectNextBackendIndex()]; });
+  cb.setReadyCallback([] { std::cout << "READY" << std::endl; });
+  cb.setSessionCallback([&](const l4lb::net::SessionEvent& e) {
     trace << (e.accepted ? "accepted" : "ended") << ' ' << e.id << ' '
           << e.backend.port << ' ' << e.reason << ' ' << e.error << ' '
           << e.sent[0] << ' ' << e.sent[1] << std::endl;
-  };
-  cb.diagnostic = [&](const std::string& name, int error) {
+  });
+  cb.setDiagnosticCallback([&](const std::string& name, int error) {
     trace << "diagnostic " << name << ' ' << error << std::endl;
-  };
+  });
   l4lb::net::TcpReactorOptions options;
-  options.observe = [&](const l4lb::net::Observation& o) {
+  options.setObservationCallback([&](const l4lb::net::Observation& o) {
     trace << o.kind << ' ' << o.session << ' ' << o.side << ' ' << o.value
           << ' ' << o.sessions << ' ' << o.tokens << std::endl;
-  };
+  });
   if (mode == "capacity") options.maxSessions = 1;
   if (mode == "idle") options.idleTimeout = std::chrono::milliseconds(250);
   if (mode == "connect-timeout")

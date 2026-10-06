@@ -133,7 +133,7 @@ class UdpReactor {
   }
 
   int runUdpEventLoop() {
-    if (callbacks_.ready) callbacks_.ready();
+    if (callbacks_.readyCallback()) callbacks_.readyCallback()();
     std::array<epoll_event, 128> events{};
 
     while (!consumeStopSignals()) {
@@ -149,7 +149,7 @@ class UdpReactor {
 
       if (consumeStopSignals()) break;
       expireIdleFlows();
-      if (callbacks_.maintenance) callbacks_.maintenance();
+      if (callbacks_.maintenanceCallback()) callbacks_.maintenanceCallback()();
 
       for (int eventIndex = 0; eventIndex < eventCount; ++eventIndex) {
         if (consumeStopSignals()) return 0;
@@ -162,7 +162,8 @@ class UdpReactor {
 
  private:
   void reportStatEvent(StatKind kind, std::uint64_t amount = 1) {
-    if (callbacks_.statistics) callbacks_.statistics({kind, amount});
+    if (callbacks_.statisticsCallback())
+      callbacks_.statisticsCallback()({kind, amount});
   }
 
   UClock::time_point currentTime() const {
@@ -171,8 +172,8 @@ class UdpReactor {
 
   void reportObservation(const char* kind, std::uint64_t token = 0,
                          int fd = -1) {
-    if (options_.observe)
-      options_.observe(
+    if (options_.observationCallback())
+      options_.observationCallback()(
           {kind, token, fd, flows_.size(), flowTokensByKey_.size()});
   }
 
@@ -186,7 +187,8 @@ class UdpReactor {
       return;
 
     lastDiagnosticTimes_[kind] = time;
-    if (callbacks_.diagnostic) callbacks_.diagnostic(kind, error);
+    if (callbacks_.diagnosticCallback())
+      callbacks_.diagnosticCallback()(kind, error);
   }
 
   void registerFlowSocket(int fd, std::uint64_t token) {
@@ -205,6 +207,53 @@ class UdpReactor {
     throwUdpSystemError("UDP signalfd read", receivedBytes < 0 ? errno : EIO);
   }
 
+  void attemptCloseErrorReport(std::exception_ptr& firstFailure) {
+    try {
+      reportStatEvent(StatKind::kError);
+    } catch (...) {
+      if (!firstFailure) firstFailure = std::current_exception();
+    }
+  }
+
+  void attemptCloseDiagnosticReport(int detachError,
+                                    std::exception_ptr& firstFailure) {
+    try {
+      if (callbacks_.diagnosticCallback())
+        callbacks_.diagnosticCallback()("UDP epoll DEL", detachError);
+    } catch (...) {
+      if (!firstFailure) firstFailure = std::current_exception();
+    }
+  }
+
+  void attemptClosedStatReport(std::exception_ptr& firstFailure) {
+    try {
+      reportStatEvent(StatKind::kClosed);
+    } catch (...) {
+      if (!firstFailure) firstFailure = std::current_exception();
+    }
+  }
+
+  void attemptClosedObservationReport(const char* reason, std::uint64_t token,
+                                      int fd,
+                                      std::exception_ptr& firstFailure) {
+    try {
+      reportObservation(reason, token, fd);
+    } catch (...) {
+      if (!firstFailure) firstFailure = std::current_exception();
+    }
+  }
+
+  void attemptFlowEventReport(std::uint64_t token, const Endpoint& backend,
+                              const char* reason, int error,
+                              std::exception_ptr& firstFailure) {
+    try {
+      if (callbacks_.flowCallback())
+        callbacks_.flowCallback()({token, backend, reason, error});
+    } catch (...) {
+      if (!firstFailure) firstFailure = std::current_exception();
+    }
+  }
+
   void closeFlow(std::uint64_t token, const char* reason, int error = 0) {
     auto flowIt = flows_.find(token);
     if (flowIt == flows_.end()) return;
@@ -221,28 +270,15 @@ class UdpReactor {
     flow->fd.closeFd();
 
     std::exception_ptr failure;
-    auto attempt = [&](auto action) {
-      try {
-        action();
-      } catch (...) {
-        if (!failure) failure = std::current_exception();
-      }
-    };
 
     if (detachError) {
-      attempt([&] { reportStatEvent(StatKind::kError); });
-      attempt([&] {
-        if (callbacks_.diagnostic)
-          callbacks_.diagnostic("UDP epoll DEL", detachError);
-      });
+      attemptCloseErrorReport(failure);
+      attemptCloseDiagnosticReport(detachError, failure);
     }
 
-    attempt([&] { reportStatEvent(StatKind::kClosed); });
-    attempt([&] { reportObservation(reason, token, fd); });
-    attempt([&] {
-      if (callbacks_.flow)
-        callbacks_.flow({token, flow->backend, reason, error});
-    });
+    attemptClosedStatReport(failure);
+    attemptClosedObservationReport(reason, token, fd, failure);
+    attemptFlowEventReport(token, flow->backend, reason, error, failure);
 
     if (failure) std::rethrow_exception(failure);
   }
@@ -272,7 +308,7 @@ class UdpReactor {
       return 0;
     }
 
-    auto selected = callbacks_.select_backend();  // 真正异常仍传播。
+    auto selected = callbacks_.backendSelector()();  // 真正异常仍传播。
     if (!selected) {
       reportStatEvent(StatKind::kRejected);
       return 0;
@@ -353,7 +389,8 @@ class UdpReactor {
 
     reportStatEvent(StatKind::kCreated);
     reportObservation("created", token, flows_.at(token)->fd.fd());
-    if (callbacks_.flow) callbacks_.flow({token, backend, "created"});
+    if (callbacks_.flowCallback())
+      callbacks_.flowCallback()({token, backend, "created"});
     return token;
   }
 
@@ -659,7 +696,7 @@ int runUdpReactor(const Endpoint& endpoint,
       options.pollInterval.count() <= 0 ||
       options.pollInterval.count() > std::numeric_limits<int>::max() ||
       !options.receiveSize || options.receiveSize > kUdpPayloadLimit ||
-      !callbacks.select_backend)
+      !callbacks.backendSelector())
     throw std::invalid_argument("invalid UDP options/callbacks");
 
   UdpReactor reactor(endpoint, callbacks, options);

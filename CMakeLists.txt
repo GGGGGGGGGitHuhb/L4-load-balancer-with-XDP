@@ -153,6 +153,12 @@ if(BUILD_TESTING)
 endif()
 
 if(BUILD_TESTING)
+  add_executable(CallbackLifecycle_test tests/CallbackLifecycle_test.cpp)
+  target_include_directories(CallbackLifecycle_test PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
+  target_link_libraries(CallbackLifecycle_test PRIVATE l4lb_control)
+  add_test(NAME refactor_callback_lifecycle COMMAND CallbackLifecycle_test)
+  set_tests_properties(refactor_callback_lifecycle PROPERTIES LABELS refactor TIMEOUT 30)
+
   add_executable(v04_lifecycle_test tests/v04_lifecycle_test.cpp)
   target_include_directories(v04_lifecycle_test PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
   target_link_libraries(v04_lifecycle_test PRIVATE Threads::Threads)

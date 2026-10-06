@@ -19,9 +19,9 @@
 
 ## 编码规范重构当前状态
 
-2026-10-05：R1 用户态命名、28个生产文件路径迁移及排版基线已完成（`Completed`）；Approved O1/D1/RV1及附件范围不变，Builder004完整自测、独立Reviewer001 PASS、Leader005收尾齐备。四配置完整回归各150/150、六构建及当前产品smoke通过；没有新增技术债或阻塞。R1工作树尚未暂存、提交或发布。
+2026-10-06：R1、R2均`Completed`，重构整体还有R3、R4。R2 D1/RV1修订1与三附件保持Approved，Builder002、独立Reviewer002 PASS及Leader003收尾齐备；首次Reviewer001 FAIL和第1轮52处空白纠正历史保留，R2累计1轮、R1历史4轮单列。双方各OFF Debug/Release33/33、ON Debug/Release44/44，四配置合计各154/154，六构建及当前产品smoke通过，无新增债或阻塞。
 
-R2事件回调、R3 XDP用户态规范、R4综合回归与当前文档收尾均未启动，保留串行顺序，每阶段分别设计和批准。本次仅同步R1当前状态，不以R1接受代表重构整体完成。详细治理记录仅本地：`docs/leader/designs/refactor/outline.md`、`docs/leader/reports/refactor/R1-report-005.md`。
+R1提交`e42ce072027d2ef8c7459bc13334921c3cd30e29`及附注标签`refactor-r1`已推送核验；当前R2工作树尚未暂存、提交、推送或打标签。R3 XDP用户态规范、R4综合回归与当前文档收尾均未启动，保留串行顺序、各自设计与批准。本次只同步R2关闭门槛，不以R2接受代表重构整体完成。详细治理记录仅本地：`docs/leader/designs/refactor/outline.md`、`docs/leader/reports/refactor/R2-report-003.md`。
 
 ## 范围边界
 

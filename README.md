@@ -6,6 +6,8 @@ C++20 用户态四层负载均衡实验项目：单线程 LT epoll TCP 双向字
 
 ## 当前状态
 
+2026-10-06：R2事件回调、具名响应与生命周期重构已完成，独立复验PASS并由Leader收尾。Builder与Reviewer各自完整执行OFF Debug33/33、OFF Release33/33、ON Debug44/44、ON Release44/44，四配置合计各154/154；各六组构建、当前CLI/TCP/UDP产品与paired短smoke通过。新增`refactor_callback_lifecycle`验证多回调失败时全部清理与首异常，以及注册/健康/快照寿命。原外部命令、日志、metrics与网络契约保持，无新增债或阻塞。当前HEAD为`e42ce072027d2ef8c7459bc13334921c3cd30e29`；R1及附注标签`refactor-r1`已推送核验，R2改动尚未暂存、提交、推送或打标签，R3/R4未启动。当前状态见[路线图](ROADMAP.md#编码规范重构当前状态)，以下日期记录为历史时点事实。
+
 2026-10-05：编码规范重构R1已完成并独立验收PASS；用户态文件、名称与排版迁移落实，OFF/ON Debug与Release完整回归各150/150、六组构建及当前产品冒烟通过，原运行命令与行为契约保持。当前分支HEAD为`62c1e558b135da88c084c2e7a66b06281be06e5b`，R1改动尚未暂存、提交或发布；R2/R3/R4未启动。当前重构进度见[路线图](ROADMAP.md#编码规范重构当前状态)，历史S4记录保持其原时点事实。
 
 V1.2/S2 已完成独立验收与收尾（2026-09-22）：Builder与Reviewer真实内核各1077用例，另有14项短包逻辑边界夹具；generic/native各16组真实转发与故障检查通过。ON完整37/37、默认OFF Release31/31通过，见[DSR验证摘要](docs/runbooks/xdp-dsr-validation-result.json)。S2已由PR #20合并为 `0c3de8e`，标签 `v1.2-s2` 已推送核验。S3运行期更新/健康联动已完成独立验收与收尾（2026-09-28）：ON 42/42、OFF 31/31，双方generic 20组/native 19组与100次在线发布通过，见[运行期验证摘要](docs/runbooks/xdp-runtime-validation-result.json)。S3已由PR #21合并为 `2dd2c98`，附注标签 `v1.2-s3` 已推送核验。当前分支 `codex/v1.2-s4`；S4性能比较已完成（2026-10-05）：Builder与独立Reviewer各126/126，独立ON Debug43/43及公开包离线重算通过；[九标准验收](docs/specs/v1.2-acceptance.md)齐备，V1.2批准开发范围Completed。S4工作树尚未提交、推送、合并或打标签，V1.2未正式发布，见[路线图](ROADMAP.md)。
@@ -86,7 +88,7 @@ bash tests/udp_manual_demo.sh ./build/bin/l4lb ./build/udp-manual-evidence 18080
 
 ## 测试与生产构建
 
-当前CTest注册 **31项**；Debug快速 **30项**，Release完整 **31项**（包含约61秒的原60秒UDP expiry）。由`ctest -N`核对，不把历史阶段数字当当前结果。
+当前默认OFF注册 **33项**，ON注册 **44项**；Debug/Release各自完整运行33或44项（含原60秒UDP expiry），四配置合计154项。以当前`ctest -N`核对；快速排除udp_long不能替代阶段完整回归。新增机制测试可运行`ctest --test-dir build -R '^refactor_callback_lifecycle$' --output-on-failure`，标签为`refactor`。
 
 ```bash
 ctest --test-dir build -N
