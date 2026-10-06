@@ -73,7 +73,7 @@ class FakeTransport final : public ProbeTransport {
   int closeCalls = 0;
   int failOpen = -1;
 
-  int open(const ProbeTarget&) override {
+  int openProbeSocket(const ProbeTarget&) override {
     if (openCalls++ == failOpen) throw std::runtime_error("local_error open");
     int handle = 10;
     while (sockets.contains(handle)) ++handle;
@@ -81,12 +81,13 @@ class FakeTransport final : public ProbeTransport {
     return handle;
   }
 
-  void close(int handle) noexcept override {
+  void closeProbeSocket(int handle) noexcept override {
     ++closeCalls;
     sockets.erase(handle);
   }
 
-  ProbeIoResult send(int handle, std::span<const uint8_t> packet) override {
+  ProbeIoResult sendProbePacket(int handle,
+                                std::span<const uint8_t> packet) override {
     auto& socket = sockets.at(handle);
     if (socket.sendError) return {-1, socket.sendError};
     if (socket.partialSend) return {1, 0};
@@ -96,7 +97,8 @@ class FakeTransport final : public ProbeTransport {
     return {static_cast<int>(packet.size()), 0};
   }
 
-  ProbeIoResult receive(int handle, std::span<uint8_t> buffer) override {
+  ProbeIoResult receiveProbePacket(int handle,
+                                   std::span<uint8_t> buffer) override {
     auto& replies = sockets.at(handle).replies;
     if (replies.empty()) return {-1, EAGAIN};
     auto reply = std::move(replies.front());
@@ -133,7 +135,7 @@ std::shared_ptr<ProbeNonceSequence> nonce() {
 
 void testNonce() {
   ProbeNonceSequence source(0x0102030405060708ULL, 0x1112131415161717ULL);
-  auto packet = source.next();
+  auto packet = source.generateProbePacket();
   require(std::memcmp(packet.data(), "L4LBHC01", 8) == 0, "wrong magic");
   for (unsigned index = 0; index < 8; ++index) {
     require(packet[8 + index] == index + 1, "epoch is not network order");
@@ -143,7 +145,7 @@ void testNonce() {
   ProbeNonceSequence exhausted(0, std::numeric_limits<uint64_t>::max());
   bool rejected = false;
   try {
-    exhausted.next();
+    exhausted.generateProbePacket();
   } catch (const std::runtime_error&) {
     rejected = true;
   }
@@ -153,49 +155,52 @@ void testNonce() {
 void testTransitions() {
   auto transport = std::make_shared<FakeTransport>();
   UdpProbeChecker checker({target()}, {}, transport, nonce(), logicalClock());
-  require(checker.healthyTargets().empty() && checker.inFlight() == 0,
+  require(checker.copyHealthyProbeTargets().empty() &&
+              checker.inFlightProbeCount() == 0,
           "unknown is selectable");
-  require(checker.nextWakeup() == at(0), "first probe not immediate");
-  checker.tick(at(0));
-  require(checker.inFlight() == 1 && checker.nextWakeup() == at(500),
-          "deadline");
+  require(checker.nextProbeWakeup() == at(0), "first probe not immediate");
+  checker.pollProbeTransitions(at(0));
+  require(
+      checker.inFlightProbeCount() == 1 && checker.nextProbeWakeup() == at(500),
+      "deadline");
   transport->echo();
-  require(checker.tick(at(1)).empty(), "one success became healthy");
-  checker.tick(at(1000));
+  require(checker.pollProbeTransitions(at(1)).empty(),
+          "one success became healthy");
+  checker.pollProbeTransitions(at(1000));
   transport->echo();
-  auto changes = checker.tick(at(1001));
+  auto changes = checker.pollProbeTransitions(at(1001));
   require(changes.size() == 1 && changes[0].to == ProbeState::kHealthy,
           "two successes missing");
   for (int cycle = 2; cycle < 5; ++cycle) {
-    checker.tick(at(cycle * 1000));
-    changes = checker.tick(at(cycle * 1000 + 500));
+    checker.pollProbeTransitions(at(cycle * 1000));
+    changes = checker.pollProbeTransitions(at(cycle * 1000 + 500));
   }
   require(changes.size() == 1 && changes[0].to == ProbeState::kUnhealthy &&
               changes[0].reason == "timeout",
           "three failures missing");
-  require(checker.healthyTargets().empty(), "unhealthy selectable");
+  require(checker.copyHealthyProbeTargets().empty(), "unhealthy selectable");
   for (int cycle = 5; cycle < 7; ++cycle) {
-    checker.tick(at(cycle * 1000));
+    checker.pollProbeTransitions(at(cycle * 1000));
     transport->echo();
-    changes = checker.tick(at(cycle * 1000 + 1));
+    changes = checker.pollProbeTransitions(at(cycle * 1000 + 1));
   }
   require(changes.size() == 1 && changes[0].to == ProbeState::kHealthy,
           "recovery missing");
-  auto snapshot = checker.snapshots()[0];
+  auto snapshot = checker.copyProbeSnapshots()[0];
   require(
       snapshot.consecutiveSuccesses == 2 && snapshot.consecutiveFailures == 0,
       "counter reset");
-  checker.tick(at(7000));
+  checker.pollProbeTransitions(at(7000));
   transport->echo();
-  checker.tick(at(7001));
-  require(checker.snapshots()[0].consecutiveSuccesses == 2,
+  checker.pollProbeTransitions(at(7001));
+  require(checker.copyProbeSnapshots()[0].consecutiveSuccesses == 2,
           "counter did not saturate");
 }
 
 void testReplyBoundaries() {
   auto transport = std::make_shared<FakeTransport>();
   UdpProbeChecker checker({target()}, {}, transport, nonce(), logicalClock());
-  checker.tick(at(0));
+  checker.pollProbeTransitions(at(0));
   auto packet = transport->sockets.at(10).requests.back();
   auto& queue = transport->sockets.at(10).replies;
   queue.push_back({std::vector<uint8_t>(23, 0), 0});
@@ -203,30 +208,31 @@ void testReplyBoundaries() {
   auto wrong = packet;
   ++wrong[23];
   queue.push_back({{wrong.begin(), wrong.end()}, 0});
-  checker.tick(at(499));
-  require(checker.inFlight() == 1 && checker.lastReceiveEvents() == 3,
-          "bad replies completed probe");
+  checker.pollProbeTransitions(at(499));
+  require(
+      checker.inFlightProbeCount() == 1 && checker.lastReceiveEventCount() == 3,
+      "bad replies completed probe");
   transport->echo();
-  checker.tick(at(500));
-  require(checker.snapshots()[0].consecutiveFailures == 1 &&
-              checker.snapshots()[0].consecutiveSuccesses == 0,
+  checker.pollProbeTransitions(at(500));
+  require(checker.copyProbeSnapshots()[0].consecutiveFailures == 1 &&
+              checker.copyProbeSnapshots()[0].consecutiveSuccesses == 0,
           "exact deadline accepted reply");
-  checker.tick(at(1000));
-  require(checker.inFlight() == 1 &&
-              checker.snapshots()[0].consecutiveFailures == 1,
+  checker.pollProbeTransitions(at(1000));
+  require(checker.inFlightProbeCount() == 1 &&
+              checker.copyProbeSnapshots()[0].consecutiveFailures == 1,
           "late old token accepted");
   transport->echo();
   transport->echo();
-  checker.tick(at(1001));
-  checker.tick(at(2000));
-  require(checker.inFlight() == 1 &&
-              checker.snapshots()[0].consecutiveSuccesses == 1,
+  checker.pollProbeTransitions(at(1001));
+  checker.pollProbeTransitions(at(2000));
+  require(checker.inFlightProbeCount() == 1 &&
+              checker.copyProbeSnapshots()[0].consecutiveSuccesses == 1,
           "duplicate became next success");
   // A delayed controller sends one fresh probe, not thousands of catch-up
   // probes.
-  checker.tick(at(100000));
+  checker.pollProbeTransitions(at(100000));
   require(transport->sockets.at(10).requests.size() == 4, "catch-up burst");
-  require(checker.nextWakeup() == at(100500),
+  require(checker.nextProbeWakeup() == at(100500),
           "new deadline based on stale time");
 }
 
@@ -234,12 +240,12 @@ void testCompletionDeadline() {
   auto transport = std::make_shared<FakeTransport>();
   auto clock = logicalClock();
   UdpProbeChecker checker({target()}, {}, transport, nonce(), clock);
-  checker.tick(at(0));
+  checker.pollProbeTransitions(at(0));
   transport->echo();
   clock->delay = 1ms;
-  checker.tick(at(499));
-  require(checker.snapshots()[0].consecutiveFailures == 1 &&
-              checker.snapshots()[0].consecutiveSuccesses == 0,
+  checker.pollProbeTransitions(at(499));
+  require(checker.copyProbeSnapshots()[0].consecutiveFailures == 1 &&
+              checker.copyProbeSnapshots()[0].consecutiveSuccesses == 0,
           "reply processing crossed deadline but counted success");
 }
 
@@ -247,16 +253,17 @@ void testBudget() {
   auto transport = std::make_shared<FakeTransport>();
   UdpProbeChecker checker({target("blue"), target("green")}, {}, transport,
                           nonce(), logicalClock());
-  checker.tick(at(0));
+  checker.pollProbeTransitions(at(0));
   for (int index = 0; index < 600; ++index)
     transport->sockets.at(10).replies.push_back(
         {std::vector<uint8_t>(24, 0), 0});
   transport->echo(11);
-  checker.tick(at(1));
-  require(checker.lastReceiveEvents() == 256, "receive budget not enforced");
-  checker.tick(at(2));
-  require(checker.lastReceiveEvents() <= 256 &&
-              checker.snapshots()[1].consecutiveSuccesses == 1,
+  checker.pollProbeTransitions(at(1));
+  require(checker.lastReceiveEventCount() == 256,
+          "receive budget not enforced");
+  checker.pollProbeTransitions(at(2));
+  require(checker.lastReceiveEventCount() <= 256 &&
+              checker.copyProbeSnapshots()[1].consecutiveSuccesses == 1,
           "noisy peer starves other target");
 }
 
@@ -266,33 +273,34 @@ void testReload() {
   auto old = std::make_unique<UdpProbeChecker>(
       std::vector{target()}, std::vector<ProbeSnapshot>{}, transport, source,
       logicalClock());
-  old->tick(at(0));
+  old->pollProbeTransitions(at(0));
   transport->echo();
-  old->tick(at(1));
-  old->tick(at(1000));
+  old->pollProbeTransitions(at(1));
+  old->pollProbeTransitions(at(1000));
   auto oldPacket = transport->sockets.at(10).requests.back();
   auto candidate = std::make_unique<UdpProbeChecker>(
-      std::vector{target("green"), target()}, old->snapshots(), transport,
-      source, logicalClock());
-  require(candidate->inFlight() == 0 && old->inFlight() == 1,
-          "candidate mutates old probe");
-  require(candidate->snapshots()[1].consecutiveSuccesses == 1,
+      std::vector{target("green"), target()}, old->copyProbeSnapshots(),
+      transport, source, logicalClock());
+  require(
+      candidate->inFlightProbeCount() == 0 && old->inFlightProbeCount() == 1,
+      "candidate mutates old probe");
+  require(candidate->copyProbeSnapshots()[1].consecutiveSuccesses == 1,
           "completed health not preserved");
   old.reset();
-  candidate->tick(at(1001));
+  candidate->pollProbeTransitions(at(1001));
   // Deliver an old token to a new socket despite fd reuse: still no success.
   transport->sockets.at(12).replies.push_back(
       {{oldPacket.begin(), oldPacket.end()}, 0});
-  candidate->tick(at(1002));
-  require(candidate->snapshots()[1].consecutiveSuccesses == 1 &&
-              candidate->inFlight() == 2,
+  candidate->pollProbeTransitions(at(1002));
+  require(candidate->copyProbeSnapshots()[1].consecutiveSuccesses == 1 &&
+              candidate->inFlightProbeCount() == 2,
           "old token accepted after reorder");
   transport->echo(12);
-  candidate->tick(at(1003));
-  require(candidate->healthyTargets().size() == 1 &&
-              candidate->healthyTargets()[0].id == "blue",
+  candidate->pollProbeTransitions(at(1003));
+  require(candidate->copyHealthyProbeTargets().size() == 1 &&
+              candidate->copyHealthyProbeTargets()[0].id == "blue",
           "preserved counter missing");
-  auto snapshots = candidate->snapshots();
+  auto snapshots = candidate->copyProbeSnapshots();
   for (int field = 0; field < 6; ++field) {
     auto changed = target();
     if (field == 0) changed.id = "renamed";
@@ -303,18 +311,18 @@ void testReload() {
     if (field == 5) ++changed.probePort;
     UdpProbeChecker reset({changed}, snapshots, transport, source,
                           logicalClock());
-    require(reset.snapshots()[0].state == ProbeState::kUnknown &&
-                reset.snapshots()[0].consecutiveSuccesses == 0,
+    require(reset.copyProbeSnapshots()[0].state == ProbeState::kUnknown &&
+                reset.copyProbeSnapshots()[0].consecutiveSuccesses == 0,
             "changed identity kept health");
   }
   candidate.reset();
   require(transport->sockets.empty(), "reload leaked sockets");
   UdpProbeChecker reused({target()}, {}, transport, source, logicalClock());
-  reused.tick(at(2000));
+  reused.pollProbeTransitions(at(2000));
   transport->sockets.at(10).replies.push_back(
       {{oldPacket.begin(), oldPacket.end()}, 0});
-  reused.tick(at(2001));
-  require(reused.inFlight() == 1, "reused fd accepted old identity");
+  reused.pollProbeTransitions(at(2001));
+  require(reused.inFlightProbeCount() == 1, "reused fd accepted old identity");
 }
 
 void testErrorsAndBounds() {
@@ -324,7 +332,7 @@ void testErrorsAndBounds() {
     transport->sockets.at(10).sendError = error;
     std::vector<ProbeTransition> changes;
     for (int cycle = 0; cycle < 3; ++cycle)
-      changes = checker.tick(at(cycle * 1000));
+      changes = checker.pollProbeTransitions(at(cycle * 1000));
     require(changes.size() == 1 && changes[0].to == ProbeState::kUnhealthy,
             "send errors not failed");
     bool local = error == ENOBUFS || error == ENOMEM || error == EAGAIN;
@@ -337,11 +345,11 @@ void testErrorsAndBounds() {
     targets.push_back(target(std::to_string(index)));
   {
     UdpProbeChecker checker(targets, {}, transport, nonce(), logicalClock());
-    checker.tick(at(0));
-    require(checker.inFlight() == 64, "64 target bound");
+    checker.pollProbeTransitions(at(0));
+    require(checker.inFlightProbeCount() == 64, "64 target bound");
     bool rejected = false;
     try {
-      checker.tick(at(-1));
+      checker.pollProbeTransitions(at(-1));
     } catch (const std::runtime_error&) {
       rejected = true;
     }
@@ -372,7 +380,7 @@ void testErrorsAndBounds() {
     transport->sockets.at(10).sendError = EBADF;
     rejected = false;
     try {
-      checker.tick(at(0));
+      checker.pollProbeTransitions(at(0));
     } catch (const std::runtime_error&) {
       rejected = true;
     }
@@ -386,7 +394,7 @@ void testErrorsAndBounds() {
                             logicalClock());
     rejected = false;
     try {
-      checker.tick(at(0));
+      checker.pollProbeTransitions(at(0));
     } catch (const std::runtime_error&) {
       rejected = true;
     }
@@ -395,8 +403,8 @@ void testErrorsAndBounds() {
   }
   {
     UdpProbeChecker checker({}, {}, transport, nonce(), logicalClock());
-    require(checker.tick(at(0)).empty() &&
-                checker.nextWakeup() == ProbeClock::time_point::max(),
+    require(checker.pollProbeTransitions(at(0)).empty() &&
+                checker.nextProbeWakeup() == ProbeClock::time_point::max(),
             "empty set");
   }
 }
@@ -405,26 +413,28 @@ void testCandidateAbortAndRename() {
   auto transport = std::make_shared<FakeTransport>();
   auto source = nonce();
   UdpProbeChecker original({target()}, {}, transport, source, logicalClock());
-  original.tick(at(0));
+  original.pollProbeTransitions(at(0));
   transport->echo();
-  original.tick(at(1));
-  original.tick(at(1000));
+  original.pollProbeTransitions(at(1));
+  original.pollProbeTransitions(at(1000));
   transport->echo();
-  original.tick(at(1001));
-  original.tick(at(2000));
+  original.pollProbeTransitions(at(1001));
+  original.pollProbeTransitions(at(2000));
   {
-    UdpProbeChecker candidate({target("green")}, original.snapshots(),
+    UdpProbeChecker candidate({target("green")}, original.copyProbeSnapshots(),
                               transport, source, logicalClock());
-    require(candidate.inFlight() == 0, "unpublished candidate sent probe");
+    require(candidate.inFlightProbeCount() == 0,
+            "unpublished candidate sent probe");
   }
-  require(original.inFlight() == 1 && original.healthyTargets().size() == 1 &&
+  require(original.inFlightProbeCount() == 1 &&
+              original.copyHealthyProbeTargets().size() == 1 &&
               transport->sockets.size() == 1,
           "aborted candidate changed original");
   auto renamed = target();
   renamed.interfaceName = "renamed0";
-  UdpProbeChecker candidate({renamed}, original.snapshots(), transport, source,
-                            logicalClock());
-  require(candidate.snapshots()[0].state == ProbeState::kHealthy,
+  UdpProbeChecker candidate({renamed}, original.copyProbeSnapshots(), transport,
+                            source, logicalClock());
+  require(candidate.copyProbeSnapshots()[0].state == ProbeState::kHealthy,
           "same ifindex with renamed interface lost health");
 }
 
@@ -434,9 +444,9 @@ void testReceiveErrors() {
     UdpProbeChecker checker({target()}, {}, transport, nonce(), logicalClock());
     std::vector<ProbeTransition> changes;
     for (int cycle = 0; cycle < 3; ++cycle) {
-      checker.tick(at(cycle * 1000));
+      checker.pollProbeTransitions(at(cycle * 1000));
       transport->sockets.at(10).replies.push_back({{}, error});
-      changes = checker.tick(at(cycle * 1000 + 1));
+      changes = checker.pollProbeTransitions(at(cycle * 1000 + 1));
     }
     require(changes.size() == 1 && changes[0].to == ProbeState::kUnhealthy,
             "receive errors not failed");
@@ -446,18 +456,18 @@ void testReceiveErrors() {
   }
   auto transport = std::make_shared<FakeTransport>();
   UdpProbeChecker checker({target()}, {}, transport, nonce(), logicalClock());
-  checker.tick(at(0));
+  checker.pollProbeTransitions(at(0));
   transport->sockets.at(10).replies.push_back({{}, EINTR});
   transport->echo();
-  checker.tick(at(1));
-  require(checker.snapshots()[0].consecutiveSuccesses == 1 &&
-              checker.lastReceiveEvents() == 2,
+  checker.pollProbeTransitions(at(1));
+  require(checker.copyProbeSnapshots()[0].consecutiveSuccesses == 1 &&
+              checker.lastReceiveEventCount() == 2,
           "interrupted receive not bounded/retried");
-  checker.tick(at(1000));
+  checker.pollProbeTransitions(at(1000));
   transport->sockets.at(10).replies.push_back({{}, EBADF});
   bool rejected = false;
   try {
-    checker.tick(at(1001));
+    checker.pollProbeTransitions(at(1001));
   } catch (const std::runtime_error&) {
     rejected = true;
   }
@@ -499,7 +509,7 @@ void testRealSocket() {
   UdpProbeChecker checker({endpoint}, {}, {}, {}, logicalClock());
   ProbePacket previous{};
   for (int cycle = 0; cycle < 2; ++cycle) {
-    checker.tick(at(cycle * 1000));
+    checker.pollProbeTransitions(at(cycle * 1000));
     require(waitReadable(server.fd) == 1, "bound UDP request absent");
     ProbePacket packet{};
     sockaddr_in client{};
@@ -515,8 +525,8 @@ void testRealSocket() {
     require(sendto(otherPeer.fd, packet.data(), packet.size(), 0,
                    reinterpret_cast<sockaddr*>(&client), clientLength) == 24,
             "other-peer send");
-    checker.tick(at(cycle * 1000 + 1));
-    require(checker.inFlight() == 1, "other peer accepted");
+    checker.pollProbeTransitions(at(cycle * 1000 + 1));
+    require(checker.inFlightProbeCount() == 1, "other peer accepted");
     auto wrong = packet;
     ++wrong[23];
     sendto(server.fd, wrong.data(), wrong.size(), 0,
@@ -527,22 +537,24 @@ void testRealSocket() {
     std::copy(packet.begin(), packet.end(), longReply.begin());
     sendto(server.fd, longReply.data(), longReply.size(), 0,
            reinterpret_cast<sockaddr*>(&client), clientLength);
-    checker.tick(at(cycle * 1000 + 2));
-    require(checker.inFlight() == 1, "real wrong/short/long echo accepted");
+    checker.pollProbeTransitions(at(cycle * 1000 + 2));
+    require(checker.inFlightProbeCount() == 1,
+            "real wrong/short/long echo accepted");
     require(sendto(server.fd, packet.data(), packet.size(), 0,
                    reinterpret_cast<sockaddr*>(&client), clientLength) == 24,
             "echo response send");
-    checker.tick(at(cycle * 1000 + 3));
-    require(checker.inFlight() == 0, "matching real echo not accepted");
+    checker.pollProbeTransitions(at(cycle * 1000 + 3));
+    require(checker.inFlightProbeCount() == 0,
+            "matching real echo not accepted");
   }
-  require(checker.healthyTargets().size() == 1,
+  require(checker.copyHealthyProbeTargets().size() == 1,
           "real echo did not become healthy");
   {
     UdpProbeChecker wallClockChecker({endpoint});
     for (int cycle = 0; cycle < 2; ++cycle) {
       if (cycle)
         require(poll(nullptr, 0, 1010) == 0, "wall-clock interval wait");
-      wallClockChecker.tick(ProbeClock::now());
+      wallClockChecker.pollProbeTransitions(ProbeClock::now());
       require(waitReadable(server.fd) == 1, "production clock request absent");
       ProbePacket packet{};
       sockaddr_in client{};
@@ -561,16 +573,17 @@ void testRealSocket() {
       require(sendto(server.fd, packet.data(), packet.size(), 0,
                      reinterpret_cast<sockaddr*>(&client), clientLength) == 24,
               "production echo send");
-      wallClockChecker.tick(ProbeClock::now());
+      wallClockChecker.pollProbeTransitions(ProbeClock::now());
     }
-    require(wallClockChecker.healthyTargets().size() == 1,
+    require(wallClockChecker.copyHealthyProbeTargets().size() == 1,
             "production completion clock rejected timely echoes");
   }
   for (int cycle = 2; cycle < 5; ++cycle) {
-    checker.tick(at(cycle * 1000));
-    checker.tick(at(cycle * 1000 + 500));
+    checker.pollProbeTransitions(at(cycle * 1000));
+    checker.pollProbeTransitions(at(cycle * 1000 + 500));
   }
-  require(checker.healthyTargets().empty(), "silent UDP remained healthy");
+  require(checker.copyHealthyProbeTargets().empty(),
+          "silent UDP remained healthy");
   // TCP accepting on a port cannot make its UDP probe healthy.
   Socket tcp{socket(AF_INET, SOCK_STREAM | SOCK_CLOEXEC, 0)};
   address.sin_port = 0;
@@ -584,10 +597,10 @@ void testRealSocket() {
   endpoint.probePort = address.sin_port;
   UdpProbeChecker tcpOnly({endpoint}, {}, {}, {}, logicalClock());
   for (int cycle = 0; cycle < 3; ++cycle) {
-    tcpOnly.tick(at(cycle * 1000));
-    tcpOnly.tick(at(cycle * 1000 + 500));
+    tcpOnly.pollProbeTransitions(at(cycle * 1000));
+    tcpOnly.pollProbeTransitions(at(cycle * 1000 + 500));
   }
-  require(tcpOnly.snapshots()[0].state == ProbeState::kUnhealthy,
+  require(tcpOnly.copyProbeSnapshots()[0].state == ProbeState::kUnhealthy,
           "TCP-only mistaken for UDP health");
 }
 }  // namespace

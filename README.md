@@ -6,6 +6,8 @@ C++20 用户态四层负载均衡实验项目：单线程 LT epoll TCP 双向字
 
 ## 当前状态
 
+2026-10-06 R3：XDP用户态规范与ABI防守重构已完成，独立Reviewer002 PASS、Leader003收尾，无新增债或阻塞。Builder与Reviewer各自七构建、四配置合计154/154完整CTest（OFF Debug/Release各33，ON Debug/Release各44）、当前UID1000产品smoke及六组真实内核验证通过。加载/条件卸载、不可变发布、健康与有界输出行为和C/BPF ABI保持；用户态`src/xdp/loader.{h,cpp}`迁为`XdpAttachment.{h,cpp}`，公共`l4lb-xdp`命令和对象路径保持。R1/R2标签已推送核验；当前HEAD `ac23fb78c7c24722c2a910971281801dad0795ab`，R3改动未提交/发布，R4未启动，重构完成3/4。见[路线图](ROADMAP.md#编码规范重构当前状态)，以下为原时点历史记录。
+
 2026-10-06：R2事件回调、具名响应与生命周期重构已完成，独立复验PASS并由Leader收尾。Builder与Reviewer各自完整执行OFF Debug33/33、OFF Release33/33、ON Debug44/44、ON Release44/44，四配置合计各154/154；各六组构建、当前CLI/TCP/UDP产品与paired短smoke通过。新增`refactor_callback_lifecycle`验证多回调失败时全部清理与首异常，以及注册/健康/快照寿命。原外部命令、日志、metrics与网络契约保持，无新增债或阻塞。当前HEAD为`e42ce072027d2ef8c7459bc13334921c3cd30e29`；R1及附注标签`refactor-r1`已推送核验，R2改动尚未暂存、提交、推送或打标签，R3/R4未启动。当前状态见[路线图](ROADMAP.md#编码规范重构当前状态)，以下日期记录为历史时点事实。
 
 2026-10-05：编码规范重构R1已完成并独立验收PASS；用户态文件、名称与排版迁移落实，OFF/ON Debug与Release完整回归各150/150、六组构建及当前产品冒烟通过，原运行命令与行为契约保持。当前分支HEAD为`62c1e558b135da88c084c2e7a66b06281be06e5b`，R1改动尚未暂存、提交或发布；R2/R3/R4未启动。当前重构进度见[路线图](ROADMAP.md#编码规范重构当前状态)，历史S4记录保持其原时点事实。

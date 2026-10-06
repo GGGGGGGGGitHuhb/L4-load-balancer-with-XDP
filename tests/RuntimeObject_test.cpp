@@ -19,7 +19,7 @@ int main(int argc, char** argv) {
   std::unique_ptr<bpf_object, decltype(&bpf_object__close)> object(
       opened, bpf_object__close);
   try {
-    l4lb::xdp::RuntimeMapStore::validateObject(object.get());
+    l4lb::xdp::RuntimeMapStore::validateRuntimeMapObject(object.get());
   } catch (const std::runtime_error& error) {
     const std::string message = error.what();
     std::cerr << message << '\n';

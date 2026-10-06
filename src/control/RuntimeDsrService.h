@@ -4,12 +4,13 @@
 
 #include <string>
 
-#include "xdp/loader.h"
+#include "xdp/XdpAttachment.h"
 
 namespace l4lb::control {
-/** Runs the optional dynamic profile until a stop signal or fatal error. */
-int runRuntimeDsr(xdp::Attachment& attachment, const std::string& object,
-                  const std::string& ingress, const std::string& vip,
-                  const std::string& configurationPath, xdp::Mode mode,
-                  const sigset_t& signals);
+/** 运行可选的动态模式，直到收到停止信号或发生致命错误。 */
+int runRuntimeDsrControlLoop(xdp::XdpAttachment& attachment,
+                             const std::string& object,
+                             const std::string& ingress, const std::string& vip,
+                             const std::string& configurationPath,
+                             xdp::XdpAttachMode mode, const sigset_t& signals);
 }  // namespace l4lb::control
