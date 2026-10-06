@@ -11,6 +11,17 @@
 
 namespace l4lb {
 namespace {
+ConfigResult makeConfigLineError(ErrorKind kind, std::size_t lineNumber,
+                                 const char* message) {
+  return ConfigError{kind, lineNumber, false, message};
+}
+
+ConfigResult makeConfigFileError(const std::string& path,
+                                 const std::string& reason) {
+  return ConfigError{ErrorKind::kFile, 0, false,
+                     "文件 " + path + "：" + reason};
+}
+
 std::string_view trimConfigWhitespace(std::string_view value) {
   const auto first = value.find_first_not_of(" \t");
   if (first == std::string_view::npos) return {};
@@ -105,7 +116,7 @@ ConfigResult parseConfig(std::string_view text) {
 
     auto makeConfigError = [&](ErrorKind kind,
                                const char* message) -> ConfigResult {
-      return ConfigError{kind, lineNumber, false, message};
+      return makeConfigLineError(kind, lineNumber, message);
     };
 
     // 逐行检查，避免后面的编码问题覆盖前面的首个错误。
@@ -207,8 +218,7 @@ ConfigResult parseConfig(std::string_view text) {
 
 ConfigResult loadConfig(const std::string& path) {
   auto makeConfigError = [&](const std::string& reason) -> ConfigResult {
-    return ConfigError{ErrorKind::kFile, 0, false,
-                       "文件 " + path + "：" + reason};
+    return makeConfigFileError(path, reason);
   };
 
   // 非阻塞打开可使 FIFO 在无写端时立即返回，之后按已打开对象检查类型。

@@ -8,7 +8,7 @@
 
 本项目与高性能 HTTP 服务器项目形成分层互补：HTTP 服务器聚焦应用层协议解析和请求响应处理，本项目聚焦传输层 TCP/UDP 转发、后端调度、UDP flow table、健康检查、控制面与数据面分离，以及 XDP/eBPF 包级 fast path 验证。
 
-当前已完成 V0.1 的 S1 工程骨架、S2 TCP 转发与 S3 产品验证，V0.1 开发范围完成；本地 main 已同步至 V0.3/S3 合并提交 281db01；V0.2/S1 已完成 Completed（Reviewer002 PASS、Leader003 收尾），S2 Completed（Reviewer001 PASS、Leader003 收尾），S3 Completed（Reviewer001 PASS、Leader003收尾），V0.2开发范围完成；S3已合并并有远端标签v0.2-s3（7821b25）；V0.3/S1 Completed且已合并/标记9971818b；V0.3/S2 Completed并合并/标记2f5c26d；当前V0.3/S3及V0.3开发范围Completed。总体技术方向如下：
+历史阶段摘要（原 V0.3/S3 时点，本地 main 描述不表示当前分支 HEAD）：已完成 V0.1 的 S1 工程骨架、S2 TCP 转发与 S3 产品验证，V0.1 开发范围完成；本地 main 已同步至 V0.3/S3 合并提交 281db01；V0.2/S1 已完成 Completed（Reviewer002 PASS、Leader003 收尾），S2 Completed（Reviewer001 PASS、Leader003 收尾），S3 Completed（Reviewer001 PASS、Leader003收尾），V0.2开发范围完成；S3已合并并有远端标签v0.2-s3（7821b25）；V0.3/S1 Completed且已合并/标记9971818b；V0.3/S2 Completed并合并/标记2f5c26d；当前V0.3/S3及V0.3开发范围Completed。总体技术方向如下：
 
 - C++20 优先。
 - 用户态及 XDP/eBPF 开发、功能验证与阶段收尾采用已验证的本地 WSL2/Linux 隔离网络；不要求购买云服务器。V1.2 性能结论限定于实测环境，环境变化需重新预检。依据见 `docs/runbooks/linux-xdp-env.md`（2026-09-11 用户授权）。
@@ -19,11 +19,9 @@
 
 ## 编码规范重构当前状态
 
-2026-10-06：R1、R2、R3均`Completed`，重构整体完成3/4，R4未启动。R3 D1/RV1修订1与四附件保持Approved，用户“批准”登记Leader002；Builder002、独立Reviewer002 PASS及Leader003收尾齐备。R3-F01/F02/F03闭环，无新增债或阻塞；首次FAIL/执行失败保留。R3累计1轮、R2历史1轮、R1历史4轮分开，本次关闭不新增纠正。
+2026-10-06 当前：R1..R4 四阶段全部 `Completed`，编码规范重构开发范围完成4/4。R4独立Reviewer正式PASS、Leader收尾完成，无未解决finding或mandatory缺项；双方各七构建、四完整CTest合计154/154（OFF Debug/Release各33，ON各44）、六真实内核组和当前普通UID产品smoke通过。R1/R2/R3附注标签已推送核验；HEAD `cf21b2efa13e751841a47e8a36ae1dca57f6ea2c`，R4尚未提交、推送或打标签，不等于版本正式发布。旧夹具仍存在释放端口后复用导致假失败的限制，首次失败与有界有效复验保留，长期测试维护须另授权；不新增物理NIC/offload或正式性能声明。以下日期条目保留原时点事实。
 
-双方各七构建（六常规含两无Python Production及BPF-only）、OFF Debug/Release各33/33、ON Debug/Release各44/44，四配置合计各154/154，当前CLI/UID1000产品smoke与六组真实内核原runner通过。C/BPF ABI、commit前后/RCU、desired/applied、nonce/deadline与有界输出契约保持；不新增物理NIC/offload/正式性能声明。
-
-R1 `refactor-r1`及R2 `refactor-r2`已推送核验；R2标签对应当前HEAD `ac23fb78c7c24722c2a910971281801dad0795ab`。R3工作树尚未提交、推送或打标签。R4综合回归与当前文档收尾仍需各自设计/批准，不自动开始。详细治理记录仅本地：`docs/leader/designs/refactor/outline.md`、`docs/leader/reports/refactor/R3-report-003.md`。
+R1/R2/R3首次FAIL、取消和纠正历史保留；R1历史4、R2历史1、R3历史1；R4累计3，新增恢复额度1已用，初始0和历史1/2及停止报告保留。R4-D2/RV2修订1与附件保持Approved，有限Config.cpp两错误工厂已具名提取，其他源/ABI/测试/配置/历史性能包保持。闭环不新增已接受产品债，既有TD处置保持；开发完成与实际发布分开。
 
 ## 范围边界
 
