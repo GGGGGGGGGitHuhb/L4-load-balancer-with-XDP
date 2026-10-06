@@ -16,14 +16,14 @@ struct UdpTestAccess {
     for (int mode = 0; mode < 5; ++mode) {
       metrics::MetricsCollector counts(Protocol::kUdp, 1);
       UdpReactorCallbacks cb;
-      cb.statistics = [&](StatEvent e) {
+      cb.setStatisticsCallback([&](StatEvent e) {
         check(counts.recordStatEvent(e), "received packet lifecycle");
-      };
-      cb.select_backend = [&]() -> std::optional<Endpoint> {
+      });
+      cb.setBackendSelector([&]() -> std::optional<Endpoint> {
         if (mode == 2) throw std::runtime_error("selection-original");
         if (mode == 3) return std::nullopt;
         return Endpoint{{127, 0, 0, 1}, 1234};
-      };
+      });
       UdpReactorOptions opt;
       if (mode == 1) opt.setupError = [](const char*, int) { return ENOMEM; };
       if (mode == 4)
@@ -84,11 +84,11 @@ struct UdpTestAccess {
     metrics::MetricsCollector counts(Protocol::kUdp, 1);
     UdpReactorCallbacks cb;
     unsigned logs = 0;
-    cb.statistics = [&](StatEvent e) {
+    cb.setStatisticsCallback([&](StatEvent e) {
       check(counts.recordStatEvent(e), "UDP model lifecycle");
-    };
-    cb.select_backend = [] { return Endpoint{{127, 0, 0, 1}, 1234}; };
-    cb.diagnostic = [&](const std::string&, int) { ++logs; };
+    });
+    cb.setBackendSelector([] { return Endpoint{{127, 0, 0, 1}, 1234}; });
+    cb.setDiagnosticCallback([&](const std::string&, int) { ++logs; });
     UdpReactorOptions opt;
     auto time = UClock::time_point{};
     opt.now = [&] { return time; };

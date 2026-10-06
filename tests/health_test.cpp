@@ -150,7 +150,7 @@ void injected_tests() {
     return 0;
   };
   {
-    TcpHealthChecker c({endpoint}, {}, opt);
+    TcpHealthChecker c({endpoint}, opt);
     c.pollHealthProbes();
     auto old = latest;
     check(c.activeProbeCount() == 1, "pending started");
@@ -181,7 +181,7 @@ void injected_tests() {
   }
   check(fds() == count, "cancel reclaims pending fd epoll");
   {
-    TcpHealthChecker many(std::vector<Endpoint>(256, endpoint), {}, opt);
+    TcpHealthChecker many(std::vector<Endpoint>(256, endpoint), opt);
     event = 0;
     many.pollHealthProbes();
     check(many.activeProbeCount() == 256, "256 upper bound");
@@ -198,13 +198,11 @@ void injected_tests() {
     };
     std::string reason;
     int observed = 0;
-    TcpHealthChecker c(
-        {endpoint},
-        [&](const HealthChange& e) {
-          reason = e.reason;
-          observed = e.error;
-        },
-        resource);
+    TcpHealthChecker c({endpoint}, resource);
+    c.setHealthChangeCallback([&](const HealthChange& e) {
+      reason = e.reason;
+      observed = e.error;
+    });
     for (int n = 0; n < 3; ++n) {
       c.pollHealthProbes();
       time += 1s;
@@ -219,8 +217,9 @@ void injected_tests() {
   };
   {
     std::string reason;
-    TcpHealthChecker c(
-        {endpoint}, [&](const HealthChange& e) { reason = e.reason; }, opt);
+    TcpHealthChecker c({endpoint}, opt);
+    c.setHealthChangeCallback(
+        [&](const HealthChange& e) { reason = e.reason; });
     for (int n = 0; n < 3; ++n) {
       c.pollHealthProbes();
       time += 1s;
@@ -233,7 +232,7 @@ void injected_tests() {
     return -1;
   };
   {
-    TcpHealthChecker c({endpoint}, {}, opt);
+    TcpHealthChecker c({endpoint}, opt);
     bool threw = false;
     try {
       c.pollHealthProbes();
@@ -266,7 +265,7 @@ void real_tests() {
     TcpHealthCheckOptions opt;
     opt.interval = 5ms;
     opt.timeout = 200ms;
-    TcpHealthChecker c({target}, {}, opt);
+    TcpHealthChecker c({target}, opt);
     auto wait = [&](HealthStatus expected) {
       auto deadline = Clock::now() + 2s;
       while (Clock::now() < deadline && c.backendState(0).status != expected) {

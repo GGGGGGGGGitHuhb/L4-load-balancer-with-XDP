@@ -116,7 +116,7 @@ class TcpReactor {
   }
 
   int runTcpEventLoop() {
-    callbacks_.ready();
+    callbacks_.readyCallback()();
     std::array<epoll_event, 128> events{};
 
     for (;;) {
@@ -152,7 +152,8 @@ class TcpReactor {
       if (stopRequested_) continue;
       if (!draining_) {
         processSessionDeadlines();
-        if (!draining_ && callbacks_.maintenance) callbacks_.maintenance();
+        if (!draining_ && callbacks_.maintenanceCallback())
+          callbacks_.maintenanceCallback()();
       }
 
       for (int eventIndex = 0; eventIndex < eventCount; ++eventIndex) {
@@ -175,14 +176,15 @@ class TcpReactor {
 
  private:
   void reportStatEvent(StatKind kind, std::uint64_t amount = 1) {
-    if (callbacks_.statistics) callbacks_.statistics({kind, amount});
+    if (callbacks_.statisticsCallback())
+      callbacks_.statisticsCallback()({kind, amount});
   }
 
   void reportObservation(const char* kind, const Session* session = nullptr,
                          int side = -1, std::uint64_t value = 0) {
-    if (options_.observe)
-      options_.observe({kind, session ? session->id : 0, side, value,
-                        sessions_.size(), tokens_.size()});
+    if (options_.observationCallback())
+      options_.observationCallback()({kind, session ? session->id : 0, side,
+                                      value, sessions_.size(), tokens_.size()});
   }
 
   bool consumeStopSignals() {
@@ -220,9 +222,9 @@ class TcpReactor {
             event.pending[side] += session->pending[side].size();
 
         reportObservation("draining");
-        if (callbacks_.stopping) callbacks_.stopping(event);
-        if (detachError && callbacks_.diagnostic)
-          callbacks_.diagnostic("stop listener DEL", detachError);
+        if (callbacks_.stoppingCallback()) callbacks_.stoppingCallback()(event);
+        if (detachError && callbacks_.diagnosticCallback())
+          callbacks_.diagnosticCallback()("stop listener DEL", detachError);
         continue;
       }
       if (count < 0 && errno == EINTR) continue;
@@ -296,7 +298,58 @@ class TcpReactor {
     int error = detachEndpointFromEpoll(end);
     if (error) {
       reportStatEvent(StatKind::kError);
-      if (callbacks_.diagnostic) callbacks_.diagnostic("epoll_ctl DEL", error);
+      if (callbacks_.diagnosticCallback())
+        callbacks_.diagnosticCallback()("epoll_ctl DEL", error);
+    }
+  }
+
+  void attemptCloseErrorReport(std::exception_ptr& firstFailure) {
+    try {
+      reportStatEvent(StatKind::kError);
+    } catch (...) {
+      if (!firstFailure) firstFailure = std::current_exception();
+    }
+  }
+
+  void attemptCloseDiagnosticReport(int code,
+                                    std::exception_ptr& firstFailure) {
+    try {
+      if (callbacks_.diagnosticCallback())
+        callbacks_.diagnosticCallback()("epoll_ctl DEL", code);
+    } catch (...) {
+      if (!firstFailure) firstFailure = std::current_exception();
+    }
+  }
+
+  void attemptSessionEventReport(const Session& session,
+                                 const std::string& reason, int error,
+                                 std::exception_ptr& firstFailure) {
+    try {
+      if (callbacks_.sessionCallback())
+        callbacks_.sessionCallback()({session.id,
+                                      session.backend,
+                                      false,
+                                      reason,
+                                      error,
+                                      {session.sent[0], session.sent[1]}});
+    } catch (...) {
+      if (!firstFailure) firstFailure = std::current_exception();
+    }
+  }
+
+  void attemptClosedStatReport(std::exception_ptr& firstFailure) {
+    try {
+      reportStatEvent(StatKind::kClosed);
+    } catch (...) {
+      if (!firstFailure) firstFailure = std::current_exception();
+    }
+  }
+
+  void attemptClosedObservationReport(std::exception_ptr& firstFailure) {
+    try {
+      reportObservation("closed");
+    } catch (...) {
+      if (!firstFailure) firstFailure = std::current_exception();
     }
   }
 
@@ -317,34 +370,16 @@ class TcpReactor {
     }
 
     std::exception_ptr failure;
-    auto attempt = [&](auto action) {
-      try {
-        action();
-      } catch (...) {
-        if (!failure) failure = std::current_exception();
-      }
-    };
 
     for (int code : errors)
       if (code) {
-        attempt([&] { reportStatEvent(StatKind::kError); });
-        attempt([&] {
-          if (callbacks_.diagnostic)
-            callbacks_.diagnostic("epoll_ctl DEL", code);
-        });
+        attemptCloseErrorReport(failure);
+        attemptCloseDiagnosticReport(code, failure);
       }
 
-    attempt([&] {
-      if (callbacks_.session)
-        callbacks_.session({session.id,
-                            session.backend,
-                            false,
-                            reason,
-                            error,
-                            {session.sent[0], session.sent[1]}});
-    });
-    attempt([&] { reportStatEvent(StatKind::kClosed); });
-    attempt([&] { reportObservation("closed"); });
+    attemptSessionEventReport(session, reason, error, failure);
+    attemptClosedStatReport(failure);
+    attemptClosedObservationReport(failure);
 
     if (failure) std::rethrow_exception(failure);
   }
@@ -386,7 +421,7 @@ class TcpReactor {
             errno == ENOMEM) {
           reportStatEvent(StatKind::kError);
           if (!resourceWarning_)
-            callbacks_.diagnostic("accept4 resource backoff", errno);
+            callbacks_.diagnosticCallback()("accept4 resource backoff", errno);
           resourceWarning_ = true;
           updateEpollRegistration(EPOLL_CTL_DEL, listenerFd_.fd(), 1, 0);
           listenerDeferred_ = true;
@@ -404,7 +439,7 @@ class TcpReactor {
         continue;
       }
 
-      auto backend = callbacks_.select_backend();
+      auto backend = callbacks_.backendSelector()();
       if (!backend) {
         reportStatEvent(StatKind::kRejected);
         continue;
@@ -418,7 +453,7 @@ class TcpReactor {
       sessions_.emplace(id, std::move(sessionOwner));
       reportStatEvent(StatKind::kCreated);
       auto& session = *sessions_.at(id);
-      callbacks_.session({id, session.backend, true, "accepted"});
+      callbacks_.sessionCallback()({id, session.backend, true, "accepted"});
 
       try {
         session.ends[1].fd =

@@ -4,6 +4,7 @@
 
 #include <chrono>
 #include <functional>
+#include <utility>
 #include <vector>
 
 #include "config/Config.h"
@@ -35,9 +36,14 @@ struct TcpHealthCheckOptions {
 /** 单线程非阻塞探测；独占所有 probe，析构取消不计失败。 */
 class TcpHealthChecker {
  public:
+  using HealthChangeCallback = std::function<void(const HealthChange&)>;
+
   TcpHealthChecker(const std::vector<Endpoint>& endpoints,
-                   std::function<void(const HealthChange&)> changed = {},
                    TcpHealthCheckOptions options = {});
+
+  void setHealthChangeCallback(HealthChangeCallback healthChangeCallback) {
+    healthChangeCallback_ = std::move(healthChangeCallback);
+  }
 
   void pollHealthProbes();
 
@@ -65,7 +71,7 @@ class TcpHealthChecker {
   void startBackendProbe(std::size_t backendIndex, Clock::time_point time);
 
   std::vector<Endpoint> endpoints_;
-  std::function<void(const HealthChange&)> changed_;
+  HealthChangeCallback healthChangeCallback_;
   TcpHealthCheckOptions options_;
 
   net::Fd epoll_;

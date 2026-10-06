@@ -90,13 +90,15 @@ struct UdpTestAccess {
     Endpoint listen;
 
     Rig(bool wildcard = false) {
-      cb.select_backend = [&] {
+      cb.setBackendSelector([&] {
         auto e = socket_endpoint(selects % 2 ? b.fd() : a.fd());
         ++selects;
         return e;
-      };
-      cb.flow = [&](const UdpFlowEvent& e) { lifecycle.push_back(e); };
-      opt.observe = [&](const UdpObservation& e) { observed.push_back(e); };
+      });
+      cb.setFlowCallback(
+          [&](const UdpFlowEvent& e) { lifecycle.push_back(e); });
+      opt.setObservationCallback(
+          [&](const UdpObservation& e) { observed.push_back(e); });
       start(wildcard);
     }
 
@@ -187,7 +189,7 @@ struct UdpTestAccess {
     require_udp(!deadline.expired(UClock::time_point{} + 19ms, 10ms),
                 "zero success activity");
     UdpReactorCallbacks cb;
-    cb.select_backend = [] { return Endpoint{{127, 0, 0, 1}, 1}; };
+    cb.setBackendSelector([] { return Endpoint{{127, 0, 0, 1}, 1}; });
     for (int which = 0; which < 5; ++which) {
       UdpReactorOptions o;
       if (which == 0) o.maxFlows = 0;
@@ -392,9 +394,8 @@ struct UdpTestAccess {
     {
       Rig t;
       auto c = bound_udp();
-      t.cb.select_backend = []() -> Endpoint {
-        throw std::runtime_error("selection contract");
-      };
+      t.cb.setBackendSelector(
+          []() -> Endpoint { throw std::runtime_error("selection contract"); });
       put(c.fd(), t.listen, "throw");
       bool thrown = false;
       try {
@@ -543,10 +544,10 @@ struct UdpTestAccess {
       auto vacant = bound_udp();
       dead = socket_endpoint(vacant.fd());
     }
-    icmp.cb.select_backend = [&] {
+    icmp.cb.setBackendSelector([&] {
       ++icmp.selects;
       return dead;
-    };
+    });
     put(bad.fd(), icmp.listen, "trigger ICMP");
     icmp.pump();
     auto until = UClock::now() + 1s;
@@ -615,7 +616,7 @@ struct UdpTestAccess {
     auto clock = UClock::now();
     t.opt.now = [&] { return clock; };
     int diagnostics = 0;
-    t.cb.diagnostic = [&](const std::string&, int) { ++diagnostics; };
+    t.cb.setDiagnosticCallback([&](const std::string&, int) { ++diagnostics; });
     for (int i = 0; i < 20; ++i) t.r->reportDiagnostic("rate-test", ENOBUFS);
     require_udp(diagnostics == 1, "diagnostic burst rate limit");
     clock += 1s;

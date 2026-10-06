@@ -48,6 +48,9 @@ class MetricsCollector {
   MetricsSnapshot snapshot() const noexcept { return data_; }
 
  private:
+  void incrementCounter(std::uint64_t& value,
+                        std::uint64_t incrementAmount) noexcept;
+
   MetricsSnapshot data_;
 };
 
@@ -70,8 +73,10 @@ class MetricsOutput {
   friend struct TestAccess;
 
  public:
-  MetricsOutput(MetricsCollector& collector,
-                std::function<void(std::span<BackendHealthSnapshot>)> backends,
+  using BackendHealthProvider =
+      std::function<void(std::span<BackendHealthSnapshot>)>;
+
+  MetricsOutput(MetricsCollector& collector, BackendHealthProvider backends,
                 MetricsOutputOptions options = {});
 
   void emitReadySnapshot() noexcept;
@@ -85,7 +90,7 @@ class MetricsOutput {
   void emitSnapshot(std::string_view phase) noexcept;
 
   MetricsCollector& collector_;
-  std::function<void(std::span<BackendHealthSnapshot>)> copyBackendHealth_;
+  BackendHealthProvider backendHealthProvider_;
   MetricsOutputOptions options_;
 
   Clock::time_point startTime_, nextSnapshotTime_{};

@@ -106,28 +106,28 @@ struct ReactorTestAccess {
       TcpReactorCallbacks callbacks;
       int notified[3]{};
       TcpReactor* live = nullptr;
-      callbacks.session = [&](const SessionEvent& e) {
+      callbacks.setSessionCallback([&](const SessionEvent& e) {
         verify(!live->sessions_.contains(e.id),
                "TCP owner invalid before session callback");
         ++notified[0];
         if (hook == "session") throw std::runtime_error("session-primary");
-      };
-      callbacks.statistics = [&](StatEvent e) {
+      });
+      callbacks.setStatisticsCallback([&](StatEvent e) {
         if (e.kind == StatKind::kClosed) {
           ++notified[1];
           if (hook == "statistics")
             throw std::runtime_error("statistics-primary");
         }
-      };
-      options.observe = [&](const Observation& e) {
+      });
+      options.setObservationCallback([&](const Observation& e) {
         if (e.kind == "closed") {
           ++notified[2];
           if (hook == "observe") throw std::runtime_error("observe-primary");
         }
-      };
-      callbacks.diagnostic = [&](const std::string&, int) {
+      });
+      callbacks.setDiagnosticCallback([&](const std::string&, int) {
         throw std::runtime_error("diagnostic-primary");
-      };
+      });
       std::vector<int> descriptors;
       {
         TcpReactor r({{127, 0, 0, 1}, 0}, callbacks, options);
@@ -183,20 +183,20 @@ struct ReactorTestAccess {
     TcpReactorOptions options;
     options.idleTimeout = 50ms;
     TcpReactorCallbacks callbacks;
-    callbacks.ready = [] {};
+    callbacks.setReadyCallback([] {});
     int maintenance = 0, timeouts = 0, polls = 0;
     bool requested = false;
-    callbacks.maintenance = [&] { ++maintenance; };
-    callbacks.statistics = [&](StatEvent e) {
+    callbacks.setMaintenanceCallback([&] { ++maintenance; });
+    callbacks.setStatisticsCallback([&](StatEvent e) {
       if (e.kind == StatKind::kTimeout) ++timeouts;
-    };
-    options.observe = [&](const Observation& e) {
+    });
+    options.setObservationCallback([&](const Observation& e) {
       if (e.kind == "poll") ++polls;
       if (e.kind == "hup-retry" && !requested) {
         requested = true;
         kill(getpid(), SIGTERM);
       }
-    };
+    });
     TcpReactor r({{127, 0, 0, 1}, 0}, callbacks, options);
     auto peers0 = add(r, 1);
     auto peers1 = add(r, 2);
@@ -223,17 +223,18 @@ struct ReactorTestAccess {
     TcpReactorOptions options;
     options.drainTimeout = 80ms;
     TcpReactorCallbacks callbacks;
-    callbacks.ready = [] {};
+    callbacks.setReadyCallback([] {});
     int maintenance = 0;
-    callbacks.maintenance = [&] { ++maintenance; };
+    callbacks.setMaintenanceCallback([&] { ++maintenance; });
     std::vector<SessionEvent> closed;
-    callbacks.session = [&](const SessionEvent& e) { closed.push_back(e); };
+    callbacks.setSessionCallback(
+        [&](const SessionEvent& e) { closed.push_back(e); });
     int polls = 0, new_reads = 0;
     bool stopped = false;
-    options.observe = [&](const Observation& e) {
+    options.setObservationCallback([&](const Observation& e) {
       if (e.kind == "poll") ++polls;
       if (stopped && e.kind == "buffer") ++new_reads;
-    };
+    });
     options.sendCall = [&](int fd, const void* data, std::size_t size,
                            int flags) -> ssize_t {
       if (recordIoProgress && stopped) {
@@ -243,10 +244,10 @@ struct ReactorTestAccess {
       return send(fd, data, size, flags);
     };
     StopEvent barrier;
-    callbacks.stopping = [&](const StopEvent& e) {
+    callbacks.setStoppingCallback([&](const StopEvent& e) {
       barrier = e;
       stopped = true;
-    };
+    });
     TcpReactor r({{127, 0, 0, 1}, 0}, callbacks, options);
     auto peers = add(r, 1);
     auto connecting = add(r, 2, true);
@@ -374,28 +375,28 @@ struct UdpTestAccess {
       UdpReactorCallbacks callbacks;
       UdpReactor* live = nullptr;
       int notified[3]{};
-      callbacks.flow = [&](const UdpFlowEvent& e) {
+      callbacks.setFlowCallback([&](const UdpFlowEvent& e) {
         verify(!live->flows_.contains(e.id),
                "UDP owner invalid before flow notification");
         ++notified[0];
         if (hook == "flow") throw std::runtime_error("flow-primary");
-      };
-      callbacks.statistics = [&](StatEvent e) {
+      });
+      callbacks.setStatisticsCallback([&](StatEvent e) {
         if (e.kind == StatKind::kClosed) {
           ++notified[1];
           if (hook == "statistics")
             throw std::runtime_error("statistics-primary");
         }
-      };
-      options.observe = [&](const UdpObservation& e) {
+      });
+      options.setObservationCallback([&](const UdpObservation& e) {
         if (e.kind == "test-close" || e.kind == "service-stop") {
           ++notified[2];
           if (hook == "observe") throw std::runtime_error("observe-primary");
         }
-      };
-      callbacks.diagnostic = [&](const std::string&, int) {
+      });
+      callbacks.setDiagnosticCallback([&](const std::string&, int) {
         throw std::runtime_error("diagnostic-primary");
-      };
+      });
       std::vector<int> fds;
       {
         UdpReactor r({{127, 0, 0, 1}, 0}, callbacks, options);

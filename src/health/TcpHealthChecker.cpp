@@ -20,12 +20,9 @@ void throwHealthSystemError(const char* what) {
 }
 }  // namespace
 
-TcpHealthChecker::TcpHealthChecker(
-    const std::vector<Endpoint>& endpoints,
-    std::function<void(const HealthChange&)> changed,
-    TcpHealthCheckOptions options)
+TcpHealthChecker::TcpHealthChecker(const std::vector<Endpoint>& endpoints,
+                                   TcpHealthCheckOptions options)
     : endpoints_(endpoints),
-      changed_(std::move(changed)),
       options_(std::move(options)),
       epoll_(epoll_create1(EPOLL_CLOEXEC)),
       probes_(endpoints.size()) {
@@ -58,8 +55,9 @@ void TcpHealthChecker::completeBackendProbe(std::size_t backendIndex,
 
   probe.next = time + options_.interval;
   auto before = probe.state.status;
-  if (probe.state.applyProbeResult(success) && changed_)
-    changed_({backendIndex, before, probe.state.status, reason, error});
+  if (probe.state.applyProbeResult(success) && healthChangeCallback_)
+    healthChangeCallback_(
+        {backendIndex, before, probe.state.status, reason, error});
 }
 
 void TcpHealthChecker::startBackendProbe(std::size_t backendIndex,

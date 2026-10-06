@@ -28,6 +28,12 @@ class MetricsService {
   void finishMetrics(bool error) noexcept;
 
  private:
+  void copyBackendHealthSnapshot(
+      std::span<metrics::BackendHealthSnapshot> backends) const;
+
+  const Config& config_;
+  const std::unique_ptr<HealthSelection>& selection_;
+
   bool finalized_ = false;
 
   std::unique_ptr<metrics::MetricsCollector> collector_;
