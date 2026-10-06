@@ -158,11 +158,11 @@ void testSynchronization() {
 void testStats() {
   std::array<uint64_t, 3> values{std::numeric_limits<uint64_t>::max(), 2, 8};
   auto bytes = std::as_bytes(std::span(values));
-  require(l4lb::xdp::sumPassPackets(bytes, 3) == 9, "modular CPU sum");
+  require(l4lb::xdp::sumPerCpuPassPackets(bytes, 3) == 9, "modular CPU sum");
   for (int cpus : {-1, 0, 2, 4}) {
     bool rejected = false;
     try {
-      l4lb::xdp::sumPassPackets(bytes, cpus);
+      l4lb::xdp::sumPerCpuPassPackets(bytes, cpus);
     } catch (const std::runtime_error&) {
       rejected = true;
     }
@@ -174,13 +174,13 @@ void testMetadata(const char* path) {
   bpf_object* object = bpf_object__open_file(path, nullptr);
   require(object && !libbpf_get_error(object), "open maps object");
   try {
-    l4lb::xdp::MapStore::validateObject(object);
+    l4lb::xdp::MapStore::validateConfigMapObject(object);
     auto* map = bpf_object__find_map_by_name(object, "l4lb_be_v1");
     require(map != nullptr, "backend map missing");
     bpf_map__set_max_entries(map, 63);
     bool rejected = false;
     try {
-      l4lb::xdp::MapStore::validateObject(object);
+      l4lb::xdp::MapStore::validateConfigMapObject(object);
     } catch (const std::runtime_error&) {
       rejected = true;
     }

@@ -19,9 +19,11 @@
 
 ## 编码规范重构当前状态
 
-2026-10-06：R1、R2均`Completed`，重构整体还有R3、R4。R2 D1/RV1修订1与三附件保持Approved，Builder002、独立Reviewer002 PASS及Leader003收尾齐备；首次Reviewer001 FAIL和第1轮52处空白纠正历史保留，R2累计1轮、R1历史4轮单列。双方各OFF Debug/Release33/33、ON Debug/Release44/44，四配置合计各154/154，六构建及当前产品smoke通过，无新增债或阻塞。
+2026-10-06：R1、R2、R3均`Completed`，重构整体完成3/4，R4未启动。R3 D1/RV1修订1与四附件保持Approved，用户“批准”登记Leader002；Builder002、独立Reviewer002 PASS及Leader003收尾齐备。R3-F01/F02/F03闭环，无新增债或阻塞；首次FAIL/执行失败保留。R3累计1轮、R2历史1轮、R1历史4轮分开，本次关闭不新增纠正。
 
-R1提交`e42ce072027d2ef8c7459bc13334921c3cd30e29`及附注标签`refactor-r1`已推送核验；当前R2工作树尚未暂存、提交、推送或打标签。R3 XDP用户态规范、R4综合回归与当前文档收尾均未启动，保留串行顺序、各自设计与批准。本次只同步R2关闭门槛，不以R2接受代表重构整体完成。详细治理记录仅本地：`docs/leader/designs/refactor/outline.md`、`docs/leader/reports/refactor/R2-report-003.md`。
+双方各七构建（六常规含两无Python Production及BPF-only）、OFF Debug/Release各33/33、ON Debug/Release各44/44，四配置合计各154/154，当前CLI/UID1000产品smoke与六组真实内核原runner通过。C/BPF ABI、commit前后/RCU、desired/applied、nonce/deadline与有界输出契约保持；不新增物理NIC/offload/正式性能声明。
+
+R1 `refactor-r1`及R2 `refactor-r2`已推送核验；R2标签对应当前HEAD `ac23fb78c7c24722c2a910971281801dad0795ab`。R3工作树尚未提交、推送或打标签。R4综合回归与当前文档收尾仍需各自设计/批准，不自动开始。详细治理记录仅本地：`docs/leader/designs/refactor/outline.md`、`docs/leader/reports/refactor/R3-report-003.md`。
 
 ## 范围边界
 

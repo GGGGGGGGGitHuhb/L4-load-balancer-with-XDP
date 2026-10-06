@@ -8,8 +8,7 @@
 struct bpf_object;
 
 namespace l4lb::xdp {
-
-/** A failure after commit requires termination, never rollback or rejection. */
+/** 提交后的失败必须终止，绝不能回滚或拒绝。 */
 class RuntimePublishError final : public std::runtime_error {
  public:
   RuntimePublishError(const std::string& message, bool committed)
@@ -21,7 +20,7 @@ class RuntimePublishError final : public std::runtime_error {
   bool committed_;
 };
 
-/** Borrows object descriptors; owns at most one active and one candidate fd. */
+/** 借用对象描述符；最多拥有一个 active fd 和一个 candidate fd。 */
 class RuntimeMapStore final {
  public:
   explicit RuntimeMapStore(bpf_object* object);
@@ -29,16 +28,21 @@ class RuntimeMapStore final {
   RuntimeMapStore(const RuntimeMapStore&) = delete;
   RuntimeMapStore& operator=(const RuntimeMapStore&) = delete;
 
-  static void validateObject(bpf_object* object);
-  void publish(const UdpRuntimeSnapshot& snapshot);
-  UdpDsrStatsValue readStats() const;
+  static void validateRuntimeMapObject(bpf_object* object);
+
+  void publishSnapshot(const UdpRuntimeSnapshot& snapshot);
+
+  UdpDsrStatsValue readRuntimeStatistics() const;
 
   uint64_t generation() const { return generation_; }
 
  private:
   int outerFd_;
+
   int statsFd_;
+
   int activeFd_{-1};
+
   uint64_t generation_{0};
 };
 }  // namespace l4lb::xdp

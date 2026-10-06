@@ -9,14 +9,14 @@
 #include <vector>
 
 namespace l4lb::health {
-
 using ProbeClock = std::chrono::steady_clock;
 using ProbePacket = std::array<uint8_t, 24>;
 
 enum class ProbeState { kUnknown, kHealthy, kUnhealthy };
+
 const char* probeStateName(ProbeState state);
 
-/** Addresses and ports use network byte order; MACs participate in identity. */
+/** 地址和端口使用网络字节序；MAC 参与身份匹配。 */
 struct ProbeTarget {
   std::string id;
   std::string interfaceName;
@@ -44,7 +44,7 @@ struct ProbeTransition {
   int error = 0;
 };
 
-/** Nonblocking transport seam; handles belong exclusively to one checker. */
+/** 非阻塞传输测试缝；句柄仅由一个 checker 独占。 */
 struct ProbeIoResult {
   int bytes = -1;
   int error = 0;
@@ -53,41 +53,49 @@ struct ProbeIoResult {
 class ProbeTransport {
  public:
   virtual ~ProbeTransport() = default;
-  virtual int open(const ProbeTarget& target) = 0;
-  virtual void close(int handle) noexcept = 0;
-  virtual ProbeIoResult send(int handle, std::span<const uint8_t> packet) = 0;
-  virtual ProbeIoResult receive(int handle, std::span<uint8_t> buffer) = 0;
+
+  virtual int openProbeSocket(const ProbeTarget& target) = 0;
+
+  virtual void closeProbeSocket(int handle) noexcept = 0;
+
+  virtual ProbeIoResult sendProbePacket(int handle,
+                                        std::span<const uint8_t> packet) = 0;
+
+  virtual ProbeIoResult receiveProbePacket(int handle,
+                                           std::span<uint8_t> buffer) = 0;
 };
 
 class ProbeNonceSource {
  public:
   virtual ~ProbeNonceSource() = default;
-  virtual ProbePacket next() = 0;
+
+  virtual ProbePacket generateProbePacket() = 0;
 };
 
-/** Completion timestamp. Tests can project logical tick time deterministically.
- */
+/** 完成时间戳；测试可以确定性地投射逻辑轮询时间。 */
 class ProbeCompletionClock {
  public:
   virtual ~ProbeCompletionClock() = default;
+
   virtual ProbeClock::time_point nowAtCompletion(
-      ProbeClock::time_point tickTime) = 0;
+      ProbeClock::time_point pollTime) = 0;
 };
 
-/** Pure encoder with checked monotonic sequence, also usable in time tests. */
+/** 检查单调序号的纯编码器，也可用于时间测试。 */
 class ProbeNonceSequence final : public ProbeNonceSource {
  public:
   explicit ProbeNonceSequence(uint64_t epoch, uint64_t lastSequence = 0);
-  ProbePacket next() override;
+
+  ProbePacket generateProbePacket() override;
 
  private:
   uint64_t epoch_;
   uint64_t lastSequence_;
 };
 
-/** Single-threaded UDP echo health model. No callbacks, BPF access or logging.
- * Construction prepares candidate sockets without touching the old checker.
- * Commit by replacing the old owner; destruction cancels tokens before close.
+/** 单线程 UDP echo 健康模型，不使用回调、BPF 访问或日志。
+ * 构造时准备候选 socket，不触碰旧 checker。
+ * 通过替换旧 owner 提交；析构时先取消 token 再关闭。
  */
 class UdpProbeChecker {
  public:
@@ -101,36 +109,45 @@ class UdpProbeChecker {
   UdpProbeChecker(const UdpProbeChecker&) = delete;
   UdpProbeChecker& operator=(const UdpProbeChecker&) = delete;
 
-  std::vector<ProbeTransition> tick(ProbeClock::time_point now);
-  std::vector<ProbeSnapshot> snapshots() const;
-  std::vector<ProbeTarget> healthyTargets() const;
-  ProbeClock::time_point nextWakeup() const;
-  size_t inFlight() const;
+  std::vector<ProbeTransition> pollProbeTransitions(
+      ProbeClock::time_point pollTime);
 
-  size_t lastReceiveEvents() const { return lastReceiveEvents_; }
+  std::vector<ProbeSnapshot> copyProbeSnapshots() const;
+  std::vector<ProbeTarget> copyHealthyProbeTargets() const;
+
+  ProbeClock::time_point nextProbeWakeup() const;
+  size_t inFlightProbeCount() const;
+
+  size_t lastReceiveEventCount() const { return lastReceiveEventCount_; }
 
  private:
   struct Probe {
     ProbeSnapshot snapshot;
+
     int handle = -1;
     bool pending = false;
     ProbePacket token{};
+
     ProbeClock::time_point next{};
     ProbeClock::time_point deadline{};
   };
 
-  void finish(Probe& probe, bool success, const char* reason, int error,
-              std::vector<ProbeTransition>& transitions);
-  void cancelAll() noexcept;
+  void completeProbeResult(Probe& probe, bool success, const char* reason,
+                           int error,
+                           std::vector<ProbeTransition>& transitions);
+  void cancelAllProbes() noexcept;
 
   std::shared_ptr<ProbeTransport> transport_;
   std::shared_ptr<ProbeNonceSource> nonceSource_;
   std::shared_ptr<ProbeCompletionClock> completionClock_;
+
   std::vector<Probe> probes_;
-  ProbeClock::time_point lastTick_{};
-  bool ticked_ = false;
+
+  ProbeClock::time_point lastPollTime_{};
+  bool hasPolled_ = false;
+
   size_t receiveCursor_ = 0;
-  size_t lastReceiveEvents_ = 0;
+  size_t lastReceiveEventCount_ = 0;
 };
 
 }  // namespace l4lb::health

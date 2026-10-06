@@ -7,15 +7,14 @@
 #include <stdexcept>
 #include <string>
 
+#include "XdpAttachment.h"
 #include "control/RuntimeDsrService.h"
 #include "control/XdpConfigSync.h"
-#include "loader.h"
 
 namespace {
-
-struct Options {
+struct XdpOptions {
   bool attach = false;
-  l4lb::xdp::Profile profile = l4lb::xdp::Profile::kLegacy;
+  l4lb::xdp::XdpObjectProfile profile = l4lb::xdp::XdpObjectProfile::kLegacy;
   std::string vip;
   std::string runtimeConfig;
   std::vector<std::string> targets;
@@ -24,11 +23,11 @@ struct Options {
   std::vector<XdpBackendValue> backends;
   std::string device;
   std::string object;
-  l4lb::xdp::Mode mode = l4lb::xdp::Mode::Generic;
-  uint32_t program_id = 0;
+  l4lb::xdp::XdpAttachMode mode = l4lb::xdp::XdpAttachMode::kGeneric;
+  uint32_t programId = 0;
 };
 
-void usage() {
+void printXdpUsage() {
   std::cout
       << "用法：\n"
          "  l4lb-xdp attach --dev NAME --object PATH [--mode generic|native]\n"
@@ -43,31 +42,38 @@ void usage() {
          "不会覆盖已有程序；detach 必须指定预期程序 ID。\n";
 }
 
-Options parse(int argc, char** argv) {
+XdpOptions parseXdpOptions(int argc, char** argv) {
   if (argc < 2) throw std::invalid_argument("缺少 attach/detach 子命令");
-  Options options;
+
+  XdpOptions options;
   std::string command = argv[1];
   if (command != "attach" && command != "detach") {
     throw std::invalid_argument("未知子命令：" + command);
   }
   options.attach = command == "attach";
-  bool seen_mode = false;
-  bool seen_id = false;
-  for (int i = 2; i < argc; i += 2) {
-    std::string key = argv[i];
+
+  bool modeSeen = false;
+  bool programIdSeen = false;
+
+  for (int argumentIndex = 2; argumentIndex < argc; argumentIndex += 2) {
+    std::string key = argv[argumentIndex];
     if ((key == "--maps" || key == "--udp-dsr" || key == "--udp-dsr-runtime") &&
-        options.attach && options.profile == l4lb::xdp::Profile::kLegacy) {
+        options.attach &&
+        options.profile == l4lb::xdp::XdpObjectProfile::kLegacy) {
       options.profile = key == "--udp-dsr-runtime"
-                            ? l4lb::xdp::Profile::kUdpRuntimeV3
-                        : key == "--maps" ? l4lb::xdp::Profile::kMapsV1
-                                          : l4lb::xdp::Profile::kUdpDsrV2;
-      --i;
+                            ? l4lb::xdp::XdpObjectProfile::kUdpRuntimeV3
+                        : key == "--maps"
+                            ? l4lb::xdp::XdpObjectProfile::kMapsV1
+                            : l4lb::xdp::XdpObjectProfile::kUdpDsrV2;
+      --argumentIndex;
       continue;
     }
-    if (i + 1 >= argc || argv[i + 1][0] == '\0') {
+
+    if (argumentIndex + 1 >= argc || argv[argumentIndex + 1][0] == '\0') {
       throw std::invalid_argument("选项缺少值：" + key);
     }
-    std::string value = argv[i + 1];
+
+    std::string value = argv[argumentIndex + 1];
     if (key == "--backend" && options.attach) {
       options.endpoints.push_back(value);
     } else if (key == "--vip" && options.attach && options.vip.empty()) {
@@ -81,26 +87,26 @@ Options parse(int argc, char** argv) {
       options.device = value;
     } else if (key == "--object" && options.attach && options.object.empty()) {
       options.object = value;
-    } else if (key == "--mode" && !seen_mode) {
+    } else if (key == "--mode" && !modeSeen) {
       if (value != "generic" && value != "native") {
         throw std::invalid_argument("mode 只支持 generic 或 native");
       }
-      options.mode = value == "generic" ? l4lb::xdp::Mode::Generic
-                                        : l4lb::xdp::Mode::Native;
-      seen_mode = true;
-    } else if (key == "--prog-id" && !options.attach && !seen_id) {
+      options.mode = value == "generic" ? l4lb::xdp::XdpAttachMode::kGeneric
+                                        : l4lb::xdp::XdpAttachMode::kNative;
+      modeSeen = true;
+    } else if (key == "--prog-id" && !options.attach && !programIdSeen) {
       auto result = std::from_chars(value.data(), value.data() + value.size(),
-                                    options.program_id);
+                                    options.programId);
       if (result.ec != std::errc{} ||
-          result.ptr != value.data() + value.size() ||
-          options.program_id == 0) {
+          result.ptr != value.data() + value.size() || options.programId == 0) {
         throw std::invalid_argument("prog-id 必须是正 uint32 整数");
       }
-      seen_id = true;
+      programIdSeen = true;
     } else {
       throw std::invalid_argument("未知、重复或不适用的选项：" + key);
     }
   }
+
   if (options.device.empty() || options.device.size() >= IF_NAMESIZE ||
       options.device.find_first_of("/ \t\r\n:") != std::string::npos) {
     throw std::invalid_argument(
@@ -108,19 +114,22 @@ Options parse(int argc, char** argv) {
   }
   if (options.attach && options.object.empty())
     throw std::invalid_argument("缺少 --object");
-  if (!options.attach && !seen_id)
+  if (!options.attach && !programIdSeen)
     throw std::invalid_argument("缺少 --prog-id");
-  if (options.profile != l4lb::xdp::Profile::kMapsV1 &&
+
+  if (options.profile != l4lb::xdp::XdpObjectProfile::kMapsV1 &&
       !options.endpoints.empty())
     throw std::invalid_argument("--backend 需要 --maps");
+
   options.backends = l4lb::control::parseXdpBackends(options.endpoints);
-  if (options.profile == l4lb::xdp::Profile::kUdpRuntimeV3) {
+
+  if (options.profile == l4lb::xdp::XdpObjectProfile::kUdpRuntimeV3) {
     if (options.vip.empty() || options.runtimeConfig.empty() ||
         !options.targets.empty())
       throw std::invalid_argument(
           "动态DSR需要--vip/--runtime-config，禁止--target");
     l4lb::control::parseXdpBackends({options.vip});
-  } else if (options.profile == l4lb::xdp::Profile::kUdpDsrV2) {
+  } else if (options.profile == l4lb::xdp::XdpObjectProfile::kUdpDsrV2) {
     if (options.vip.empty())
       throw std::invalid_argument("--udp-dsr 需要 --vip");
     // Literal checks remain parameter errors; interface inspection happens
@@ -129,9 +138,11 @@ Options parse(int argc, char** argv) {
   } else if (!options.vip.empty() || !options.targets.empty()) {
     throw std::invalid_argument("--vip/--target 需要 --udp-dsr");
   }
-  if (options.profile != l4lb::xdp::Profile::kUdpRuntimeV3 &&
+
+  if (options.profile != l4lb::xdp::XdpObjectProfile::kUdpRuntimeV3 &&
       !options.runtimeConfig.empty())
     throw std::invalid_argument("--runtime-config 需要 --udp-dsr-runtime");
+
   return options;
 }
 
@@ -139,72 +150,91 @@ Options parse(int argc, char** argv) {
 
 int main(int argc, char** argv) {
   if (argc == 2 && std::strcmp(argv[1], "--help") == 0) {
-    usage();
+    printXdpUsage();
     return std::cout ? 0 : 1;
   }
-  Options options;
+
+  XdpOptions options;
+
   try {
-    options = parse(argc, argv);
+    options = parseXdpOptions(argc, argv);
   } catch (const std::invalid_argument& error) {
     std::cerr << "参数错误：" << error.what() << '\n';
-    usage();
+    printXdpUsage();
     return 2;
   }
+
   try {
     sigset_t signals;
     sigemptyset(&signals);
     sigaddset(&signals, SIGINT);
     sigaddset(&signals, SIGTERM);
-    // SIGPIPE must not bypass RAII cleanup if the output reader disappears.
+    // 输出读取者消失时，SIGPIPE 不能绕过 RAII 清理。
     sigaddset(&signals, SIGPIPE);
-    if (options.profile == l4lb::xdp::Profile::kUdpRuntimeV3)
+
+    if (options.profile == l4lb::xdp::XdpObjectProfile::kUdpRuntimeV3)
       sigaddset(&signals, SIGHUP);
     if (sigprocmask(SIG_BLOCK, &signals, nullptr) != 0) {
       throw std::runtime_error("无法阻塞退出信号");
     }
-    int ifindex = l4lb::xdp::interface_index(options.device);
+
+    int interfaceIndex = l4lb::xdp::resolveInterfaceIndex(options.device);
     if (!options.attach) {
-      l4lb::xdp::detach_program(ifindex, options.mode, options.program_id);
+      l4lb::xdp::detachExpectedProgram(interfaceIndex, options.mode,
+                                       options.programId);
+
       std::cout << "DETACHED dev=" << options.device
-                << " mode=" << l4lb::xdp::mode_name(options.mode)
-                << " prog_id=" << options.program_id
+                << " mode=" << l4lb::xdp::xdpAttachModeName(options.mode)
+                << " prog_id=" << options.programId
                 << "（已卸载或本模式无程序）" << std::endl;
       return std::cout ? 0 : 1;
     }
-    if (options.profile == l4lb::xdp::Profile::kUdpDsrV2)
+
+    if (options.profile == l4lb::xdp::XdpObjectProfile::kUdpDsrV2)
       options.dsr = l4lb::control::parseDsrConfiguration(
           options.device, options.vip, options.targets);
-    l4lb::xdp::Attachment attachment;
-    if (options.profile == l4lb::xdp::Profile::kUdpRuntimeV3)
-      return l4lb::control::runRuntimeDsr(
+
+    l4lb::xdp::XdpAttachment attachment;
+
+    if (options.profile == l4lb::xdp::XdpObjectProfile::kUdpRuntimeV3)
+      return l4lb::control::runRuntimeDsrControlLoop(
           attachment, options.object, options.device, options.vip,
           options.runtimeConfig, options.mode, signals);
-    attachment.load(options.object, options.profile, options.backends,
-                    options.dsr);
-    attachment.attach(ifindex, options.mode);
+
+    attachment.loadObject(options.object, options.profile, options.backends,
+                          options.dsr);
+    attachment.attachProgram(interfaceIndex, options.mode);
+
     std::cout << "READY dev=" << options.device
-              << " mode=" << l4lb::xdp::mode_name(options.mode)
-              << " prog_id=" << attachment.program_id();
-    if (options.profile == l4lb::xdp::Profile::kMapsV1)
+              << " mode=" << l4lb::xdp::xdpAttachModeName(options.mode)
+              << " prog_id=" << attachment.programId();
+
+    if (options.profile == l4lb::xdp::XdpObjectProfile::kMapsV1)
       std::cout << " schema=1 backend_count=" << options.backends.size();
-    if (options.profile == l4lb::xdp::Profile::kUdpDsrV2)
+
+    if (options.profile == l4lb::xdp::XdpObjectProfile::kUdpDsrV2)
       std::cout << " schema=2 profile=udp-dsr backend_count="
                 << options.dsr.backends.size();
+
     std::cout << std::endl;
     if (!std::cout) throw std::runtime_error("READY 输出失败，清理挂载");
+
     int received = 0;
     int error = sigwait(&signals, &received);
     if (error != 0)
       throw std::runtime_error("等待信号失败：" +
                                std::string(std::strerror(error)));
+
     bool cleanupFailed = false;
+
     try {
-      attachment.detach();
+      attachment.detachProgram();
     } catch (const std::exception& error) {
       cleanupFailed = true;
       std::cerr << "XDP 卸载失败：" << error.what() << '\n';
     }
-    if (options.profile == l4lb::xdp::Profile::kMapsV1) {
+
+    if (options.profile == l4lb::xdp::XdpObjectProfile::kMapsV1) {
       try {
         auto packets = attachment.readPassPackets();
         std::cout << "XDP_STATS schema=1 pass_packets=" << packets << std::endl;
@@ -213,7 +243,8 @@ int main(int argc, char** argv) {
         std::cerr << "XDP 统计失败：" << error.what() << '\n';
       }
     }
-    if (options.profile == l4lb::xdp::Profile::kUdpDsrV2) {
+
+    if (options.profile == l4lb::xdp::XdpObjectProfile::kUdpDsrV2) {
       try {
         auto stats = attachment.readDsrStats();
         std::cout << "XDP_STATS schema=2 total_packets=" << stats.totalPackets
@@ -230,17 +261,19 @@ int main(int argc, char** argv) {
         std::cerr << "XDP 统计失败：" << error.what() << '\n';
       }
     }
+
     if (cleanupFailed) return 1;
+
     std::cout << "DETACHED dev=" << options.device
-              << " mode=" << l4lb::xdp::mode_name(options.mode)
-              << " prog_id=" << attachment.program_id() << std::endl;
+              << " mode=" << l4lb::xdp::xdpAttachModeName(options.mode)
+              << " prog_id=" << attachment.programId() << std::endl;
     return std::cout && received != SIGPIPE ? 0 : 1;
   } catch (const std::invalid_argument& error) {
     std::cerr << "参数错误：" << error.what() << '\n';
     return 2;
   } catch (const std::exception& error) {
     std::cerr << "XDP 失败 dev=" << options.device
-              << " mode=" << l4lb::xdp::mode_name(options.mode) << "："
+              << " mode=" << l4lb::xdp::xdpAttachModeName(options.mode) << "："
               << error.what() << '\n';
     return 1;
   }

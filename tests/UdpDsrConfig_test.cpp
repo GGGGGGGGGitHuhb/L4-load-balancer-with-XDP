@@ -7,7 +7,7 @@
 #include <stdexcept>
 
 #include "control/DsrConfigSync.h"
-#include "xdp/loader.h"
+#include "xdp/XdpAttachment.h"
 
 namespace {
 void require(bool condition, const char* message) {
@@ -169,7 +169,7 @@ void testMetadata(const char* path) {
       if (mutation == 5) bpf_map__set_map_flags(map, BPF_F_NO_PREALLOC);
       bool rejected = false;
       try {
-        l4lb::xdp::DsrMapStore::validateObject(object);
+        l4lb::xdp::DsrMapStore::validateDsrMapObject(object);
       } catch (const std::runtime_error&) {
         rejected = true;
       }
@@ -184,8 +184,8 @@ int main(int argc, char** argv) {
   try {
     if (argc == 3 && std::string(argv[1]) == "--reject") {
       try {
-        l4lb::xdp::Attachment attachment;
-        attachment.load(argv[2], l4lb::xdp::Profile::kUdpDsrV2);
+        l4lb::xdp::XdpAttachment attachment;
+        attachment.loadObject(argv[2], l4lb::xdp::XdpObjectProfile::kUdpDsrV2);
       } catch (const std::runtime_error& error) {
         std::string message = error.what();
         require(message.find("白名单") != std::string::npos ||

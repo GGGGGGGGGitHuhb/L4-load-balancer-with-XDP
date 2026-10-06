@@ -149,14 +149,14 @@ void verify(const char* path) {
   bpf_object* object = bpf_object__open_file(path, nullptr);
   require(object && !libbpf_get_error(object), "open object");
   try {
-    RuntimeMapStore::validateObject(object);
+    RuntimeMapStore::validateRuntimeMapObject(object);
     require(!bpf_object__load(object), "load object");
     int outerFd = bpf_object__find_map_fd_by_name(object, "l4lb_active_v3");
     int programFd =
         bpf_program__fd(bpf_object__find_program_by_name(object, "xdp_udp_rt"));
     {
       RuntimeMapStore store(object);
-      store.publish(snapshot(1));
+      store.publishSnapshot(snapshot(1));
       runPacket(programFd, false, 1);
       uint32_t oldId = activeId(outerFd);
       size_t stableFds = fdCount();
@@ -165,7 +165,7 @@ void verify(const char* path) {
         setenv("L4LB_RUNTIME_FAULT", fault, 1);
         bool rejected = false;
         try {
-          store.publish(snapshot(2));
+          store.publishSnapshot(snapshot(2));
         } catch (const RuntimePublishError& error) {
           require(!error.committed(), "precommit mislabeled");
           rejected = true;
@@ -188,7 +188,7 @@ void verify(const char* path) {
       try {
         for (uint64_t generation = 2; generation <= 101; ++generation) {
           retired.push_back(activeId(outerFd));
-          store.publish(snapshot(generation));
+          store.publishSnapshot(snapshot(generation));
           runPacket(programFd, false, generation);
         }
       } catch (...) {
@@ -208,7 +208,7 @@ void verify(const char* path) {
         setenv("L4LB_RUNTIME_FAULT", fault, 1);
         bool committed = false;
         try {
-          store.publish(snapshot(generation));
+          store.publishSnapshot(snapshot(generation));
         } catch (const RuntimePublishError& error) {
           committed = error.committed();
         }
@@ -221,9 +221,9 @@ void verify(const char* path) {
       auto empty = snapshot(store.generation() + 1);
       empty.backendCount = 0;
       std::memset(empty.backends, 0, sizeof(empty.backends));
-      store.publish(empty);
+      store.publishSnapshot(empty);
       runPacket(programFd, false, 0, XDP_DROP);
-      auto stats = store.readStats();
+      auto stats = store.readRuntimeStatistics();
       require(stats.noBackendPackets == 1 && stats.dropPackets == 1 &&
                   !stats.invalidConfigPackets,
               "v3 empty active must DROP/count");
