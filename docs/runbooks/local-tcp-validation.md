@@ -19,7 +19,7 @@ ctest --test-dir build-release --output-on-failure
 ctest --test-dir build-release -L s3 --repeat until-fail:3 --output-on-failure
 ```
 
-预期：当前注册31项，Debug快速30/30（排除udp_long），Release全套31/31（包含一次约61秒的原生产UDP过期测试），退出0。V0.2/S2历史为9项；V0.2/S3新增 `v02_udp_system` 与 `v02_udp_expiry`。长项只需Release一次，详见 [UDP手册](local-udp-validation.md)；s3 标签恰有一个产品用例，重复 3 次均通过。直接入口最后输出中文 `PASS` 与原子唯一的 `run-XXXXXX` 目录，退出 0。该目录保留配置、各子进程 `.out`/`.err` 和 `result.txt`；后者记录 PID、动态端口、场景结果和重绑结果。测试失败退出 1，用法错误退出 2。不要把外部超时 124 当作断言成功。
+预期：默认 XDP OFF 当前注册33项，快速组32/32（排除udp_long），完整组33/33（包含一次约61秒的原生产UDP过期测试），退出0。V0.2/S2历史为9项；V0.2/S3新增 `v02_udp_system` 与 `v02_udp_expiry`。长项只需Release一次，详见 [UDP手册](local-udp-validation.md)；s3 标签恰有一个产品用例，重复 3 次均通过。直接入口最后输出中文 `PASS` 与原子唯一的 `run-XXXXXX` 目录，退出 0。该目录保留配置、各子进程 `.out`/`.err` 和 `result.txt`；后者记录 PID、动态端口、场景结果和重绑结果。测试失败退出 1，用法错误退出 2。不要把外部超时 124 当作断言成功。
 
 若当前执行环境把 127/8 经代理接口转发，可能出现 send 成功但大 UDP 包被丢弃。可在临时用户/网络命名空间验证真实回环，不修改宿主路由：`unshare --user --map-root-user --net sh -c 'ip link set lo up && ctest --test-dir build'`。此时命名空间内 uid=0，文件读取权限用例会跳过；另在原普通用户环境运行 `ctest --test-dir build -R cli_integration` 补齐。只有在独立回环完整通过后才能将测试记为通过，不能缩小 65507 字节边界。
 

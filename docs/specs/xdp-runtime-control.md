@@ -1,6 +1,6 @@
 # XDP 运行期配置与 UDP 健康联动
 
-V1.2/S3，已完成独立验收与收尾（2026-09-28），尚未提交或发布；本页描述新profile的实现契约，阶段状态以README/ROADMAP及最终验证摘要为准。旧[静态DSR](xdp-udp-dsr.md)保持独立，不解除schema v2冻结。
+V1.2/S3，已完成独立验收与收尾（2026-09-28）；阶段标签见 [CHANGELOG](../../CHANGELOG.md)。本页描述新profile的实现契约，阶段状态以README/ROADMAP及最终验证摘要为准。旧[静态DSR](xdp-udp-dsr.md)保持独立，不解除schema v2冻结。
 
 ## 启动和重载
 
