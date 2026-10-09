@@ -4,13 +4,13 @@
 
 ## 关联、地址与资源
 
-- `core/udp_flow.h` 的 FlowKey 是客户端 IPv4/UDP 端口加实际本地目的 IPv4；listener 端口及 UDP 协议由单实例隐含。相同源端点向 wildcard 的不同目标地址发送会建立不同 flow。
+- [core/UdpFlow.h](../../src/core/UdpFlow.h) 的 UdpFlowKey 是客户端 IPv4/UDP 端口加实际本地目的 IPv4；listener 端口及 UDP 协议由单实例隐含。相同源端点向 wildcard 的不同目标地址发送会建立不同 flow。
 - listener 为非阻塞/CLOEXEC IPv4 UDP socket，一次 bind，无 listen/accept、SO_REUSEADDR/SO_REUSEPORT/SO_BROADCAST。无论具体地址或 `0.0.0.0` 都必须启用 IP_PKTINFO，失败则启动失败、无 ready。
 - recvmsg 验证完整 AF_INET 客户端、非零源端口、非零单播源/目的地址、无 MSG_CTRUNC，恰有一个完整 IP_PKTINFO。拒绝 224.0.0.0/4、255.255.255.255、`ipi_addr != ipi_spec_dst`；具体绑定还要求目的地址匹配。缺失、截断或不支持元数据在建 flow/调度前整包丢弃。
 - 保存 `ipi_addr` 为 flow 的目的 IP。回复从原 listener 以 sendmsg 发回客户端，IP_PKTINFO 设置 `ipi_spec_dst=保存地址`、`ipi_ifindex=0`、`ipi_addr=0`，保持源 IP/源端口与请求目标一致；不复制接收 ifindex 干扰路由。特殊策略路由/地址重配不在保证范围。
 - 每个 flow 独占一个非阻塞/CLOEXEC UDP backend socket，先 bind `INADDR_ANY:0` 再 connect 到选定静态后端；无握手/探活，connect 成功不表示可达。后端看到代理临时端口，不是原客户端端点。
 - 后端请求使用 send，回包使用 recvmsg，仅接收已连接对端的源 IP/port；外来 socket 不能通过回包覆写关联。一个请求允许多个回包，不解析 request ID，不在用户态提供发送队列。
-- `net/udp_reactor.*` 持有 key→token 与 token→flow 索引；flow 内持有 fd RAII，core 只保存纯值类型。控制层持有 Scheduler，生命周期覆盖同步 reactor，不将配置策略解析或日志放入 net。
+- [net/UdpReactor.cpp](../../src/net/UdpReactor.cpp) 持有 key→token 与 token→flow 索引；flow 内持有 fd RAII，core 只保存纯值类型。控制层持有 BackendScheduler，生命周期覆盖同步 reactor，不将配置策略解析或日志放入 net。
 
 ## 建立、调度与容量
 

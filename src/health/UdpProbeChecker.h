@@ -58,11 +58,9 @@ class ProbeTransport {
 
   virtual void closeProbeSocket(int handle) noexcept = 0;
 
-  virtual ProbeIoResult sendProbePacket(int handle,
-                                        std::span<const uint8_t> packet) = 0;
+  virtual ProbeIoResult sendProbePacket(int handle, std::span<const uint8_t> packet) = 0;
 
-  virtual ProbeIoResult receiveProbePacket(int handle,
-                                           std::span<uint8_t> buffer) = 0;
+  virtual ProbeIoResult receiveProbePacket(int handle, std::span<uint8_t> buffer) = 0;
 };
 
 class ProbeNonceSource {
@@ -77,8 +75,7 @@ class ProbeCompletionClock {
  public:
   virtual ~ProbeCompletionClock() = default;
 
-  virtual ProbeClock::time_point nowAtCompletion(
-      ProbeClock::time_point pollTime) = 0;
+  virtual ProbeClock::time_point nowAtCompletion(ProbeClock::time_point pollTime) = 0;
 };
 
 /** 检查单调序号的纯编码器，也可用于时间测试。 */
@@ -99,18 +96,16 @@ class ProbeNonceSequence final : public ProbeNonceSource {
  */
 class UdpProbeChecker {
  public:
-  explicit UdpProbeChecker(
-      const std::vector<ProbeTarget>& targets,
-      const std::vector<ProbeSnapshot>& previous = {},
-      std::shared_ptr<ProbeTransport> transport = {},
-      std::shared_ptr<ProbeNonceSource> nonceSource = {},
-      std::shared_ptr<ProbeCompletionClock> completionClock = {});
+  explicit UdpProbeChecker(const std::vector<ProbeTarget>& targets,
+                           const std::vector<ProbeSnapshot>& previous = {},
+                           std::shared_ptr<ProbeTransport> transport = {},
+                           std::shared_ptr<ProbeNonceSource> nonceSource = {},
+                           std::shared_ptr<ProbeCompletionClock> completionClock = {});
   ~UdpProbeChecker();
   UdpProbeChecker(const UdpProbeChecker&) = delete;
   UdpProbeChecker& operator=(const UdpProbeChecker&) = delete;
 
-  std::vector<ProbeTransition> pollProbeTransitions(
-      ProbeClock::time_point pollTime);
+  std::vector<ProbeTransition> pollProbeTransitions(ProbeClock::time_point pollTime);
 
   std::vector<ProbeSnapshot> copyProbeSnapshots() const;
   std::vector<ProbeTarget> copyHealthyProbeTargets() const;
@@ -125,14 +120,21 @@ class UdpProbeChecker {
     ProbeSnapshot snapshot;
 
     int handle = -1;
-    bool pending = false;
+    bool awaitingReply = false;
     ProbePacket token{};
 
-    ProbeClock::time_point next{};
-    ProbeClock::time_point deadline{};
+    ProbeClock::time_point nextProbeTime{};
+    ProbeClock::time_point probeDeadline{};
   };
 
-  void completeProbeResult(Probe& probe, bool success, const char* reason,
+  void sendDueProbePackets(ProbeClock::time_point pollTime,
+                           std::vector<ProbeTransition>& transitions);
+  void receivePendingProbeReplies(ProbeClock::time_point pollTime,
+                                  std::vector<ProbeTransition>& transitions);
+
+  void completeProbeResult(Probe& probe,
+                           bool success,
+                           const char* reason,
                            int error,
                            std::vector<ProbeTransition>& transitions);
   void cancelAllProbes() noexcept;

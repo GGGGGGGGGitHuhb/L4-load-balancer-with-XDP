@@ -97,4 +97,4 @@ python3 tests/v04_benchmark_compare.py recompute --package docs/benchmarks/repor
 
 ## 当前入口与Git来源
 
-当前V1.0二进制的短TCP/UDP命令见[README](../../README.md#benchmark当前smoke与历史报告)。离线recompute只需已跟踪工具和公开raw包，不需产品构建、角色目录或网络；重新build固定v0.4-s1/v0.4-s2产品需要完整clone中的对应Git标签及提交对象。受限环境使用跟踪文件导出时应明确它不是完整clone；若另从本地只读Git源提供历史对象，记录该来源及快照manifest。不要覆盖原正式报告、JSON或raw包，recompute输出必须是新目录。
+当前二进制的短TCP/UDP命令见[README](../../README.md#benchmark当前smoke与历史报告)。离线recompute只需已跟踪工具和公开raw包，不需产品构建、角色目录或网络；重新build固定v0.4-s1/v0.4-s2产品需要完整clone中的对应Git标签及提交对象。受限环境使用跟踪文件导出时应明确它不是完整clone；若另从本地只读Git源提供历史对象，记录该来源及快照manifest。不要覆盖原正式报告、JSON或raw包，recompute输出必须是新目录。

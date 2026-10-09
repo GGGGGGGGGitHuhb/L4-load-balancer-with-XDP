@@ -1,169 +1,143 @@
 # L4 Load Balancer with XDP
 
-C++20 用户态四层负载均衡实验项目：单线程 LT epoll TCP 双向字节流、UDP flow 固定绑定、轮询、可选 TCP 握手健康检查与 stderr 指标。另提供可选的最小XDP/eBPF对象及独立加载器；默认用户态运行无需内核模块、数据库或外部服务。
+一个用于学习和验证四层负载均衡的 C++20 实验项目。可以运行 TCP/UDP 用户态代理，观察轮询、健康检查与流绑定；也可以在 Linux 隔离网络中运行 XDP UDP DSR，对比两条转发路径的行为和成本。
 
-可选XDP：提供[BPF对象构建](docs/runbooks/xdp-build.md)和独立的[l4lb-xdp加载工具](docs/runbooks/xdp-loader.md)，默认均关闭。V1.2/S1提供[启动map同步与统计](docs/specs/xdp-map-schema.md)，S2新增[IPv4/UDP二层DSR](docs/specs/xdp-udp-dsr.md)：一个VIP、最多64个静态目标，按五元组转发到后端并直接回包。配置挂载前同步、回读并冻结，修改需停止重启。复现见[XDP验证](docs/runbooks/xdp-validation.md)。另有[运行期 DSR](docs/specs/xdp-runtime-control.md)，支持不可变快照发布、SIGHUP 重载和 UDP nonce 探测健康联动；[运行期部署](docs/specs/xdp-runtime-control.md#启动和重载)与[验证](docs/runbooks/xdp-runtime-validation-result.json)说明限制。四个 profile 为 pass、maps、udp-dsr、udp-runtime；加载器是独立 `l4lb-xdp` 进程，不是用户态代理的透明 fallback，也不提供 TCP XDP 转发。
+用户态与 XDP 是两个独立程序：`l4lb` 通过 socket 转发，`l4lb-xdp` 管理内核 XDP 程序与配置。项目已完成 V0.1—V1.2 的开发与验收，以及 R1—R4 编码规范重构；版本变化与阶段标签见 [CHANGELOG](CHANGELOG.md)。 本轮内部结构整理已于 2026-10-09 完成全轮五阶段及独立综合验收；工作树未发布。内部类与具名实现的阅读顺序见 [ARCHITECTURE](ARCHITECTURE.md#current-source-index)。
 
-## 当前状态
+## 已实现能力
 
-2026-10-06 当前：R1..R4 四阶段全部 `Completed`，编码规范重构开发范围完成4/4。R4独立Reviewer正式PASS、Leader收尾完成，无未解决finding或mandatory缺项；双方各七构建、四完整CTest合计154/154（OFF Debug/Release各33，ON各44）、六真实内核组和当前普通UID产品smoke通过。R1/R2/R3附注标签已推送核验；HEAD `cf21b2efa13e751841a47e8a36ae1dca57f6ea2c`，R4尚未提交、推送或打标签，不等于版本正式发布。旧夹具仍存在释放端口后复用导致假失败的限制，首次失败与有界有效复验保留，长期测试维护须另授权；不新增物理NIC/offload或正式性能声明。以下日期条目保留原时点事实。
+| 路径 | 能力 |
+|---|---|
+| 用户态 TCP | 单线程 LT epoll 双向转发、轮询、背压、半关闭与连接超时 |
+| 用户态 UDP | 按 flow 固定绑定后端、轮询、空闲过期与回复源地址保持 |
+| 用户态控制 | 可选 TCP 握手健康检查、stderr 指标、信号停止与资源清理 |
+| XDP | PASS、map 同步与计数、静态 UDP DSR、运行期 UDP DSR |
+| 运行期 DSR | 不可变配置快照、SIGHUP 重载、UDP nonce echo 健康摘除与恢复 |
 
-2026-10-06 R3：XDP用户态规范与ABI防守重构已完成，独立Reviewer002 PASS、Leader003收尾，无新增债或阻塞。Builder与Reviewer各自七构建、四配置合计154/154完整CTest（OFF Debug/Release各33，ON Debug/Release各44）、当前UID1000产品smoke及六组真实内核验证通过。加载/条件卸载、不可变发布、健康与有界输出行为和C/BPF ABI保持；用户态`src/xdp/loader.{h,cpp}`迁为`XdpAttachment.{h,cpp}`，公共`l4lb-xdp`命令和对象路径保持。R1/R2标签已推送核验；当前HEAD `ac23fb78c7c24722c2a910971281801dad0795ab`，R3改动未提交/发布，R4未启动，重构完成3/4。见[路线图](ROADMAP.md#编码规范重构当前状态)，以下为原时点历史记录。
-
-2026-10-06：R2事件回调、具名响应与生命周期重构已完成，独立复验PASS并由Leader收尾。Builder与Reviewer各自完整执行OFF Debug33/33、OFF Release33/33、ON Debug44/44、ON Release44/44，四配置合计各154/154；各六组构建、当前CLI/TCP/UDP产品与paired短smoke通过。新增`refactor_callback_lifecycle`验证多回调失败时全部清理与首异常，以及注册/健康/快照寿命。原外部命令、日志、metrics与网络契约保持，无新增债或阻塞。当前HEAD为`e42ce072027d2ef8c7459bc13334921c3cd30e29`；R1及附注标签`refactor-r1`已推送核验，R2改动尚未暂存、提交、推送或打标签，R3/R4未启动。当前状态见[路线图](ROADMAP.md#编码规范重构当前状态)，以下日期记录为历史时点事实。
-
-2026-10-05：编码规范重构R1已完成并独立验收PASS；用户态文件、名称与排版迁移落实，OFF/ON Debug与Release完整回归各150/150、六组构建及当前产品冒烟通过，原运行命令与行为契约保持。当前分支HEAD为`62c1e558b135da88c084c2e7a66b06281be06e5b`，R1改动尚未暂存、提交或发布；R2/R3/R4未启动。当前重构进度见[路线图](ROADMAP.md#编码规范重构当前状态)，历史S4记录保持其原时点事实。
-
-V1.2/S2 已完成独立验收与收尾（2026-09-22）：Builder与Reviewer真实内核各1077用例，另有14项短包逻辑边界夹具；generic/native各16组真实转发与故障检查通过。ON完整37/37、默认OFF Release31/31通过，见[DSR验证摘要](docs/runbooks/xdp-dsr-validation-result.json)。S2已由PR #20合并为 `0c3de8e`，标签 `v1.2-s2` 已推送核验。S3运行期更新/健康联动已完成独立验收与收尾（2026-09-28）：ON 42/42、OFF 31/31，双方generic 20组/native 19组与100次在线发布通过，见[运行期验证摘要](docs/runbooks/xdp-runtime-validation-result.json)。S3已由PR #21合并为 `2dd2c98`，附注标签 `v1.2-s3` 已推送核验。当前分支 `codex/v1.2-s4`；S4性能比较已完成（2026-10-05）：Builder与独立Reviewer各126/126，独立ON Debug43/43及公开包离线重算通过；[九标准验收](docs/specs/v1.2-acceptance.md)齐备，V1.2批准开发范围Completed。S4工作树尚未提交、推送、合并或打标签，V1.2未正式发布，见[路线图](ROADMAP.md)。
-
-V0.1—V0.4 用户态开发范围已完成；V1.0/S1 已冻结[用户可见行为](docs/specs/v1.0-user-visible-contract.md)。V1.0/S2 文档与验收补齐已完成（2026-09-10）：独立Debug快速30/30、Release完整31/31、最短示例与公开文档验证通过，Leader已收尾。S3独立发布前审查PASS且Leader已收尾，**S1/S2/S3及V1.0用户态开发范围Completed，本轮候选发布就绪，实际发布未执行**（2026-09-10）。S3独立Debug30/30、Release31/31含长expiry及原TCP/UDP示例通过，不自动启动未来XDP阶段。本轮候选及三种状态见[公开发布前审查](docs/specs/v1.0-release-review.md)。阶段证据与待验事项见[公开 V1.0 验收索引](docs/specs/v1.0-acceptance.md)；历史版本结果分别保留在[V0.1](docs/specs/v0.1-acceptance.md)、[V0.2](docs/specs/v0.2-acceptance.md)、[V0.3](docs/specs/v0.3-acceptance.md)、[V0.4](docs/specs/v0.4-acceptance.md)矩阵中，不是当前测试数量。
-
-V1.1/S1构建骨架已完成（2026-09-14，独立审查PASS；已本地提交并标记v1.1-s1）。显式开启 `-DL4LB_BUILD_XDP=ON` 后可构建 `l4lb_xdp`，生成独立BPF对象；默认用户态路径保持。命令和依赖见[XDP构建说明](docs/runbooks/xdp-build.md)。
-
-## 环境与快速构建
-
-Linux/WSL2、支持 C++20 的 Clang++、CMake ≥3.20、Ninja。默认测试及benchmark使用 Python3 标准库，无 pip 包下载；**生产 `BUILD_TESTING=OFF` 不依赖 Python**。运行示例需要 Bash，UDP演示另用 coreutils/ripgrep。正常Linux回环不需要root或外网。
-
-在仓库根执行（每种构建用独立目录）：
-
-```bash
-mkdir -p .stage-tmp/readme/tmp .stage-tmp/readme/cache .stage-tmp/readme/pycache
-export TMPDIR="$PWD/.stage-tmp/readme/tmp" TMP="$PWD/.stage-tmp/readme/tmp" TEMP="$PWD/.stage-tmp/readme/tmp"
-export XDG_CACHE_HOME="$PWD/.stage-tmp/readme/cache" PYTHONPYCACHEPREFIX="$PWD/.stage-tmp/readme/pycache"
-cmake -S . -B build -G Ninja -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Debug
-cmake --build build -j4
-./build/bin/l4lb --help
-./build/bin/l4lb --check-config configs/example.conf
-```
-
-配置检查输出 `配置有效：TCP，后端数量=2` 加换行；它只做静态校验，不创建socket或证明backend可达。所有程序位于构建目录的 `bin/`。
+DSR 根据五元组选择后端，只改写二层 MAC，由后端直接向客户端回包。它需要配置 VIP、后端网络和回程；具体拓扑见[架构](ARCHITECTURE.md#current-source-index)。
 
 ## TCP 最短运行路径
 
-三个终端依次执行，下列固定端口须未被占用：
+### 环境与快速构建
+
+在 Linux/WSL2 的 Bash 中，从仓库根目录执行。需要支持 C++20 的 Clang++、CMake ≥3.20、Ninja；默认测试构建另需 Python3 标准库，无需 pip 包。正常 Linux 回环运行无需 root。
 
 ```bash
-# 终端1
+cmake -S . -B build -G Ninja -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Debug
+cmake --build build -j4
+./build/bin/l4lb --check-config configs/example.conf
+```
+
+预期输出 `配置有效：TCP，后端数量=2`。这只检查配置，不探测后端是否可达。程序生成在构建目录的 `bin/` 中。
+
+### 启动与请求
+
+确保 8080、9001、9002 端口未被占用，依次在三个终端执行：
+
+```bash
+# 终端 1：示例后端 A
 ./build/bin/tcp_echo_backend 9001
-# 终端2
+# 终端 2：示例后端 B
 ./build/bin/tcp_echo_backend 9002
-# 终端3
+# 终端 3：代理
 ./build/bin/l4lb --run configs/example.conf
 ```
 
-终端3输出 `TCP 服务已启动：127.0.0.1:8080` 后，第四个 Bash 终端执行：
+代理输出 `TCP 服务已启动：127.0.0.1:8080` 后，在第四个 Bash 终端发送请求：
 
 ```bash
 exec 3<>/dev/tcp/127.0.0.1/8080
-printf 'hello S2\n' >&3
+printf 'hello\n' >&3
 IFS= read -r reply <&3
 printf '%s\n' "$reply"
 exec 3<&- 3>&-
 ```
 
-预期 `hello S2`。在三个服务终端分别 Ctrl+C 结束；代理消费SIGINT/SIGTERM后只尝试在固定1秒内发送已有用户态pending，不保证网络在途数据送达。echo是测试构建生成的单连接顺序fixture，不是生产依赖。
+预期收到 `hello`。完成后在三个服务终端分别按 Ctrl+C。示例 echo 后端由测试构建生成，实际使用时替换为自己的服务。停止会尽力发送用户态待发数据，不保证在途数据送达。
 
-自动真实产品验证（动态端口、有界进程清理）：
+更多半关闭、故障和自动验证步骤见 [TCP 运行手册](docs/runbooks/local-tcp-validation.md)。
 
-```bash
-./build/bin/tcp_product_smoke ./build/bin/l4lb ./build/bin/tcp_echo_backend ./build/product-evidence
-```
+## UDP 与 XDP
 
-预期退出0、PASS及独立证据目录；[TCP手册](docs/runbooks/local-tcp-validation.md)解释字节、半关闭、故障、重复验证和资源回收。
+### UDP 演示
 
-## UDP 最短运行路径
-
-在同一正常回环环境执行公开单shell演示；输出目录保存新一轮证据，18080—18085须未被占用：
+默认构建完成后运行；需要 Bash、coreutils 和 ripgrep，18080—18085 端口须空闲，证据目录使用新路径：
 
 ```bash
 bash tests/udp_manual_demo.sh ./build/bin/l4lb ./build/udp-manual-evidence 18080
 ```
 
-脚本实际生成UDP配置、执行`--check-config`（输出`配置有效：UDP，后端数量=2`）、启动两个标记后端和原产品，验证wildcard源地址、固定flow、零长包、故障后显式新请求、恢复及占端口失败；预期最后PASS、所有自有PID退出和六端口可重绑。示例后端的XOR标记仅用于验证，产品不修改payload。手动多终端参数及逐步输出见[UDP手册](docs/runbooks/local-udp-validation.md#完整手动流程可直接运行的单-shell-版本)。UDP仅尽力转发，停止关闭flows，无排空保证。
+脚本启动两个示例后端和代理，验证 flow 绑定、回复源地址、零长报文及故障恢复，预期最终输出 PASS 并清理自有进程。逐步操作见 [UDP 运行手册](docs/runbooks/local-udp-validation.md)。
 
-## 配置、健康与指标
+### XDP 入口
 
-[配置规格](docs/specs/config-schema.md)冻结六键：必填`listen`一次、`backend` 1—256个有序不同端点；可选默认`protocol=tcp`、`scheduler=round_robin`、`health_check=off`、`metrics=off`。只支持数字IPv4:端口，键值大小写敏感，不搜索默认文件、不读环境覆盖、不写回配置。文件上限65536字节，普通文件/指向普通文件的符号链接允许。
+XDP 默认关闭。BPF 对象需要支持 BPF 的 Clang 与 Linux UAPI；独立加载工具另需 libbpf ≥1.0 开发文件。构建、挂载和真实转发需要不同的依赖与权限，按以下手册操作：
 
-- CLI成功0、文件/配置/服务错误1、用法错误2；成功/check/ready写stdout，诊断和指标写stderr。ready只表示监听就绪，不保证backend可达或Healthy。
-- [健康检查](docs/specs/health-check.md)：`tcp_connect`只证明TCP握手，Unknown初态，连续2成功开放、3失败摘除。无Healthy拒绝新业务，已有TCP/UDP绑定不迁移。UDP**仅在启用tcp_connect时**需要同IP/端口且代表UDP服务的TCP健康端点。
-- [metrics](docs/specs/metrics.md)：`stderr`与健康开关独立，schema=1；ready/periodic/final/error快照，字节计成功提交内核、不代表送达。stderr混合业务日志，整体不是JSONL。
-- 同步stdout/stderr可能阻塞业务和退出；指标写失败后禁用、可能半行，SIGPIPE/强杀可能无尾快照。建议本地普通文件并外部管理轮转。
+- [构建 BPF 对象](docs/runbooks/xdp-build.md)、[构建与运行加载工具](docs/runbooks/xdp-loader.md)。
+- [静态 UDP DSR 配置与部署](docs/specs/xdp-udp-dsr.md)。
+- [运行期 DSR 启动与重载](docs/specs/xdp-runtime-control.md#启动和重载)。
+- [Linux/WSL2 环境](docs/runbooks/linux-xdp-env.md)、[隔离网络验证](docs/runbooks/xdp-validation.md)。
+
+`l4lb-xdp` 提供 pass、maps、udp-dsr、udp-runtime 四种 profile；它不会自动回退到用户态代理，也不提供 TCP XDP 转发。
+
+## 配置
+
+下面是 `configs/example.conf` 中实际使用的 TCP 配置：
+
+```ini
+listen=127.0.0.1:8080
+backend=127.0.0.1:9001
+backend=127.0.0.1:9002
+```
+
+可选项默认值为 `protocol=tcp`、`scheduler=round_robin`、`health_check=off`、`metrics=off`。切换 UDP 使用 `protocol=udp`；开启健康检查使用 `health_check=tcp_connect`，开启指标使用 `metrics=stderr`。
+
+- 端点使用数字 IPv4 与端口，配置键大小写敏感；必须指定配置文件，不读取环境覆盖或写回文件。完整格式见[配置规格](docs/specs/config-schema.md)。
+- 用户态健康检查只证明 TCP 握手。UDP 启用该模式需要同 IP/端口且能代表 UDP 服务的 TCP 健康端点；已有连接与 flow 不随健康变化迁移。见[健康规格](docs/specs/health-check.md)。
+- 指标写 stderr，与业务日志混合；stdout 的 ready 只说明监听就绪。同步输出可能阻塞，计数字节不等于实际送达。见[指标规格](docs/specs/metrics.md)。
 
 ## 测试与生产构建
 
-当前默认OFF注册 **33项**，ON注册 **44项**；Debug/Release各自完整运行33或44项（含原60秒UDP expiry），四配置合计154项。以当前`ctest -N`核对；快速排除udp_long不能替代阶段完整回归。新增机制测试可运行`ctest --test-dir build -R '^refactor_callback_lifecycle$' --output-on-failure`，标签为`refactor`。
+在正常回环环境以普通用户运行完整测试：
 
 ```bash
-ctest --test-dir build -N
-ctest --test-dir build -LE udp_long --output-on-failure
-cmake -S . -B build-release -G Ninja -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Release
-cmake --build build-release -j4
-ctest --test-dir build-release --output-on-failure
-cmake -S . -B build-production -G Ninja -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF
-cmake --build build-production -j4
+ctest --test-dir build --output-on-failure
 ```
 
-`s2`/`s3`标签来自历史V0.1 TCP阶段，不是当前V1.0的全套；`udp_fast`/`udp_long`来自V0.2；`v03_health`、`v03_metrics`可作为`-R`筛选；`v03_system`为故障联合验证，`v04_lifecycle`为停止/资源，`v04_bench_smoke`为短benchmark，`v04_compare`为离线比较工具，`v10_contract`为稳定契约及成对端口夹具。
+完整测试含约 60 秒的 UDP 空闲过期验证。测试数量以 `ctest --test-dir build -N` 为准；真实内核 XDP 验证需另按手册准备特权隔离环境。
 
-普通 UID 会测试不可读文件，root 会明确跳过。本轮受限 WSL 验证使用角色独立匿名 network namespace：必要 root 只执行 `unshare --net` 和 `ip link set lo up`，随后 `setpriv --reuid 1000 --regid 1000 --init-groups` 运行完整 CTest 与产品示例。产品和普通权限用例实际 UID 1000；user namespace 内 UID 0 不能代替这一证据。正常 Linux 回环直接以普通用户执行即可，不依赖私有角色 wrapper；隔离路线不修改宿主接口、路由或 sysctl。
+生产构建设置 `BUILD_TESTING=OFF`，不需要 Python，也不生成示例后端。构建命令、快速测试筛选及格式 hook 见[开发与维护手册](docs/runbooks/development-maintenance.md)。
 
 ## Benchmark：当前smoke与历史报告
 
-[V1.2性能报告](docs/benchmarks/reports/v1.2-xdp.md)比较direct、用户态UDP代理、静态/运行期DSR的generic/native六路径，附控制面成本与可重算原始包；[方法与命令](docs/benchmarks/v1.2-methodology.md)说明独立复现、故障检测及离线重算。结论限本机WSL2/veth，50k目标大量漏槽，不能推出产品上限或物理NIC线速。
+已有两份可复核的正式报告：
 
-当前binary短验证（每协议一组低负载direct/proxy，不作正式性能结论；每次使用不存在的输出目录）：
+- [用户态 TCP/UDP 报告](docs/benchmarks/reports/v0.4-user-space.md)：固定 V0.4/S1 与 S2 对照，附[测量与重算方法](docs/benchmarks/methodology.md)。
+- [UDP/XDP 报告](docs/benchmarks/reports/v1.2-xdp.md)：direct、用户态 UDP、静态与运行期 DSR 的六路径及控制面成本，附[测量与重算方法](docs/benchmarks/v1.2-methodology.md)。
+
+生产构建后，可运行当前二进制的低负载短验证。每次使用不存在的输出目录：
 
 ```bash
-python3 tests/benchmark_runner.py --program ./build-production/bin/l4lb --protocol tcp --mode paired --warmup 0 --duration 1 --repeats 1 --rate 100 --output .stage-tmp/readme/tcp-smoke
-python3 tests/benchmark_runner.py --program ./build-production/bin/l4lb --protocol udp --mode paired --warmup 0 --duration 1 --repeats 1 --rate 100 --output .stage-tmp/readme/udp-smoke
-python3 tests/v04_benchmark_compare.py recompute --package docs/benchmarks/reports/v0.4-user-space.raw.json.gz --output .stage-tmp/readme/published-recomputed
-python3 tests/v12_benchmark.py recompute docs/benchmarks/reports/v1.2-xdp.raw.json.gz --summary .stage-tmp/readme/v12-recomputed.json
-python3 tests/v12_benchmark_test.py --package docs/benchmarks/reports/v1.2-xdp.raw.json.gz
+python3 tests/benchmark_runner.py --program ./build-production/bin/l4lb --protocol tcp --mode paired --warmup 0 --duration 1 --repeats 1 --rate 100 --output build-production/tcp-smoke
+python3 tests/benchmark_runner.py --program ./build-production/bin/l4lb --protocol udp --mode paired --warmup 0 --duration 1 --repeats 1 --rate 100 --output build-production/udp-smoke
 ```
 
-[正式V0.4报告](docs/benchmarks/reports/v0.4-user-space.md)比较固定历史v0.4-s1与v0.4-s2的48run；[机器摘要](docs/benchmarks/reports/v0.4-user-space.json)可由上面公开包离线重算，当前smoke不能更新或替代它。recompute不需要产品build或私有角色目录；重新构建历史产品则需要完整clone中的对应Git标签/对象，不能用缺历史对象的源文件导出冒充完整clone。详细统计口径、环境/采样边界及可选正式复现见[测量方法](docs/benchmarks/methodology.md)。
+短验证不会更新或替代历史正式报告。WSL2/veth、Python 发生器与共享 CPU 的测量结果不代表物理 NIC 线速或产品上限；完整采样条件和数据来源以报告为准。
 
-## 公开文档与限制
+## 使用边界
 
-当前实现路径见[架构源索引](ARCHITECTURE.md#current-source-index)。长期 scheduler/UDP flow 规格中的 `core/scheduler.h`、`core/udp_flow.h` 是历史内部路径，当前对应 `BackendScheduler.h`/`RoundRobinScheduler.h` 与 `UdpFlow.h`；稳定行为不随内部命名迁移变化。固定历史性能包内产品 SHA、标签和原路径保持原 provenance，离线重算只核旧数据与现工具契约。
+- 当前只支持 IPv4 与 round-robin；没有 DNS、IPv6、NAT、失败后自动换后端重试或 UDP 可靠交付。
+- 用户态配置在启动时加载；静态 DSR 修改需重启，运行期 DSR 支持 SIGHUP 重载。后端集合变化可能重映射已有 DSR UDP 流。
+- 用户态默认连接/flow 容量为 1024，完整产品满载能力未经承诺。UDP 面向受控实验网络，没有公网 relay 的源地址反欺骗防护。
+- 验证主要基于 Linux/WSL2 回环与隔离 veth；其他平台、物理网卡能力和多核扩展需要另行验证。
 
-- [架构](ARCHITECTURE.md)、[路线](ROADMAP.md)、[变更记录](CHANGELOG.md)、[技术债](TECH-DEBT-TRACKER.md)。
-- [TCP语义](docs/specs/tcp-forwarding-semantics.md)、[UDP flow](docs/specs/udp-flow-table.md)、[调度](docs/specs/scheduler.md)、[稳定行为契约](docs/specs/v1.0-user-visible-contract.md)。
-- [故障联合验证](docs/runbooks/local-v0.3-validation.md)、[资源与有界停止](docs/runbooks/local-v0.4-lifecycle-validation.md)、[历史开发环境](docs/runbooks/local-dev-env.md)。
-- [V1.0验收索引](docs/specs/v1.0-acceptance.md)区分S1历史组合证据、S2本轮验证和S3待验。
+## 文档导航
 
-仅支持静态IPv4，无DNS/IPv6/热加载/失败换后端重试或UDP可靠交付。容量默认1024，完整产品1024满载未经承诺；同步输出、内核缓冲等不包含在用户态pending容量中。UDP用于受控实验网络，无公网开放relay或源地址反欺骗防护。WSL/Python生成器/共享CPU测量不代表物理网卡或native XDP上限；XDP采用已预检的本地隔离网络，具体结果与边界见[本地XDP环境](docs/runbooks/linux-xdp-env.md)；TD-003的V1.2验收义务已满足，未来平台验证责任保留，主线不包含DPDK。
-
-`docs/leader/`、`docs/builder/`、`docs/reviewer/`及根AGENTS属于本地治理记录，不随普通clone分发；它们不是运行和公开验收的必读入口。ROADMAP中的未来设计路径是计划位置，不代表文件或能力已存在。公开链接检查可运行`python3 tests/docs_links.py .`，仅检查根与docs Markdown的本地链接和锚点，不联网扫外链。
+- 理解实现：[架构与源码索引](ARCHITECTURE.md#current-source-index)、[TCP 语义](docs/specs/tcp-forwarding-semantics.md)、[UDP flow](docs/specs/udp-flow-table.md)、[调度](docs/specs/scheduler.md)。
+- 检查行为：[稳定行为契约](docs/specs/v1.0-user-visible-contract.md)、[故障联合验证](docs/runbooks/local-v0.3-validation.md)、[停止与资源验证](docs/runbooks/local-v0.4-lifecycle-validation.md)。
+- 开发维护：[维护手册](docs/runbooks/development-maintenance.md)、[版本变化](CHANGELOG.md)。
+- 了解后续：[路线图](ROADMAP.md)、[技术债与风险](TECH-DEBT-TRACKER.md)。
 
 ## 许可证
 
-暂未指定。
-
-## 提交前格式检查
-
-仓库提供 `.githooks/pre-commit`。每个新 clone 启用一次：
-
-```sh
-git config core.hooksPath .githooks
-```
-
-需要 Bash、Git、clang-format 和常用 GNU 命令；本次存量格式核验使用 clang-format 18.1.3。规则来自仓库 `.clang-format`（Google、`SeparateDefinitionBlocks: Always`），函数定义之间保留空行。hook 不另行覆盖风格。
-
-每次提交遍历 **index 中全部追踪的普通 C/C++ 文件**，包括本次没有暂存变化的文件和已暂存的新文件。处理扩展名为 `.c/.cc/.cpp/.cxx/.c++/.h/.hh/.hpp/.hxx/.h++/.ipp/.tpp/.inl/.C/.H/.cu/.cuh`；Python、JSON、Markdown、配置、历史压缩证据等不交给 clang-format，未追踪文件、符号链接和submodule不修改。
-
-hook 格式化工作树，并独立读取暂存blob检查格式，**从不运行 git add 或改写 index**。工作树发生格式变化，或暂存版本仍未符合格式时，提交返回非0：先检查 `git diff` 与 `git diff --cached`，选择性暂存后重新提交。部分暂存的逻辑改动始终由用户选择；即使工作树已经格式正确，暂存版本不合规仍会拒绝。`.clang-format` 的工作树与暂存版本不同也会拒绝，避免用未提交的规则检查提交。
-
-已暂存删除的文件不参与；未暂存删除保持缺失，只检查仍在index中的原blob。文件路径按NUL读取，支持空格和换行。缺少clang-format或格式器出错时停止提交；工作树格式改动保留供检查，暂存内容保持原样。临时文件位于已忽略的 `.stage-tmp/git-hooks` 并在退出时清理。
-
-可在新的临时目录中实测hook（只对测试仓库做commit，不提交当前仓库）：
-
-```sh
-B="$PWD/.stage-tmp/format-hook-check"
-mkdir -p "$B/tmp" "$B/cache" "$B/pycache"
-export TMPDIR="$B/tmp" TMP="$B/tmp" TEMP="$B/tmp" XDG_CACHE_HOME="$B/cache" PYTHONPYCACHEPREFIX="$B/pycache"
-python3 tests/format_hook_test.py --output "$B/evidence"
-```
-
-历史benchmark报告和数据包的源码指纹对应当时被测版本，格式维护不会重写它们，也不据此重新宣称性能结果。
+暂未指定许可证。

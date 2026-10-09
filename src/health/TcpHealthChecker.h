@@ -38,8 +38,7 @@ class TcpHealthChecker {
  public:
   using HealthChangeCallback = std::function<void(const HealthChange&)>;
 
-  TcpHealthChecker(const std::vector<Endpoint>& endpoints,
-                   TcpHealthCheckOptions options = {});
+  TcpHealthChecker(const std::vector<Endpoint>& endpoints, TcpHealthCheckOptions options = {});
 
   void setHealthChangeCallback(HealthChangeCallback healthChangeCallback) {
     healthChangeCallback_ = std::move(healthChangeCallback);
@@ -60,21 +59,25 @@ class TcpHealthChecker {
     HealthState state;
     net::Fd fd;
     std::uint64_t token = 0;
-    Clock::time_point next{}, deadline{};
+
+    Clock::time_point nextProbeTime{}, probeDeadline{};
   };
 
   Clock::time_point currentTime() const;
 
-  void completeBackendProbe(std::size_t backendIndex, bool success,
-                            const char* reason, int error,
+  void completeBackendProbe(std::size_t backendIndex,
+                            bool success,
+                            const char* reason,
+                            int error,
                             Clock::time_point time);
   void startBackendProbe(std::size_t backendIndex, Clock::time_point time);
 
   std::vector<Endpoint> endpoints_;
   HealthChangeCallback healthChangeCallback_;
+
   TcpHealthCheckOptions options_;
 
-  net::Fd epoll_;
+  net::Fd epollFd_;
   std::vector<Probe> probes_;
 
   std::uint64_t nextProbeToken_ = 1;

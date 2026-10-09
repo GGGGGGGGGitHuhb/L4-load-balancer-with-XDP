@@ -1,741 +1,189 @@
-# 项目技术概览
+# 系统架构
 
-2026-10-06 当前：R1..R4编码规范重构开发范围4/4 Completed，独立Reviewer PASS及Leader收尾完成；技术职责与下述当前实现保持。R4未提交/推送/tag；旧测试夹具释放端口后复用的可靠性限制保留，当前有效输入接受不等于长期修复或性能/NIC/offload认证。
+本文说明当前实现的模块协作、状态所有权和关键约束。版本、发布与验收状态见 [README](README.md)；演进过程见[历史架构记录](docs/history/architecture-history.md)。
 
-本文角色报告/设计路径为本地治理记录（或未来计划位置），不随普通clone分发；公开复核使用README和规格/运行手册。
+## 1. 项目定位与运行边界
 
-本项目是一个面向高性能网络方向的四层负载均衡器。系统以 C++20 用户态实现为基础，使用 Linux socket 与 `epoll` 构建 TCP/UDP 转发能力；在用户态语义稳定后，引入 XDP/eBPF fast path 作为可选数据面，用于探索 Linux 网络栈中的高性能包处理。
+本项目是 C++20/Linux 四层负载均衡实验项目，提供两个独立程序：
 
-主要技术栈：
+| 程序 | 数据路径 | 当前能力 |
+| --- | --- | --- |
+| `l4lb` | Linux socket、non-blocking I/O、LT epoll | TCP 双向字节流代理、UDP flow 转发、轮询、可选健康检查和 stderr 指标 |
+| `l4lb-xdp` | libbpf 加载的 XDP/eBPF 程序 | PASS、统计、静态 IPv4/UDP 二层 DSR、运行期配置发布与 UDP 探活 |
 
-- 语言：C++20
-- 构建系统：CMake + Ninja
-- 编译器：LLVM/Clang++
-- 用户态网络能力：Linux socket、non-blocking I/O、`epoll`
-- 当前可选 XDP/eBPF：受限 C、Clang BPF target、eBPF maps 和 libbpf，独立 `l4lb-xdp`
-- 测试方式：CTest、独立 C++ 检查程序、CMake CLI 集成脚本和 Python3 标准库真实产品fixture；生产关闭BUILD_TESTING不依赖Python。当前默认 OFF 33 项、ON 44 项，Debug/Release 四配置完整合计154项，历史章节数字只描述当时版本。
+用户态代理可以独立构建和运行；XDP 对象与加载器均为可选构建。BPF-only 构建不需要用户态 libbpf 开发依赖，生产构建关闭测试后不依赖 Python。
 
-依赖原则：
+两个程序不会自动接管彼此的流量。XDP_PASS 表示交回内核网络栈，不保证进入 `l4lb`；XDP 不实现 TCP 代理、NAT 或透明用户态 fallback。
 
-- 优先使用 C++ 标准库、Linux 系统调用和小而明确的第三方库。
-- 不默认引入大型网络框架、协程框架、完整用户态 TCP/IP 协议栈或 DPDK。
-- 不把 XDP/eBPF 作为第一阶段必需运行路径；用户态实现必须能独立构建、测试和演示。
-- 项目主要面向 Linux 环境；用户态及 XDP/eBPF 功能验证与收尾采用已验证的本地 WSL2/Linux 隔离网络。云服务器不再是前置条件；环境依据见 `docs/runbooks/linux-xdp-env.md`。
-- 本地 WSL2/veth 或云服务器性能结果只代表各自实测配置；native veth 不等于物理网卡 native XDP 极限性能，本次预检不产生性能结论。
+用户态 reactor 和健康/指标维护在同一线程执行；XDP 包处理由内核执行，控制面发布状态时必须考虑并发读者。当前功能验证环境为 Linux/WSL2 隔离网络与 veth，不代表物理 NIC、offload 或多核容量认证。
 
-跨平台约束：
+## 2. 运行拓扑与模块职责
 
-- 项目不承诺 Windows 原生运行。
-- 文件路径、网络接口、系统命令和测试脚本默认按 Linux 环境设计。
-- 与内核、网卡、权限相关的行为必须在文档中明确环境假设。
+```mermaid
+flowchart LR
+    A[l4lb CLI] --> B[配置校验与 TCP/UDP 服务装配]
+    B --> C[TCP/UDP reactor]
+    C --> D[Linux socket / epoll]
+    D --> E[后端服务]
+    F[l4lb-xdp CLI] --> G[加载 / 运行期控制]
+    G --> H[libbpf / eBPF maps]
+    H --> I[XDP 包处理]
+    I --> E
+```
 
-## 系统分层
-
-系统按控制面、用户态数据面、XDP 数据面和基础设施层组织。这里的“数据面”指直接处理流量转发的路径，“控制面”指负责配置、调度决策、健康检查和状态管理的逻辑。
-
-### 用户入口层
-
-用户入口层负责接收外部命令和配置，启动或停止负载均衡器进程。
-
-职责：
-
-- 解析命令行参数。
-- 加载配置文件。
-- 初始化日志、指标和运行环境。
-- 启动控制面与数据面组件。
-
-不负责：
-
-- 直接实现 TCP/UDP 转发细节。
-- 直接操作 eBPF maps。
-- 直接维护后端健康状态。
-
-### 控制面层
-
-控制面层负责组织系统运行策略。它决定“应该把流量转发到哪里”，但不直接搬运每个字节的数据。
-
-职责：
-
-- 管理监听配置、后端列表和调度策略。
-- 维护后端健康状态。
-- 维护连接、会话和运行统计的统一视图。
-- 向用户态数据面或 XDP 数据面下发必要状态。
-
-不负责：
-
-- 在事件循环中执行具体 socket 读写。
-- 在 XDP 程序中解析包头。
-- 直接产生平台相关的系统调用细节。
-
-### 用户态数据面层
-
-用户态数据面层负责实际 TCP/UDP 转发。它是项目的基础数据路径，启用可选 XDP/eBPF 时，也必须保持可独立运行。
-
-职责：
-
-- 监听 TCP/UDP socket。
-- 使用 non-blocking I/O 和 `epoll` 处理事件。
-- 建立 TCP 前后端连接关系。
-- 维护 UDP flow 到后端的短期映射。
-- 执行读写、缓冲、关闭和资源释放。
-
-不负责：
-
-- 解析配置文件格式。
-- 决定长期健康检查策略。
-- 直接读取或写入持久化配置。
-- 直接依赖 XDP/eBPF 数据结构。
-
-### XDP/eBPF 数据面层
-
-XDP/eBPF 数据面层是当前独立可选的包级数据路径。它适合处理可在包级表达的 L3/L4 逻辑，例如解析包头、查询 eBPF map、更新统计、执行简单转发或重定向。
-
-职责：
-
-- pass profile 返回 XDP_PASS；maps profile 记录统计；静态/运行期 DSR 仅解析受限 Ethernet/IPv4/UDP。
-- 根据固定 schema maps 查询 VIP、后端或单包持有的 runtime inner snapshot，并更新统计；没有 TCP 会话 map。
-- 在 verifier 允许的范围内执行包头改写、转发或重定向。
-- 将复杂策略留给用户态控制面。
-
-不负责：
-
-- 执行复杂内存分配。
-- 执行阻塞 I/O。
-- 维护不可验证的复杂状态机。
-- 实现完整 TCP 代理语义。
-
-### 基础设施层
-
-基础设施层封装日志、指标、时间、系统调用包装、配置格式和测试辅助设施。
-
-职责：
-
-- 提供统一日志和错误表达。
-- 提供指标收集与输出。
-- 封装文件读取、socket 选项、时间源等基础能力。
-- 为测试提供可替换组件。
-
-不负责：
-
-- 承载核心转发策略。
-- 持有跨模块业务状态。
-- 绕过控制面直接改变数据面行为。
-
-## 模块职责
-
-当前已实现CLI、配置、轮询、control装配、单线程TCP/UDP reactor及可选health/metrics，用户态行为已在V1.0/S1冻结。配置检查调用链仍为 argv → CLI 参数验证 → 有界只读配置加载 → 纯解析与完整校验 → 摘要或错误；--run 在校验后进入 control → net 完成监听、后端连接与双向转发。当前 UDP 实现边界见末尾 V0.2/S2；健康检查当前边界见末尾 V0.3/S1；指标边界见末尾V0.3/S2；XDP提供独立可选加载器，V1.2/S1新增启动map同步，S2新增静态IPv4/UDP二层DSR，职责边界见末尾对应章节。
-
-### `src/cli/`
-
-主要职责：
-
-- 提供命令行入口。
-- 解析启动参数。
-- 调用配置加载与应用启动流程。
-
-不应承担：
-
-- TCP/UDP 转发逻辑。
-- 调度算法实现。
-- 健康检查状态机。
-
-重要输入与输出：
-
-- 输入：命令行参数、配置文件路径；不读取环境覆盖配置。
-- 输出：进程退出码、用户可见错误信息、启动日志。
-
-### `src/config/`
-
-主要职责：
-
-- 定义配置模型。
-- 读取和校验配置文件。
-- 提供默认值。
-
-不应承担：
-
-- 创建 socket。
-- 启动线程。
-- 修改运行时状态。
-
-重要输入与输出：
-
-- 输入：配置文件内容。
-- 输出：经过校验的配置对象。
-
-### `src/core/`
-
-主要职责：
-
-- 定义负载均衡核心实体和规则。
-- 管理后端、监听器、调度策略、连接标识和 flow key 等领域对象。
-- 提供纯逻辑或低副作用的核心算法。
-
-不应承担：
-
-- 直接执行系统调用。
-- 直接访问文件系统。
-- 直接输出用户界面文案。
-
-重要输入与输出：
-
-- 输入：配置对象、运行状态、后端状态。
-- 输出：调度决策、状态变更、统计事件。
-
-### `src/net/`
-
-主要职责：
-
-- 封装 Linux socket、`epoll`、non-blocking I/O 和网络地址处理。
-- 提供 TCP/UDP 转发所需的底层网络原语。
-
-不应承担：
-
-- 解析配置文件。
-- 决定业务级调度策略。
-- 直接操作 eBPF maps。
-
-重要输入与输出：
-
-- 输入：监听地址、后端地址、事件回调、缓冲区。
-- 输出：连接事件、数据读写结果、网络错误。
-
-### `src/control/`
-
-主要职责：
-
-- 协调配置、健康检查、调度策略、数据面和运行状态。
-- 管理服务生命周期。
-- 分别装配用户态 TCP/UDP 服务和独立 XDP 加载/运行期控制；两个产品入口不合并。
-
-不应承担：
-
-- 直接实现 epoll 事件循环细节。
-- 直接解析 XDP 包头。
-- 保存无法测试的隐式全局状态。
-
-重要输入与输出：
-
-- 输入：配置对象、数据面事件、健康检查结果。
-- 输出：数据面更新指令、日志、指标事件。
-
-### `src/health/`
-
-主要职责：
-
-- 对后端执行健康检查。
-- 维护健康状态转换。
-- 向控制面报告后端可用性变化。
-
-不应承担：
-
-- 选择请求要转发到哪个后端。
-- 管理 TCP 代理连接生命周期。
-
-重要输入与输出：
-
-- 输入：后端列表、检查参数、时间源。
-- 输出：健康状态变化事件。
-
-### `src/metrics/`
-
-主要职责：
-
-- 收集连接数、流量字节数、后端状态、错误计数等运行指标。
-- 提供统一指标快照。
-
-不应承担：
-
-- 改变调度决策。
-- 直接控制网络连接。
-
-重要输入与输出：
-
-- 输入：核心模块和数据面产生的统计事件。
-- 输出：stderr的`metrics `前缀schema=1快照；当前无metrics网络endpoint。
-
-### `src/xdp/`
-
-主要职责：
-
-- 存放 XDP/eBPF 程序、用户态加载器适配代码和 map schema。
-- 定义用户态控制面与 eBPF 数据面的交互边界。
-
-不应承担：
-
-- 替代用户态基础数据面。
-- 实现无法通过 verifier 的复杂逻辑。
-- 与业务配置格式强耦合。
-
-重要输入与输出：
-
-- 输入：控制面同步的固定后端槽、VIP、不可变 runtime snapshot 和统计 maps。
-- 输出：包处理结果、统计计数、错误状态。
-
-### `tests/`
-
-主要职责：
-
-- 验证核心逻辑、网络行为、配置解析和跨模块路径。
-- 为 Builder 和 Reviewer 提供可重复的验收基础。
-
-不应承担：
-
-- 依赖不可控外部网络环境。
-- 默认要求真实 XDP native mode 环境。
-
-## 数据与控制流
-
-### 启动流程
-
-当前用户态启动链（V1.0冻结行为）：
-
-1. `cli`首先处理互斥help/check-config/run；help直接返回，不读配置。其余入口交`config`只读加载校验。
-2. check-config静态成功输出后退出，不构造网络、健康或指标资源；run交`control/service`按协议分派。
-3. control持有Scheduler与HealthSelection、MetricsService。仅`health_check=tcp_connect`构造checker；仅`metrics=stderr`构造collector/output。两者off时相应采集、probe及周期均不启用。
-4. control向net传选择和生命周期回调，metrics启用才安装statistics；health或metrics任一启用才安装maintenance，维护先health后metrics。
-5. net创建监听socket、epoll及停止信号资源；ready回调先输出并刷新stdout的监听地址，再调用metrics.ready（off为空操作）。ready不等待Healthy，初态Unknown仍拒绝新业务。
-6. 单线程reactor处理业务；TCP停止冻结新recv/maintenance，仅在固定1秒截止内尝试已有pending，UDP关闭flows。reactor资源清理后，control输出停止说明和metrics.final；异常清理后metrics.error再沿原异常到CLI输出服务错误、退出1。
-
-metrics off不会产生快照；同步输出可能阻塞，截止不等于绝对进程退出保证。详见[稳定契约](docs/specs/v1.0-user-visible-contract.md)。
-
-### TCP 转发数据流
-
-一次 TCP 连接的典型数据流：
-
-1. 客户端连接监听 socket。
-2. 用户态数据面接收连接并创建前端连接对象。
-3. control按轮询选择后端；health启用时仅Healthy可选，off时不探活；无资格拒绝新连接，连接失败不重试其他后端。
-4. 数据面向后端建立连接。
-5. 前端连接和后端连接形成一组转发会话。
-6. `epoll` 驱动双向读写，数据面负责缓冲、半关闭和错误处理。
-7. 连接关闭后释放 socket、缓冲区和会话状态。
-8. metrics启用时记录全局业务计数和backend健康资格快照，不提供每backend流量账本。
-
-### UDP 转发数据流
-
-一次 UDP 包的典型数据流：
-
-1. 客户端向监听地址发送 UDP datagram。
-2. 数据面解析客户端地址和目标监听信息，生成 flow key。
-3. 如果 flow table 中已有映射，则复用对应后端。
-4. 如果没有映射，则调用核心调度逻辑选择后端，并建立短期 flow 映射。
-5. 数据面将 datagram 转发到后端。
-6. 后端响应返回后，数据面根据映射转发回客户端。
-7. flow 映射根据超时时间清理。
-
-UDP flow table 属于运行时内存状态，不应写入长期持久化存储。
-
-### XDP 数据流
-
-XDP fast path 只处理适合包级表达的逻辑。典型流程：
-
-1. 包进入网卡驱动附近的 XDP hook。
-2. eBPF 程序解析 L2/L3/L4 头部并进行边界检查。
-3. 程序按 profile 查询固定 map 或单包持有的 runtime snapshot；没有用户态会话表。
-4. 程序在允许范围内执行统计更新、包头改写或重定向。
-5. 不适用包按各 profile 的既有 PASS/DROP 规则处理；PASS 进入正常内核栈，不保证进入 l4lb，不存在自动用户态 fallback。
-
-控制面负责维护 eBPF maps。XDP 程序不得反向依赖用户态对象或复杂配置结构。
-
-## 依赖方向
-
-当前 control 装配 core/net/health/metrics；XDP 配置同步与 RuntimeDsrService 调用 xdp store/attachment。XDP 加载器独立构建，不链接到原 l4lb。
-
-允许的依赖方向：
-
-- `cli` 可以调用 `config` 和 `control`。
-- `control` 可以调用 `core`、`net`、`health`、`metrics` 和 `xdp` 适配层。
-- `net` 可以依赖基础设施层和少量核心类型，例如地址、连接标识和错误类型。
-- `health` 可以依赖 `net` 的轻量连接检查能力和 `core` 的后端模型。
-- `metrics` 可以接收来自 `control`、`net`、`health` 和 `xdp` 的事件。
-- `xdp` 用户态适配层可以依赖 `core` 中稳定的 map schema 或后端模型。
-
-禁止的依赖方向：
-
-- `core` 不得依赖 `cli`、`control`、`net`、`health`、`metrics` 或 `xdp`。
-- `net` 不得直接读取配置文件。
-- `health` 不得直接修改数据面内部连接表。
-- `metrics` 不得反向控制业务逻辑。
-- XDP/eBPF 程序不得依赖 C++ 运行时、动态内存分配或用户态对象布局。
-- 禁止通过全局可变状态绕过控制面修改后端表、调度策略或运行状态。
-
-持久化和输出边界：
-
-- Config 读取普通用户态配置；RuntimeDsrConfig 为独立 runtime 产品读取并校验其配置，两条有界只读路径各自负责格式。
-- 只有用户入口层负责用户可见启动错误。
-- control输出生命周期/健康/业务诊断，metrics模块格式化schema=1快照，CLI呈现顶层错误；没有独立公共日志框架。
-- 任何外部系统调用应封装在边界模块中，避免散落在核心逻辑里。
-
-## 数据模型与持久化
-
-当前实体为 `Config`/`Endpoint`、`BackendScheduler`/`RoundRobinScheduler`、TcpReactor 内部 `Session`/`EndpointState`、`TcpPendingBuffer` 与 core 的 `UdpFlowKey`/`UdpIdleDeadline`，UdpReactor 内部 `UdpFlow`、健康快照及 `Metrics`。不存在另一个通用 Listener/BackendPool 持久模型。XDP v1/v2/v3 使用独立共享 C ABI，不采用 C++ 对象布局。
-持久化原则：
-
-- 当前主要运行状态保存在内存中。
-- 配置来自文件，格式和 schema 在配置模块中维护。
-- 连接、会话、健康检查结果和指标计数默认不持久化。
-- 生成文件、构建产物、测试临时文件和日志输出不得覆盖源代码和手写文档。
-- 任何需要长期保存的 benchmark 结果或报告，应放入约定文档或报告目录，而不是混入运行时状态目录。
-
-兼容性原则：
-
-- 配置字段一旦被文档化，应尽量保持向后兼容。
-- 不兼容配置变更必须在 `CHANGELOG.md` 中记录。
-- 临时配置字段或实验字段应明确标注，避免被误认为稳定接口。
-
-## 外部接口与集成
-
-### 命令行接口
-
-命令行接口是项目的主要用户入口。用户态 CLI 提供 help/check-config/run，独立 XDP CLI 提供 profile/object/interface/mode 与相应配置参数；不承诺不存在的版本打印接口。
-
-输入：
-
-- 命令行参数。
-- 配置文件路径。
-- 显式 CLI 参数；用户态配置不读环境覆盖。
-
-输出：
-
-- 进程退出码。
-- 启动日志。
-- 用户可理解的错误信息。
-
-安全注意事项：
-
-- 文件路径必须校验。
-- 启动参数错误应在绑定端口或修改系统状态前尽早失败。
-
-### 网络接口
-
-网络接口包括 TCP/UDP 监听地址、后端地址和健康检查目标。
-
-输入：
-
-- 客户端 TCP 连接。
-- 客户端 UDP datagram。
-- 后端响应。
-
-输出：
-
-- 转发到后端的 TCP/UDP 流量。
-- 返回客户端的响应流量。
-- 后端健康检查连接或探测包。
-
-错误处理原则：
-
-- 网络错误应分为可恢复错误和致命错误。
-- 单个连接失败不应导致整个进程退出。
-- 监听 socket 创建失败属于启动失败。
-
-### 文件输入输出
-
-文件输入是静态配置文件；当前测试/benchmark已在指定目录产生日志、JSON及临时文件。
-
-原则：
-
-- 普通用户态配置只在启动由 Config 读取；独立 udp-runtime 由 RuntimeDsrConfig 启动读取，并在 SIGHUP 准备候选配置后原子发布，失败边界见下文。
-- 自动生成文件必须进入明确的构建、日志或报告目录。
-- 不得自动覆盖手写设计文档、报告和源码。
-
-### XDP/eBPF 集成
-
-XDP/eBPF 集成通过用户态加载器和 eBPF maps 完成。
-
-输入：
-
-- 编译后的 eBPF object。
-- 控制面下发的固定后端槽、VIP、runtime snapshot 或统计 map 数据。
-- 网络设备名和 attach mode。
-
-输出：
-
-- attach 或 detach 结果。
-- map 更新结果。
-- eBPF 统计数据。
-
-安全注意事项：
-
-- XDP attach、detach 和 map 操作可能需要特权权限。
-- 对网络设备的修改必须显式记录和可恢复。
-- XDP 程序失败时不应破坏用户态基础路径。
-- XDP 验证必须记录主机/虚拟化配置、内核版本、网卡类型、attach mode、权限和测试拓扑；若使用云环境，另记实例规格和云网络限制。
-
-## 错误处理与安全边界
-
-配置校验：
-
-- 配置文件必须在启动阶段完成语法和语义校验。
-- 监听地址、后端地址、端口范围、权重、超时时间和调度策略必须有明确错误信息。
-- 无效配置不得进入控制面运行状态。
-
-运行时错误：
-
-- 单个 TCP 连接失败只影响该连接。
-- 单个 UDP flow 失败只影响对应 flow。
-- 后端健康检查失败应更新后端状态，而不是直接终止进程。
-- 致命错误需要通过统一错误类型向入口层传播。
-
-安全边界：
-
-- 不记录敏感配置值；如果后续出现 token、密钥或凭据，日志必须脱敏。
-- 文件路径必须避免意外覆盖源码、文档和仓库元数据。
-- 系统命令、XDP attach、网络接口修改等操作必须集中封装。
-- 删除、覆盖、迁移和重置类操作必须具有明确目标路径和保护条件。
-
-## 并发、状态与资源管理
-
-用户态数据面会涉及并发事件处理、长连接和资源生命周期管理。
-
-并发原则：
-
-- 当前用户态产品是单线程reactor，health及metrics在同一线程维护；下列跨线程约束仅为未来扩展规则。
-- 如果引入多线程 reactor，应明确每个连接、flow 和后端状态由哪个线程拥有。
-- 跨线程状态更新必须通过明确同步机制或消息传递完成。
-- 不允许多个线程无约束地直接修改同一个连接表、flow table 或后端状态。
-
-资源管理原则：
-
-- socket 必须有明确 owner。
-- 连接关闭、错误、超时和进程退出路径都必须释放 fd、缓冲区和会话状态。
-- 定时器、健康检查任务和后台线程必须支持有序停止。
-- RAII 应作为 C++ 资源管理的默认方式。
-
-缓存与状态：
-
-- UDP flow table 是运行时缓存，应有超时和容量控制。
-- 后端健康状态由健康检查模块产生，由控制面统一消费。
-- 当前每次run只有一个可选collector，固定大小快照；不做跨线程或跨进程聚合。
-
-XDP/eBPF 状态：
-
-- eBPF maps 是用户态控制面与 XDP 数据面的共享状态边界。
-- map schema 必须稳定、明确，并避免与 C++ 内部对象布局直接绑定。
-- XDP 程序中的状态更新必须考虑 verifier 限制和并发访问语义。
-
-## 测试架构
-
-测试按单元测试、集成测试、冒烟测试和性能验证组织。
-
-单元测试应覆盖：
-
-- 配置解析和校验。
-- 调度算法。
-- 后端健康状态转换。
-- UDP flow key 和 flow table 行为。
-- 核心错误类型和边界条件。
-
-集成测试应覆盖：
-
-- TCP 客户端到后端的完整转发路径。
-- UDP datagram 转发与响应路径。
-- 后端不可用时的摘除和恢复。
-- 进程启动失败和配置错误。
-
-冒烟测试应覆盖：
-
-- 使用示例配置启动进程。
-- 启动本地 echo backend。
-- 通过负载均衡器发送最小 TCP/UDP 流量。
-- 验证进程退出和资源释放。
-
-性能验证应关注：
-
-- 吞吐。
-- 延迟。
-- CPU 使用率。
-- 连接数或 flow 数增长时的行为。
-- 用户态路径与 XDP fast path 的差异。
-
-测试数据原则：
-
-- 测试应优先使用临时目录和本地回环地址。
-- 测试不得依赖公网服务。
-- 需要云服务器、真实网卡能力或特权权限的 XDP 测试必须显式标记，不作为默认测试。
-
-## 架构约束
-
-长期约束：
-
-- 用户态 TCP/UDP 数据面必须可以独立于 XDP/eBPF 构建和运行。
-- 核心逻辑层必须尽量保持纯逻辑，不直接执行系统调用。
-- 配置解析、网络 I/O、健康检查、指标和 XDP 集成必须保持清晰边界。
-- 调度策略不得直接持有 socket 或线程资源。
-- 数据面不得直接读取配置文件。
-- XDP/eBPF 程序不得承载完整 TCP 代理语义。
-- eBPF map schema 不得直接依赖 C++ 对象内存布局。
-- 默认测试不得要求 root 权限、真实网卡或 XDP native mode。
-- XDP/eBPF 阶段以已验证的本地 Linux/WSL2 隔离网络作为验证与收尾环境；具体功能和性能须按阶段独立验收，记录环境边界。
-- 不引入 DPDK 作为本项目数据面。
-- 大型依赖、跨层全局状态和循环依赖默认禁止。
-
-文档约束：
-
-- 版本路线写入 `ROADMAP.md`。
-- 阶段详细设计写入 `docs/leader/designs/`。
-- 实现过程写入 `docs/builder/`。
-- 审查结果写入 `docs/reviewer/`。
-- 技术债和延后事项写入 `TECH-DEBT-TRACKER.md`。
-- 用户可见命令变化必须同步更新 `README.md`。
-
-## 架构变更流程
-
-以下情况属于架构变更：
-
-- 新增或删除长期模块边界。
-- 改变控制面与数据面的职责划分。
-- 改变配置模型、核心数据模型或 eBPF map schema。
-- 引入新的大型依赖或运行时模型。
-- 改变默认并发模型。
-- 改变测试分层或默认验收方式。
-
-处理原则：
-
-- Leader 在阶段设计中先说明变更原因、影响范围和替代方案。
-- Builder 实现时如果发现设计与代码冲突，应在 Builder 报告中记录，并避免私自扩大变更范围。
-- Reviewer 发现模块边界被破坏时，应在 Reviewer 报告中说明影响和建议修复方式。
-- 架构变更落地后必须更新 `ARCHITECTURE.md`。
-- 如果变更带来暂时无法解决的问题，应同步记录到 `TECH-DEBT-TRACKER.md`。
-- 如果变更影响用户可见行为或命令，应同步更新 `README.md` 和 `CHANGELOG.md`。
+图中 XDP 到后端的转发仅适用于 DSR profile；后端直接向客户端回包。PASS/统计 profile 不执行 DSR 转发。
 
 <a id="current-source-index"></a>
-## 当前源码索引与同步生命周期
 
-- 配置：[Config.h](src/config/Config.h)、[Config.cpp](src/config/Config.cpp)；调度：[BackendScheduler](src/core/BackendScheduler.h)、[RoundRobinScheduler](src/core/RoundRobinScheduler.h)。
-- 用户态网络：[TcpReactor](src/net/TcpReactor.h)、[UdpReactor](src/net/UdpReactor.h)、[Fd](src/net/Fd.h)、[TcpState](src/net/TcpState.h)、[UdpFlow](src/core/UdpFlow.h)。
-- 装配：[Service](src/control/Service.cpp)、[TcpService](src/control/TcpService.cpp)、[UdpService](src/control/UdpService.cpp)、[HealthSelection](src/control/HealthSelection.h)、[TcpHealthChecker](src/health/TcpHealthChecker.h)、[MetricsService](src/control/MetricsService.h)、[Metrics](src/metrics/Metrics.h)。
-- XDP：[main](src/xdp/main.cpp)、[XdpAttachment](src/xdp/XdpAttachment.h)、[MapStore](src/xdp/MapStore.h)、[DsrMapStore](src/xdp/DsrMapStore.h)、[RuntimeMapStore](src/xdp/RuntimeMapStore.h)。
-- 同步与 runtime：[XdpConfigSync](src/control/XdpConfigSync.h)、[DsrConfigSync](src/control/DsrConfigSync.h)、[RuntimeDsrConfig](src/control/RuntimeDsrConfig.h)、[RuntimeDsrService](src/control/RuntimeDsrService.cpp)、[UdpProbeChecker](src/health/UdpProbeChecker.h)。
-- ABI：[MapSchema](src/xdp/MapSchema.h)、[UdpDsrSchema](src/xdp/UdpDsrSchema.h)、[UdpRuntimeSchema](src/xdp/UdpRuntimeSchema.h)；四 profile BPF 位于同目录，size/align/offset、字节序、map/program/object 名称冻结。v3 snapshot 1048 字节、align8、backend@24。
+| 模块与主要源码 | 实际职责与边界 |
+| --- | --- |
+| [cli/main.cpp](src/cli/main.cpp) | 用户态参数解析、配置检查、启动与顶层错误呈现；不处理转发 |
+| [config/Config](src/config/Config.h) | 定义 Config/Endpoint；有界文件读取与纯解析校验分开；不创建网络资源 |
+| [core/BackendScheduler](src/core/BackendScheduler.h)、[RoundRobinScheduler](src/core/RoundRobinScheduler.h)、[UdpFlow](src/core/UdpFlow.h) | 纯后端索引选择、UDP key/hash 和空闲时限；不持有连接或 flow 表 |
+| [net/TcpReactor](src/net/TcpReactor.h)、[UdpReactor](src/net/UdpReactor.h) | socket/epoll、TCP session 与缓冲、UDP flow 与后端 socket、停止和资源清理 |
+| [control/Service](src/control/Service.cpp)、[TcpService](src/control/TcpService.cpp)、[UdpService](src/control/UdpService.cpp) | 协议分派、调度/健康/指标装配和具名事件响应；不复制 reactor 的连接表 |
+| [control/HealthSelection](src/control/HealthSelection.h)、[MetricsService](src/control/MetricsService.h) | 健康资格与轮询组合、事件采集和生命周期快照；不搬运业务数据 |
+| [health/TcpHealthChecker](src/health/TcpHealthChecker.h)、[UdpProbeChecker](src/health/UdpProbeChecker.h) | 分别执行用户态 TCP 握手探活和 XDP runtime UDP nonce 探测；不选择业务后端或修改 map |
+| [metrics/Metrics](src/metrics/Metrics.h) | 收集 `net::StatEvent`、健康快照和 schema=1 stderr 输出；不控制连接，无网络指标 endpoint |
+| [xdp/main.cpp](src/xdp/main.cpp)、[XdpAttachment](src/xdp/XdpAttachment.h)、[MapStore](src/xdp/MapStore.h)、[DsrMapStore](src/xdp/DsrMapStore.h)、[RuntimeMapStore](src/xdp/RuntimeMapStore.h) | 独立 XDP 入口、对象与挂载所有权、ABI 校验、map 访问与发布 |
+| [control/XdpConfigSync](src/control/XdpConfigSync.h)、[DsrConfigSync](src/control/DsrConfigSync.h)、[RuntimeDsrConfig](src/control/RuntimeDsrConfig.h)、[RuntimeDsrService](src/control/RuntimeDsrService.cpp) | 静态配置同步，运行期有界读取、候选准备、健康联动、重载和停止 |
 
-普通启动：CLI 有界加载 Config，`runConfiguredService` 分派 `runTcpService`/`runUdpService`。局部 TcpServiceRuntime/UdpServiceRuntime 借用 config，拥有 selection 与 MetricsService；selection 成员声明在 metrics 前，metrics 借用其 owner 槽，在 selection 使用期间存活并先析构。metrics 构造仍在 lifecycle try 外，selection 在 try 内构造。先完成 callback 容器的类内 `setXxxCallback` 保存装配，再运行 `runTcpReactor`/`runUdpReactor`。短 lambda 同步转发具名 on 响应；BackendSelector/BackendHealthProvider 与 syscall 注入是同步策略/替代接口，不机械事件化。reactor 借用容器，仅在同一调用线程执行维护、statistics 与业务事件，返回后不保存 callback；没有跨线程投递。
+四类 BPF 程序和共享 C ABI 位于 `src/xdp/`。测试、fixture 与 benchmark 工具位于 `tests/`，不进入生产运行依赖。
 
-正常停止：TCP 冻结新 recv/maintenance，已有 pending 在原1秒预算内尝试 drain，半关闭/背压保持；UDP 立即关闭 flows。reactor 清理资源后 control 输出停止说明/metrics.final 并返回 CLI。异常时每个原清理步骤都尝试，保存首异常；metrics.error 后仍传播原失败退出1。metrics 输出可能阻塞，reactor 预算不是整个进程墙钟上限；UDP 异常分支的停止日志顺序也保持。
+内部实现先读同 `.cpp` 匿名命名空间中的类声明、接口组和状态，再读按原顺序排列的类外方法。网络入口见 [TcpReactor.cpp](src/net/TcpReactor.cpp)、[UdpReactor.cpp](src/net/UdpReactor.cpp)，装配入口见上表两个 Service；XDP runtime 的输出和 UDP socket transport 也采用这一组织方式。短转发、简单访问器与原完整重载事务仍按其职责保留。此整理改变源码阅读组织，不新增线程、公共接口或运行功能。
 
-XDP 普通加载：独立入口选择 pass/maps/udp-dsr/udp-runtime，XdpAttachment 拥有读入 object bytes、libbpf object/program 引用及相应 store。原普通有界文件与 ELF 白名单校验后，ConfigSync 全槽写/readback/freeze，再 attach；store 中的 object/map FD 只借用，在 libbpf object 仍存活时才可调用使用它们的接口；store 对象本身不要求先析构。XdpAttachment 析构函数体关闭 object 后，runtimeMaps_ 成员随后析构，仅关闭自有 activeFd，不再访问借用 FD。停止 conditional detach 使用比较 FD（>=3）与当前 program 身份，不卸载 foreign program；ENODEV 与 cleanup 错误沿原语义处理。DSR 仅一个 VIP、最多64后端、受限 IPv4/UDP 二层转发，不提供 TCP XDP 或透明 fallback。
+## 3. 关键数据流与控制流
 
-runtime 初始：`runRuntimeDsrControlLoop` 持 configuration、checker、applied；Unknown 后端形成 generation1 空 active snapshot，真实 attach 后 READY。循环先消费停止，再 `pollProbeTransitions` 返回 transitions，control 同步输出 health；这不是持久 callback。HUP 准备 candidate config/sockets/state，再构造完整 candidate map，write/readback/freeze，唯一 outer 更新为 commit，随后替换 owner/gen 与 applied/config/checker。precommit 保旧、rejected 和每秒至多一次重试；postcommit 观测或输出失败 fatal 并卸载，不伪 rollback。健康 desired 与 applied generation 分离，generation 不回绕，每包持有一个 inner，旧引用由内核/RCU 退休，ID 消失不代表同步物理回收。
+### 3.1 用户态启动与装配
 
-probe/output：connected UDP 校验精确24byte magic、随机 epoch 和全进程 sequence，500ms deadline 到达即失败，完成时刻复核，每轮最多256接收；2 success/3 fail 转态，candidate 与取消 token/socket owner保持。runtime output 64KiB、每轮64 writes 非阻塞，EINTR/EAGAIN/短写遵循原处理；永久错误/queue超限沿首异常 cleanup。停止先 detach、取消 probe、统计、DETACHED，后最多1秒 output drain，最终恢复原 flags，不承诺绝对进程截止。
+1. `cli` 处理 help/check-config/run；help 不读配置，其他路径由 `Config` 有界加载并完整校验。
+2. check-config 输出结果后退出，不创建网络、健康或指标资源。
+3. run 调用 `runConfiguredService`，按协议进入 `runTcpService` 或 `runUdpService`。
+4. 服务装配 `HealthSelection`、`MetricsService` 和 reactor 回调；开关关闭时不启用相应 probe、统计或周期维护。
+5. 完成回调保存后调用 `runTcpReactor` / `runUdpReactor`；reactor 创建网络资源并开始事件循环。
+6. ready 响应先输出监听地址，再产生可选 metrics.ready；ready 不代表探活已完成。
 
-以下从 V0.1/S2 起全部章节为原日期的历史落地/验证记录，旧内部路径、数量和“当前”标题只表示当时状态；现行入口见[当前源码索引](#current-source-index)。
+健康检查启用时初态 Unknown，新业务只选择 Healthy 后端。维护先推进健康检查，再处理指标；长批次中的新选择也会推进探活，避免使用过期资格。
 
-## V0.1/S2 历史落地边界
+### 3.2 TCP 与 UDP 业务
 
-- `core/round_robin.h` 是固定顺序纯索引逻辑；`control/tcp_service.*` 组装选择回调与结构化会话日志；`net/reactor.*` 独占 LT epoll、会话与信号/截止，产品保持单线程。
-- `net/fd.h`、`net/state.h` 承担 fd owner、有界缓冲、截止与 endpoint token。网络层复用已校验 Endpoint 类型，不读取配置或自行选后端。
-- 本阶段只实现 TCP 静态轮询；上文健康检查、指标、UDP/XDP 为长期架构，不表示当前已实现。用户语义以 `docs/specs/tcp-forwarding-semantics.md` 为准。
+**TCP：**客户端连接 → 接受 socket → 选择一次后端 → 建立后端连接 → 双向缓冲转发 → 关闭与统计。
 
-## V0.1/S3 历史验证边界
+- 轮询和健康资格由 control 提供；无可选后端时拒绝新连接。
+- 后端连接失败不换另一个后端重试；已建立 session 不因健康变化而迁移。
+- reactor 处理 partial I/O、背压和半关闭，持有 session、两端 socket 和 pending buffer。
 
-- `tests/tcp_product_smoke.cpp` 通过独立进程启动真实产品与 echo fixture，不链接生产 reactor/control 内部；CMake 仅在 BUILD_TESTING 下生成该入口和 fixture，生产依赖不变。
-- fixture 动态端口、原子证据目录、有界 ready/I/O、明确进程回收和端口重绑用于可重复验收；它们不改变正式产品配置或 TCP 参数。
-- V0.1 开发范围已独立验收完成；复现入口见 `docs/runbooks/local-tcp-validation.md`，七条标准见 `docs/specs/v0.1-acceptance.md`。本地 main 已包含 S3 合并提交 544c8d8；远端发布状态本轮未核验，后续架构方向不代表当前已实现。
+**UDP：**datagram → 校验完整数据与目的地址信息 → 查询 flow → 新 flow 选择后端 → 转发整包 → 返回客户端。
 
-## V0.2/S1 历史落地边界
+- key 包含客户端 IPv4/端口和实际目的 IPv4；监听端口由实例隐含。
+- reactor 持有 flow 表和每个 flow 的 connected 后端 socket；已有 flow 保留原绑定。
+- 回复通过 listener 的 IP_PKTINFO 保持实际目的 IP 为源地址。
+- 成功发送更新空闲时限；flow 按超时与容量规则管理，没有用户态待发队列或可靠重传。
 
-状态：Completed（2026-09-08）；Reviewer002 PASS、Leader003 收尾。以下为 S1 验收时的实现事实，后续变化见 V0.2/S2。
+具名 helper 保留原错误域和资源 owner：TCP `dispatchTcpReadyEvents` 在每个就绪事件前检查停止，`connectSessionBackend` 仍由原 `SessionFailure` catch 处理；UDP `registerFlowIndexesAndSocket` 包住双索引和 epoll 注册及原回滚，`resolveFlowTokenForDatagram` 保留过期清理、创建 flow 与异常传播。它们都借用 reactor 已拥有的状态，不新增连接或 flow owner。
 
-- `config` 新增强类型 Protocol/SchedulerKind 和兼容默认值；`control/service.*` 在网络资源创建前分派协议，当前 UDP 明确拒绝运行。
-- `core/scheduler.*` 提供纯索引策略接口与工厂，RoundRobin 实现它；`control/tcp_service.*` 独占 scheduler 并将选择回调传给 reactor，生命周期覆盖整个 run。reactor 不解析协议或策略。
-- 单 listener、静态有序池、独立 cursor 不变；失败消耗选择、不重试。无 UDP socket/flow table、健康检查或第二策略；规格见 `docs/specs/scheduler.md` 和 `docs/specs/config-schema.md`。
+用户态 `health_check=tcp_connect` 对 TCP/UDP 均进行 TCP 握手探测；用于 UDP 时只是操作员提供的代理信号，不等于 UDP 应用健康证明。
 
-## V0.2/S2 历史落地边界
+### 3.3 XDP 静态路径
 
-- `core/udp_flow.h` 定义纯 FlowKey/空闲时限；`net/udp_reactor.*` 持有每 flow 后端 socket、双索引、单调 token 和共享接收 scratch，独立于 TCP reactor。
-- `control/udp_service.*` 独占 Scheduler、记录生命周期并接入统一协议分派；UDP 在完整数据报/元数据通过且容量允许时为新 flow 选择一次，回复使用 listener IP_PKTINFO 固定实际目的 IP 为源。
-- 1024 flow、60 秒空闲、64 次每 fd 接收尝试、100ms 清扫，立即发送/整包丢弃，无用户态队列；真实数据包和局部注入证据分别由 UDP 状态测试、独立产品测试承载。具体错误、wildcard、零长/截断、迟到包和安全限制见 `docs/specs/udp-flow-table.md`。
-- S2验收时为 Completed（2026-09-08），Reviewer001 独立 PASS、Leader003 收尾；当时S3尚未开始，当前S3测试边界见下节，无 UDP 可靠性、性能或公网防护承诺。
+| profile | BPF 对象 | 配置与包处理 |
+| --- | --- | --- |
+| `pass` | `xdp_pass.bpf.o` | 返回 XDP_PASS |
+| `maps` | `xdp_maps.bpf.o` | schema v1 后端/配置/统计 maps；记录统计，仍返回 XDP_PASS |
+| `udp-dsr` | `xdp_udp_dsr.bpf.o` | schema v2；受限 Ethernet/IPv4/UDP 解析、五元组选择、改写二层 MAC 并重定向 |
+| `udp-runtime` | `xdp_udp_runtime.bpf.o` | schema v3；从单个活动入口读取不可变快照，执行运行期 DSR |
 
-## 变更记录
+普通加载顺序：CLI 检查参数与对象 → `XdpAttachment`/store 校验 ELF 和 map ABI → 控制面写入、回读并冻结配置 → attach → 等待停止 → 条件 detach 和统计。
 
-- `2026-09-11`：根据用户授权与环境预检改用本地 XDP 验证路线，取消云服务器前置要求；模块边界保持。
+静态 maps/DSR 配置不原地更新，修改需停止重启。DSR 只支持一个 VIP 和最多 64 个 IPv4 后端，后端 VIP、回程和邻居由部署方配置，产品不代管网络。
 
-- `2026-05-21`：补充项目环境路线，明确 WSL2 用于用户态开发，云服务器用于 XDP/eBPF 功能验证与阶段收尾。
-- `2026-05-19`：创建初版架构文档，明确 C++ 用户态 L4 负载均衡器、控制面、用户态数据面和 XDP/eBPF 数据面的长期职责边界。
+静态 DSR 的非目标、未支持或坏配置等情况按既定规则 PASS，重定向 helper 即时失败 DROP；请求重定向不保证最终送达。运行期 profile 对有效匹配但没有活动后端的报文 DROP。具体解析和计数规则见规格页。
 
+### 3.4 XDP 运行期发布与重载
 
-## V0.2/S3 历史测试边界
+1. `RuntimeDsrConfig` 读取配置，`UdpProbeChecker` 准备探测资源；初始 Unknown 集合生成空活动快照，发布后再 attach。
+2. `RuntimeDsrService` 在单线程循环中优先消费停止信号，再处理 probe、重载和发布。
+3. 探测状态变化形成 desired 集合；只有实际发布成功才改变 applied generation，两者可能暂时不同。
+4. SIGHUP 先解析候选配置并准备候选 probe/state，再创建、写入、回读、冻结完整 inner map。
+5. `RuntimeMapStore` 用一次 outer map 更新提交新快照；每个包只取得一次 inner 引用，避免混读新旧配置。
+6. 提交前失败保留原活动快照；提交后致命观测或输出失败终止并清理，不能声称已经回滚。
 
-历史收尾时状态：Completed（2026-09-09），Reviewer001独立PASS、Leader003收尾；V0.2开发范围完成，生产数据面未改，当时未发布S3。
+generation 不回绕，健康集合的发布失败可在后续循环按既定节奏重试；重载被拒时保留旧配置，由后续 SIGHUP 再提出候选。旧 inner 由内核引用/RCU 退休，map ID 消失不等于同步物理回收。后端集合变化可能重映射已有 UDP 流，没有连接 draining 或无损迁移承诺。
 
-- 生产src/与原TCP示例保持S2合并版本。扩展 `tests/udp_product_test.cpp` 的system/expiry模式，复用独立argv、原子证据目录与有界进程管理，新增CTest两项，不链接生产control/net或注入Options。
-- P1/P2验证原产品wildcard/实际源地址/流隔离/伪造过滤和后端停机后显式新flow恢复；P3用同一socket真实静默≥60.5秒验证原60秒默认值，不调整产品常量或时钟。
-- 手动工具 `tests/udp_manual.py` 仅用Python3标准库，客户端持续持有同一socket；`tests/udp_manual_demo.sh`提供可复制完整流程和自有子进程/端口清理。当时Python不成为生产运行或CTest依赖；V0.3起测试构建使用Python，生产仍不依赖。
-- 容量1024静态确认，内部capacity2动态继承；无1024满载/性能结论。当时11项注册、Debug快速10项、Release11项含长项一次；完整边界见UDP运行手册和V0.2完成矩阵。
+runtime 使用 UDP nonce echo 探测，校验身份和截止；它与用户态 TCP 握手探测是不同契约。runtime 输出使用有界非阻塞队列，避免无限缓存；细节见[运行期控制规格](docs/specs/xdp-runtime-control.md)。
 
-## V0.3/S1 历史落地边界
+[RuntimeDsrService](src/control/RuntimeDsrService.cpp) 的 `publishChangedHealthySnapshot` 只负责原健康差异发布；提交前遇到停止时返回 false，由外层循环退出。重载仍保留完整候选事务及原 catch；健康发布失败保留 applied，提交后或永久输出错误仍致命。`waitForRuntimeSignalsOrOutput` 仅保留原等待段，输出 flush 仍在调用之前。
 
-- `health/state.h` 纯状态机，`health/checker.*` 单线程非阻塞 probe，独占 epoll/fd/token/steady deadlines，最多256后端。每次完成后1s、超时1s，旧token先撤销再close，截止优先；checker故障清理后传播为服务错误。无线程、sleep 或应用payload。
-- `control/health_selection.*` 持有原 Scheduler 和可选 checker、汇总转换日志，先检查集合再有界跳过，不让 health 依赖 control 或直接断业务。off 无 checker/fd/maintenance。
-- TCP/UDP `select_backend` 返回 optional Endpoint，maintenance 每轮唤醒后、停止判断后、分派前调用；长批次新选择前再次tick。net 不读取 health_check，不解释健康状态。无可选时分别关闭新client/丢弃新key，旧会话/flow 原绑定保持。
-- UDP 的 TCP 探活是操作员提供的代理信号，不是 UDP 协议健康；Unknown 预热拒绝新业务，ready 不代表 Healthy，资源失败标明 local_error。完整语义见 `docs/specs/health-check.md`。
-- CTest 新增4项至15项，Python3标准库仅用于真实产品 fixture（测试构建需 Python3，Production不需）。V0.2注册保留，Debug14快速、Release15含60s expiry；独立验收状态由角色报告记录。无 S2 指标快照/S3完整故障矩阵。
+[UdpProbeChecker.cpp](src/health/UdpProbeChecker.cpp) 的 `sendDueProbePackets` 先处理到期，再发送；`receivePendingProbeReplies` 按原轮转预算处理回复，保持完成时钟与截止优先。两个调用仍在 `pollProbeTransitions` 的同一个总 catch 中，异常取消所有 probe 后传播；nonce 与 probe 资源均由原 checker 持有。
 
-## V0.3/S2 当前指标边界
+## 4. 状态所有权、回调与资源生命周期
 
-- `net/statistics.h` 为可选强类型事实回调，不接入测试Observation或限频日志。两reactor在真实事务提交/关闭/send/错误分支发事件，net不理解metrics开关或JSON。
-- `metrics/metrics.h/.cpp` 固定Collector/Snapshot、纯schema=1格式化与Output；control的MetricsService独占它们，健康采集为HealthSelection只读复制，不tick或移动cursor。各模块继续.h/.cpp同目录。
-- off无collector/output/回调/周期；stderr模式ready后1s维护，健康先行，reactor释放后单final/error。最多256backend与32768字节完整行，单线程同步stderr、不建异步队列。慢sink、SIGPIPE、半行与失败禁用边界见metrics规格，不承诺非阻塞日志。
-- 新增5项正式模型/两reactor落点/两协议产品指标测试，保留原15项；当前20注册，Debug快速19、Release完整20。未提前实现S3完整故障矩阵/Prometheus/XDP。
+### 4.1 状态由谁持有
 
-## V0.3/S3 测试边界
+| owner | 持有或借用的状态 |
+| --- | --- |
+| Config / RuntimeDsrConfiguration | 启动或候选配置值；格式与读取路径分别负责 |
+| TcpServiceRuntime / UdpServiceRuntime | 借用 Config，拥有 HealthSelection 和 MetricsService |
+| HealthSelection | 拥有轮询 scheduler 和可选 TcpHealthChecker；不持有业务 session/flow |
+| TcpReactor / UdpReactor | 拥有 listener、epoll、业务 socket、索引、缓冲/flow 和停止状态 |
+| TcpHealthChecker / UdpProbeChecker | 拥有各自 probe socket、token、deadline 和健康状态 |
+| MetricsService | 拥有 collector/output，借用 selection owner 槽以读取健康快照 |
+| XdpAttachment / RuntimeMapStore | attachment 拥有 libbpf object 与挂载；runtime store 借用 object/map FD，拥有当前 active inner FD |
+| RuntimeDsrService | 管理 configuration、checker、applied generation、信号与有界输出队列 |
 
-新增Python标准库双backend fixture、三项真实产品CTest及独立工具负向。fixture区分健康空连接与业务nonce，以backend观测建立期望账本，再比较产品指标；测试线程/PID/socket由单run拥有。原metrics产品模块仅加main入口保护供schema解析复用，默认执行和既有断言保持。当时生产src、配置和模块边界不变，共23项注册；执行见 `docs/runbooks/local-v0.3-validation.md`。
+连接、flow、健康和指标主要是内存状态，不持久化；XDP maps 是内核共享状态。项目没有统一持久 BackendPool、数据库或独立公共日志框架。
 
-## V0.4/S1 Benchmark 工具边界
+### 4.2 同步回调与借用边界
 
-`tests/benchmark_runner.py`负责有界生命周期、ready/配置和独立run证据；`benchmark_fixture.py`为独立echo进程；`benchmark_traffic.py`负责TCP闭环partial I/O与UDP总pps节拍/有界pending；`benchmark_stats.py`提供纯统计；`benchmark_environment.py`负责环境白名单和每PID测量窗口资源采样。工具只使用Python3标准库，不进入生产依赖、不改变src/配置/调度/健康/metrics。`benchmark_tool_test.py`注册3项短CTest（原23项保留），`benchmark_acceptance.py`提供显式长矩阵、失败和隔离验证。公开口径与schema见 `docs/benchmarks/methodology.md`；不提前实现生产优化或XDP。
+- `setXxxCallback` 只保存回调；服务完成装配后才进入 reactor。
+- 短 lambda 转发到具名响应函数。reactor 借用回调容器，只在当前 run 的调用线程使用，返回后不保存；没有跨线程投递。
+- BackendSelector、BackendHealthProvider 和 syscall 注入属于同步策略/替代接口，不应当作持久事件队列理解。
+- MetricsService 借用 selection 的 owner 槽；该槽先于 metrics 构造，selection 在服务生命周期 try 中创建。服务完成回调装配后才运行 reactor，成员顺序使 metrics 先析构，selection 随后析构。
+- store 的借用 FD 只能在 libbpf object 存活时使用。XdpAttachment 析构函数体关闭 object 后，runtimeMaps_ 随后析构仅关闭自有 activeFd，不再访问借用 FD。
 
-## V0.4/S2资源与停止边界
+### 4.3 停止与错误传播
 
-Buffer保留初始化的固定64KiB数组，用head/size和连续读写span代替memmove压缩；net I/O同时受span/容量/budget限制。TCP用Running/Draining/Stopped逻辑状态，首次消费信号固定1s deadline并使listener失效，内层pump只标记停止、在安全调度边界移除session，避免悬空引用。Draining冻结新recv/连接和maintenance，仅发送已有pending；control通过StopEvent输出一次生命周期队列/截止摘要，不新增metrics schema或配置。TCP/UDP从索引中移出owner、DEL/close后才独立通知，显式清理传播首异常、noexcept析构清理所有owner。新增2项有限CTest及公开runbook，原26项保持；S1方法和样本身份不重写，兼容验证不作S3性能结论。
+- TCP 首次停止后冻结新接收和维护，在原截止内尝试发送已有 pending；不保证在途数据送达。UDP 停止直接关闭 flows。
+- reactor 清理资源后，control 输出停止说明与 metrics.final；异常时各清理步骤尽力执行，保留首异常并传播到 CLI。
+- 用户态 metrics 同步输出 stderr，可能阻塞；reactor 的 drain 预算不等于整个进程退出的墙钟上限。
+- XDP 条件卸载比较程序身份，不卸载 foreign program；runtime 停止先 detach、取消 probe、读取统计，再有界排空输出。
+- SIGKILL 不能执行产品清理，残留挂载需按实际 program ID 显式恢复。
+- 单 session/flow 的业务错误与服务级致命错误分别处理；资源、checker、发布和输出故障不能一概当作普通后端不健康。
 
-## V0.4/S3 对照工具边界
+## 5. 依赖关系与关键约束
 
-`v04_benchmark_identity.py` 从固定Git对象导出与构建产品并核验manifest，`v04_benchmark_compare.py` 串行编排同一最终runner，`v04_benchmark_data.py` 独立重算原始统计/完整格点并生成可移植数据包。product_identity与工具工作树environment分开；产品src/configs保持S2，正式矩阵不进入CTest。公开报告与版本标准入口分别在 `docs/benchmarks/reports/v0.4-user-space.md`、`docs/specs/v0.4-acceptance.md`，阶段完成仍需独立Reviewer和Leader收尾。
+### 5.1 实际依赖边界
 
-## V1.1/S1 BPF 构建边界
+- 用户态入口链接 `l4lb_config` 和 `l4lb_control`；control 装配 net、core、health、metrics。独立 XDP 加载器不链接进原 `l4lb`。
+- core/net/health/metrics 复用 `config/Config.h` 的值类型；core 不读取配置文件、不执行网络 I/O。
+- health 使用轻量 FD/socket 能力，但不修改 reactor 连接表；metrics 接收 `net/Statistics.h` 定义的事实事件，通过 provider 读取健康快照。
+- XDP 同步与加载适配层通过 map 接口和配置类型协作；当前包括 `XdpAttachment.h → control/DsrConfigSync.h` 的引用，目录职责分层不是严格的单向 include 图。
+- RuntimeDsrConfig 与 RuntimeDsrService 是独立 runtime 产品边界，前者读取文件，后者使用 signalfd/poll 编排；不能泛称 control 完全不执行系统调用。
+- BPF 程序只依赖允许的内核/UAPI 与共享 C schema，不依赖 C++ 对象或用户态运行时。
 
-`src/xdp/xdp_pass.bpf.c`仅包含Linux UAPI与最小XDP_PASS入口；`cmake/Xdp.cmake`在L4LB_BUILD_XDP开启时探测BPF工具链并生成独立object。默认OFF，不向用户态目标传播BPF依赖、编译选项或链接对象。BUILD_TESTING开启时新增无特权xdp_build对象检查。S1交付时无项目loader、maps或attach调用；S2新增loader如下，maps仍未实现。具体构建入口见 `docs/runbooks/xdp-build.md`。
+### 5.2 修改必须保持的约束
 
-## V1.1/S2 加载器边界
+1. 配置解析、服务装配与转发 I/O 分离；数据面不读取配置文件，调度算法不持有 socket。
+2. 用户态配置完整校验后才运行；当前字段与默认值以[配置规格](docs/specs/config-schema.md)和 Config 为准，不承诺未实现的权重或可配置超时。
+3. 用户态服务保持单线程所有权；增加线程或跨进程共享状态时必须重新设计执行与同步边界。
+4. XDP 四 profile、共享 schema v1/v2/v3、字节序和 map/program/object 契约明确区分；C/BPF 与 C++ 通过固定宽度布局及 static_assert 校验 ABI。
+5. 静态配置先完整同步并冻结再 attach；runtime 不可变快照以 outer 更新为提交点，不能原地篡改已发布快照。
+6. 健康状态不等于业务连接迁移；ready 不等于 Healthy，UDP echo/TCP 握手也不等于完整应用健康。
+7. 网络资源与挂载必须有明确 owner 和清理路径；特权验证只操作明确的自有资源，不把部署网络配置混入产品。
 
-`l4lb-xdp` 独立于既有l4lb：`main.cpp`严格解析attach/detach设备/模式/对象或ID，先阻塞退出信号；`loader.cpp`使用官方libbpf加载并挂载，前台同步sigwait后条件卸载。使用RAII管理object/FD，不引入回调注册或业务装配层。程序通过内核old_prog_fd原子比较保护其他挂载；比较FD复制到>=3，防止FD0被libbpf视为未指定。READY输出失败亦清理；SIGKILL不能自动清理，需要用户提供ID显式卸载。
+## 6. 详细规格、运行与验证入口
 
-`L4LB_BUILD_XDP_LOADER`默认OFF，仅开启时检测libbpf>=1.0，且要求S1 BPF构建开启；不传播到原用户态目标。默认CTest只增加普通UID的CLI负向检查，真实BPF验收是显式root自建net namespace/veth脚本。无maps、持久pin、TCP代理或性能承诺。运行契约见[加载手册](docs/runbooks/xdp-loader.md)。
+架构正文保留协作和所有权；精确字段、协议边界、操作命令和验证证据由以下文档维护。
 
-## V1.2/S1 map 与启动同步边界
+| 内容 | 权威入口 |
+| --- | --- |
+| 构建、快速运行、当前测试与状态 | [README](README.md) |
+| 用户态配置、调度 | [配置](docs/specs/config-schema.md)、[调度](docs/specs/scheduler.md)；旧内部标识符的当前映射见上文源码索引 |
+| TCP、UDP、健康与指标语义 | [TCP](docs/specs/tcp-forwarding-semantics.md)、[UDP flow](docs/specs/udp-flow-table.md)、[健康](docs/specs/health-check.md)、[指标](docs/specs/metrics.md) |
+| 稳定用户可见行为 | [用户态契约](docs/specs/v1.0-user-visible-contract.md) |
+| XDP ABI、DSR 与运行期控制 | [map schema](docs/specs/xdp-map-schema.md)、[UDP DSR](docs/specs/xdp-udp-dsr.md)、[runtime](docs/specs/xdp-runtime-control.md) |
+| XDP 环境、加载与实际验证 | [环境](docs/runbooks/linux-xdp-env.md)、[加载器](docs/runbooks/xdp-loader.md)、[验证](docs/runbooks/xdp-validation.md) |
+| 性能方法与适用边界 | [用户态方法](docs/benchmarks/methodology.md)、[V1.2 方法](docs/benchmarks/v1.2-methodology.md) |
+| 版本演进与架构历史 | [ROADMAP](ROADMAP.md)、[历史架构](docs/history/architecture-history.md) |
 
-独立 `xdp_maps.bpf.o` 与旧 `xdp_pass.bpf.o` 并存，二者始终 XDP_PASS。`MapSchema.h` 定义 cfg ARRAY、64项backend ARRAY和单项PERCPU_ARRAY统计；固定宽度布局由C/BPF与C++共同断言，不承载会话或用户态对象。
-
-`control/XdpConfigSync`负责参数转换及完整写入/回读/冻结次序；`xdp/MapStore`负责ABI白名单、内核metadata、读写和统计汇总；`Attachment`持有object/fd并在同步完成后才挂载。配置发布前无包路径读者，发布后冻结，不引入并发热更新或健康状态联动。CLI呈现READY、错误及独立XDP_STATS，原用户态metrics不变。
-
-新增代码仅链接到可选 `l4lb-xdp`。BPF-only不需要libbpf开发包，默认OFF不探测XDP依赖。正常停止先条件卸载再读统计；SIGKILL残留按实际program ID显式恢复，没有pin或他人map写入。正式布局、非原子统计采样和兼容界限见[map schema](docs/specs/xdp-map-schema.md)，验证入口见[XDP流程](docs/runbooks/xdp-validation.md)。
-
-## V1.1/S3 验证与文档边界
-
-S3复用S1/S2构建和测试，不新增运行时层。默认OFF、BPF-only、独立loader三种组合及普通UID/特权分层见[V1.1最小验证](docs/runbooks/xdp-validation.md)。特权脚本直接在临时net namespace中注入Ethernet/IPv4/UDP帧，验证真实挂载和条件卸载，普通用户态测试在隔离网络降权运行。
-
-[map schema初稿](docs/specs/xdp-map-schema.md)明确V1.1实际map集合为空；V1.2候选后端与统计字段只是后续设计输入，不是共享ABI或已实现控制面同步。版本六标准与记录环境见[验收索引](docs/specs/v1.1-acceptance.md)，公开JSON用于审计本轮结果，不作为性能或跨平台保证。
-
-## V1.2/S2 UDP DSR 边界
-
-`xdp_udp_dsr.bpf.o`使用独立schema v2，与旧PASS和schema v1对象并存。包路径有界解析Ethernet/IPv4/UDP，校验IPv4头及长度，按五元组FNV-1a选择静态目标，通过`bpf_redirect`送往出口；仅改二层MAC，后端以VIP直接回包。未支持、非目标、无后端或坏配置PASS，helper即时失败DROP；重定向请求不代表实际送达。
-
-`control/DsrConfigSync`负责VIP/目标解析与写入、完整回读、冻结；`xdp/DsrMapStore`负责v2白名单、内核map访问及八项per-CPU计数汇总。加载器检查入口/出口Ethernet接口、状态、MAC和MTU，先发布完整只读配置再挂载；停止先条件卸载再读统计。原用户态代理、metrics和S1同步路径保持。
-
-后端VIP、回程、邻居由部署方配置，产品不改宿主网络。无会话、NAT、热更新或健康联动；运行期联动留S3，性能留S4。正式ABI、解析边界和统计语义见[DSR规格](docs/specs/xdp-udp-dsr.md)，独立namespace/veth复现见[XDP验证](docs/runbooks/xdp-validation.md)。
-
-## V1.2/S3 运行期 DSR 控制面
-
-新增第四种独立profile：`xdp_udp_runtime.bpf.o`读取schema v3的单个ARRAY_OF_MAPS活动入口，每包只取得一次不可变inner快照；完整VIP、代次、计数和64槽目标处于同一1048字节值中。`RuntimeMapStore`创建、写入、回读并冻结新inner，再用一次outer更新提交；旧快照不原地复用，由内核引用/RCU退休。统计map独立，不随配置发布清零。旧v1/v2契约不变。
-
-`RuntimeDsrConfig`负责严格有界文件读取、纯文本解析及接口/目标身份解析；`UdpProbeChecker`负责单线程非阻塞UDP echo、deadline/nonce和2success/3failure状态，不读取BPF或输出日志；`RuntimeDsrService`串行编排HUP事务、desired健康集合和已应用generation，至多每秒尝试一次发布。候选探测资源和状态在提交前准备，提交后只做无抛出所有权替换；后续致命观测/日志失败终止卸载，不假称回滚。
-
-runtime用signalfd和20ms有界轮询收割响应，优先消费停止信号；输出以64KiB非阻塞队列限制背压。全部不可用时仅新profile对有效匹配报文DROP；配置/健康改变可能重映射既有UDP流，不引入会话或draining。部署方提供UDP echo端点、VIP和回程，产品不配置网络。ABI、探测与提交点语义见[运行期控制规格](docs/specs/xdp-runtime-control.md)。S4负责性能，本阶段不作吞吐或物理网卡结论。
-
-## V1.2/S4 性能验证工具边界
-
-新增 `tests/v12_benchmark*.py` 仅在测试侧构建固定S3 Release产品、建立自有隔离网络、按开放节拍生成UDP流量、采集原始计数/RTT/PID与全机资源并离线重算；CMake只在BUILD_TESTING内增加短schema测试。生产模块、ABI、历史测试及配置保持冻结，无新生产Python依赖。工具记录漏槽和超时，不以目标pps代替实际goodput；全机CPU含VM背景任务，loader CPU不是BPF数据面CPU。六路径与控制面测量的拓扑/语义和口径见[性能方法](docs/benchmarks/v1.2-methodology.md)，独立验收与九标准见[版本验收](docs/specs/v1.2-acceptance.md)。此段登记已批准S4落地，不变更产品架构或将后续平台纳入验收。
+验证覆盖配置/调度等单元规则、TCP/UDP 真实产品、健康/指标/异常停止，以及显式执行的 XDP 内核场景。普通产品测试与必要特权环境准备分开；历史版本验收和性能数据只证明当时记录的产品与环境，不作为当前平台或性能上限保证。

@@ -30,9 +30,9 @@
 
 ## 控制面和业务语义
 
-control 持有 checker 和原 Scheduler，两个 reactor 在每轮唤醒、处理停止后且分派前执行可选 maintenance。长批次每次新选择再非阻塞 tick，资格不过期；单线程读写。off 不注册 maintenance。
+control 持有 checker 和BackendScheduler，两个 reactor 在每轮唤醒、处理停止后且分派前执行可选 maintenance。长批次每次新选择再非阻塞 tick，资格不过期；单线程读写。off 不注册 maintenance。
 
-- 空 Healthy 集合返回 nullopt，不调用 Scheduler::next，不推进 cursor；有 Healthy 时至多 next N 次，跳过不可选项，首次 Healthy 返回。恢复不重置 cursor。没有第二种策略或 fallback。
+- 空 Healthy 集合返回 nullopt，不调用 BackendScheduler::selectNextBackendIndex，不推进 cursor；有 Healthy 时至多选择 N 次，跳过不可选项，首次 Healthy 返回。恢复不重置 cursor。没有第二种策略或 fallback。
 - TCP 接受 client 后无后端可选立即关闭，既不创建 backend socket，也不保留会话；EOF/reset 均可能。不健康转换不关闭既有连接。
 - UDP 新 key 不可选整包丢弃、不建 flow/socket；既有未过期 flow 的后续包仍发到原后端。自然错误或原 60s 超时仍照旧删除，之后的新 flow 重新过滤。
 - 容量、坏包早拒绝在选择之前；选定后资源/业务失败照旧消耗位置、不重试。
@@ -44,7 +44,7 @@ control 持有 checker 和原 Scheduler，两个 reactor 在每轮唤醒、处�
 - `v03_health_checker`：真实 TCP 接受和拒绝、probe 无 payload、清理；仅内部测试缩短间隔，生产参数固定。
 - `v03_health_tcp_product` / `v03_health_udp_product`：标准库 Python fixture 启动原产品，默认 1s/3fail/2success，nonce 数据与空 probe 分别计数；Unknown、摘除/恢复、无 fallback、旧 TCP/UDP 绑定、热业务下维护与停止。
 - V0.3/S1历史验收：原11项回归保留，当时总15项，Debug排除udp_long后14，Release15 含真实 60s expiry。Python3 仅测试依赖，Production `BUILD_TESTING=OFF` 不需要 Python。
-- 原始日志、源码指纹及 Release 负向验证见 Builder/Reviewer 报告。未实现指标快照、应用层/UDP 主动探测、重试、迁移、热加载或 XDP。
+- 原始日志、源码指纹及 Release 负向验证见 Builder/Reviewer 报告。以上为 V0.3/S1 验收时点：当时尚无指标快照或 XDP。当前用户态 tcp_connect 仍不提供应用层/UDP 主动探测、失败换后端、绑定迁移或配置热加载；指标与独立 XDP 运行期 UDP 探测见 [README](../../README.md)。
 
 V0.3/S3双backend故障与指标联合验证见 [本机运行手册](../runbooks/local-v0.3-validation.md) 和 [版本验收矩阵](v0.3-acceptance.md)；不改变本规格的生产语义。
 

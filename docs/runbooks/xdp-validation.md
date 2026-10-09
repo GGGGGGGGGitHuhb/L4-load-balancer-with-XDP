@@ -18,7 +18,7 @@ cmake --build build-user -j4
 ctest --test-dir build-user --output-on-failure
 ```
 
-期望31项用户态测试通过（包含约60秒UDP expiry）。如果只需生产程序，配置时加 `-DBUILD_TESTING=OFF`，此时不需要Python且不执行CTest。
+默认 OFF 期望33项用户态测试通过（以 `ctest -N` 为准）（包含约60秒UDP expiry）。如果只需生产程序，配置时加 `-DBUILD_TESTING=OFF`，此时不需要Python且不执行CTest。
 
 此前S2验收中宿主网络曾有4项回归失败，但独立隔离网络普通UID复验通过，宿主具体原因未确定。遇到同类端口/网络状态干扰，可采用下方隔离方式重跑，保留首次失败：
 
@@ -53,7 +53,7 @@ build-xdp/bin/l4lb-xdp --help
 ctest --test-dir build-xdp -R '^(xdp_|udp_dsr_|udp_runtime_)' --output-on-failure
 ```
 
-期望旧四项及 udp_dsr_config、udp_dsr_cli 共六项通过。保留旧 CLI 内部33项；新增测试覆盖 ABI/字节序、0/1/64后端、132个同步步骤的故障注入、65处回读不一致、per-CPU汇总，以及12类对象白名单变异和参数拒绝。DSR另覆盖23种CLI错误、12种v2对象变异、132处同步故障与65处回读故障。S3另新增配置文件、UDP探测纯逻辑/随机源失败/真实socket、CLI及对象负向五项，当前相关11项、全量ON42项，默认OFF仍31项。自定义libbpf目录配置见[加载手册](xdp-loader.md#构建)。
+期望旧四项及 udp_dsr_config、udp_dsr_cli 共六项通过。保留旧 CLI 内部33项；新增测试覆盖 ABI/字节序、0/1/64后端、132个同步步骤的故障注入、65处回读不一致、per-CPU汇总，以及12类对象白名单变异和参数拒绝。DSR另覆盖23种CLI错误、12种v2对象变异、132处同步故障与65处回读故障。S3另新增配置文件、UDP探测纯逻辑/随机源失败/真实socket、CLI及对象负向五项，这些 XDP 相关11项保持；当前全量 ON 两选项共44项，默认 OFF 共33项，数量以 `ctest -N` 为准。自定义libbpf目录配置见[加载手册](xdp-loader.md#构建)。
 
 ## 4. 显式真实挂载与流量验证
 

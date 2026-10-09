@@ -31,55 +31,61 @@ class RuntimeControlError final : public std::runtime_error {
 /** 仅 runtime 模式修改 stdout 标志，并恢复继承的状态。 */
 class RuntimeOutput {
  public:
-  RuntimeOutput() : originalFlags_(fcntl(STDOUT_FILENO, F_GETFL)) {
-    if (originalFlags_ < 0 ||
-        fcntl(STDOUT_FILENO, F_SETFL, originalFlags_ | O_NONBLOCK))
-      throw std::runtime_error("无法设置 runtime 非阻塞输出");
-  }
+  RuntimeOutput();
 
   ~RuntimeOutput() { fcntl(STDOUT_FILENO, F_SETFL, originalFlags_); }
 
-  void appendOutputLine(const std::string& line) {
-    if (pending_.size() + line.size() + 1 > 64 * 1024)
-      throw RuntimeControlError("runtime 输出队列超过64KiB");
+  void appendOutputLine(const std::string& line);
 
-    pending_ += line;
-    pending_ += '\n';
+  void flushPendingOutput();
 
-    flushPendingOutput();
-  }
+  bool hasPendingOutput() const { return !pendingOutput_.empty(); }
 
-  void flushPendingOutput() {
-    for (unsigned attempt = 0; attempt < 64 && !pending_.empty(); ++attempt) {
-      const auto count = write(STDOUT_FILENO, pending_.data(), pending_.size());
-      if (count < 0 && errno == EINTR) continue;
-      if (count < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) return;
-      if (count <= 0) throw RuntimeControlError("runtime 输出失败");
-      pending_.erase(0, static_cast<size_t>(count));
-    }
-  }
-
-  bool hasPendingOutput() const { return !pending_.empty(); }
-
-  void drainOutputOnStop() {
-    const auto deadline = Clock::now() + 1s;
-    while (hasPendingOutput()) {
-      flushPendingOutput();
-      if (!hasPendingOutput()) break;
-
-      if (Clock::now() >= deadline)
-        throw RuntimeControlError("停止后 runtime 输出背压超时");
-
-      pollfd output{STDOUT_FILENO, POLLOUT, 0};
-      if (poll(&output, 1, 20) < 0 && errno != EINTR)
-        throw RuntimeControlError("runtime 输出等待失败");
-    }
-  }
+  void drainOutputOnStop();
 
  private:
   int originalFlags_;
-  std::string pending_;
+  std::string pendingOutput_;
 };
+
+RuntimeOutput::RuntimeOutput() : originalFlags_(fcntl(STDOUT_FILENO, F_GETFL)) {
+  if (originalFlags_ < 0 || fcntl(STDOUT_FILENO, F_SETFL, originalFlags_ | O_NONBLOCK))
+    throw std::runtime_error("无法设置 runtime 非阻塞输出");
+}
+
+void RuntimeOutput::appendOutputLine(const std::string& line) {
+  if (pendingOutput_.size() + line.size() + 1 > 64 * 1024)
+    throw RuntimeControlError("runtime 输出队列超过64KiB");
+
+  pendingOutput_ += line;
+  pendingOutput_ += '\n';
+
+  flushPendingOutput();
+}
+
+void RuntimeOutput::flushPendingOutput() {
+  for (unsigned attempt = 0; attempt < 64 && !pendingOutput_.empty(); ++attempt) {
+    const auto count = write(STDOUT_FILENO, pendingOutput_.data(), pendingOutput_.size());
+    if (count < 0 && errno == EINTR) continue;
+    if (count < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) return;
+    if (count <= 0) throw RuntimeControlError("runtime 输出失败");
+    pendingOutput_.erase(0, static_cast<size_t>(count));
+  }
+}
+
+void RuntimeOutput::drainOutputOnStop() {
+  const auto deadline = Clock::now() + 1s;
+  while (hasPendingOutput()) {
+    flushPendingOutput();
+    if (!hasPendingOutput()) break;
+
+    if (Clock::now() >= deadline) throw RuntimeControlError("停止后 runtime 输出背压超时");
+
+    pollfd output{STDOUT_FILENO, POLLOUT, 0};
+    if (poll(&output, 1, 20) < 0 && errno != EINTR)
+      throw RuntimeControlError("runtime 输出等待失败");
+  }
+}
 
 struct SignalState {
   bool reload = false;
@@ -102,16 +108,14 @@ void consumeRuntimeSignals(int fd, SignalState& state) {
     return;
   }
 
-  if (errno != EAGAIN && errno != EINTR)
-    throw RuntimeControlError("runtime 停止信号检查失败");
+  if (errno != EAGAIN && errno != EINTR) throw RuntimeControlError("runtime 停止信号检查失败");
 
   for (unsigned count = 0; count < 64; ++count) {
     signalfd_siginfo information{};
     const auto bytes = read(fd, &information, sizeof(information));
     if (bytes < 0 && errno == EINTR) continue;
     if (bytes < 0 && errno == EAGAIN) return;
-    if (bytes != sizeof(information))
-      throw RuntimeControlError("runtime 信号读取失败");
+    if (bytes != sizeof(information)) throw RuntimeControlError("runtime 信号读取失败");
     if (information.ssi_signo == SIGHUP)
       state.reload = true;
     else {
@@ -121,8 +125,7 @@ void consumeRuntimeSignals(int fd, SignalState& state) {
   }
 }
 
-std::vector<health::ProbeTarget> buildProbeTargets(
-    const RuntimeDsrConfiguration& configuration) {
+std::vector<health::ProbeTarget> buildProbeTargets(const RuntimeDsrConfiguration& configuration) {
   std::vector<health::ProbeTarget> result;
   for (const auto& target : configuration.targets) {
     health::ProbeTarget probe;
@@ -139,9 +142,9 @@ std::vector<health::ProbeTarget> buildProbeTargets(
   return result;
 }
 
-UdpRuntimeSnapshot buildRuntimeSnapshot(
-    const RuntimeDsrConfiguration& configuration,
-    const health::UdpProbeChecker& checker, uint64_t generation) {
+UdpRuntimeSnapshot buildRuntimeSnapshot(const RuntimeDsrConfiguration& configuration,
+                                        const health::UdpProbeChecker& checker,
+                                        uint64_t generation) {
   UdpRuntimeSnapshot snapshot{};
   snapshot.schemaVersion = L4LB_RUNTIME_SCHEMA_VERSION;
   snapshot.generation = generation;
@@ -152,10 +155,8 @@ UdpRuntimeSnapshot buildRuntimeSnapshot(
       throw std::logic_error("runtime 健康目标超界");
     auto& backend = snapshot.backends[snapshot.backendCount++];
     backend.ifindex = target.ifindex;
-    std::copy(target.sourceMac.begin(), target.sourceMac.end(),
-              backend.sourceMac);
-    std::copy(target.destinationMac.begin(), target.destinationMac.end(),
-              backend.destinationMac);
+    std::copy(target.sourceMac.begin(), target.sourceMac.end(), backend.sourceMac);
+    std::copy(target.destinationMac.begin(), target.destinationMac.end(), backend.destinationMac);
   }
 
   return snapshot;
@@ -167,11 +168,9 @@ uint64_t nextRuntimeGeneration(const UdpRuntimeSnapshot& applied) {
   return applied.generation + 1;
 }
 
-bool haveSameActiveTargets(const UdpRuntimeSnapshot& first,
-                           const UdpRuntimeSnapshot& second) {
+bool haveSameActiveTargets(const UdpRuntimeSnapshot& first, const UdpRuntimeSnapshot& second) {
   return first.backendCount == second.backendCount &&
-         std::memcmp(first.backends, second.backends, sizeof(first.backends)) ==
-             0;
+         std::memcmp(first.backends, second.backends, sizeof(first.backends)) == 0;
 }
 
 std::string formatAppliedSnapshotFields(const UdpRuntimeSnapshot& applied) {
@@ -190,8 +189,7 @@ std::string sanitizeErrorReason(const std::exception& error) {
 std::string formatRuntimeStatisticsLine(const UdpDsrStatsValue& stats) {
   std::ostringstream line;
   line << "XDP_STATS schema=3 total_packets=" << stats.totalPackets
-       << " pass_packets=" << stats.passPackets
-       << " redirect_requests=" << stats.redirectRequests
+       << " pass_packets=" << stats.passPackets << " redirect_requests=" << stats.redirectRequests
        << " drop_packets=" << stats.dropPackets
        << " unsupported_packets=" << stats.unsupportedPackets
        << " no_backend_packets=" << stats.noBackendPackets
@@ -200,19 +198,74 @@ std::string formatRuntimeStatisticsLine(const UdpDsrStatsValue& stats) {
 
   return line.str();
 }
+
+bool publishChangedHealthySnapshot(xdp::XdpAttachment& attachment,
+                                   const RuntimeDsrConfiguration& configuration,
+                                   const std::unique_ptr<health::UdpProbeChecker>& checker,
+                                   UdpRuntimeSnapshot& applied,
+                                   const net::Fd& signalFd,
+                                   SignalState& signalState,
+                                   Clock::time_point& nextPublish,
+                                   RuntimeOutput& output) {
+  if (Clock::now() >= nextPublish) {
+    auto snapshot = buildRuntimeSnapshot(configuration, *checker, nextRuntimeGeneration(applied));
+    if (!haveSameActiveTargets(snapshot, applied)) {
+      consumeRuntimeSignals(signalFd.fd(), signalState);
+      if (signalState.stop) return false;
+
+      nextPublish = Clock::now() + 1s;
+      bool committed = false;
+
+      try {
+        attachment.publishRuntime(snapshot);
+
+        committed = true;
+        applied = snapshot;
+
+        output.appendOutputLine("XDP_PUBLISH status=applied reason=health" +
+                                formatAppliedSnapshotFields(applied));
+      } catch (const xdp::RuntimePublishError& error) {
+        if (error.committed()) throw;
+
+        output.appendOutputLine("XDP_PUBLISH status=failed reason=health" +
+                                formatAppliedSnapshotFields(applied));
+      } catch (const RuntimeControlError&) {
+        throw;
+      } catch (const std::exception&) {
+        if (committed) throw;
+
+        output.appendOutputLine("XDP_PUBLISH status=failed reason=health" +
+                                formatAppliedSnapshotFields(applied));
+      }
+    }
+  }
+  return true;
+}
+
+void waitForRuntimeSignalsOrOutput(const net::Fd& signalFd, const RuntimeOutput& output) {
+  pollfd descriptors[2]{
+      {signalFd.fd(), POLLIN, 0},
+      {STDOUT_FILENO, static_cast<short>(output.hasPendingOutput() ? POLLOUT : 0), 0}};
+  if (poll(descriptors, 2, 20) < 0 && errno != EINTR)
+    throw RuntimeControlError("runtime poll 失败");
+  if ((descriptors[0].revents | descriptors[1].revents) & (POLLERR | POLLHUP | POLLNVAL))
+    throw RuntimeControlError("runtime 输出或信号描述符失效");
+}
+
 }  // namespace
 
 int runRuntimeDsrControlLoop(xdp::XdpAttachment& attachment,
                              const std::string& object,
-                             const std::string& ingress, const std::string& vip,
+                             const std::string& ingress,
+                             const std::string& vip,
                              const std::string& configurationPath,
-                             xdp::XdpAttachMode mode, const sigset_t& signals) {
+                             xdp::XdpAttachMode mode,
+                             const sigset_t& signals) {
   const auto path = std::filesystem::absolute(configurationPath).string();
 
   auto configuration = loadRuntimeConfig(path, ingress, vip);
 
-  auto checker = std::make_unique<health::UdpProbeChecker>(
-      buildProbeTargets(configuration));
+  auto checker = std::make_unique<health::UdpProbeChecker>(buildProbeTargets(configuration));
 
   auto applied = buildRuntimeSnapshot(configuration, *checker, 1);
 
@@ -221,17 +274,15 @@ int runRuntimeDsrControlLoop(xdp::XdpAttachment& attachment,
 
   RuntimeOutput output;
 
-  attachment.loadObject(object, xdp::XdpObjectProfile::kUdpRuntimeV3, {}, {},
-                        &applied);
+  attachment.loadObject(object, xdp::XdpObjectProfile::kUdpRuntimeV3, {}, {}, &applied);
   attachment.attachProgram(xdp::resolveInterfaceIndex(ingress), mode);
 
   try {
-    output.appendOutputLine(
-        "READY dev=" + ingress + " mode=" + xdp::xdpAttachModeName(mode) +
-        " prog_id=" + std::to_string(attachment.programId()) +
-        " schema=3 profile=udp-dsr-runtime configured_backends=" +
-        std::to_string(configuration.targets.size()) +
-        formatAppliedSnapshotFields(applied));
+    output.appendOutputLine("READY dev=" + ingress + " mode=" + xdp::xdpAttachModeName(mode) +
+                            " prog_id=" + std::to_string(attachment.programId()) +
+                            " schema=3 profile=udp-dsr-runtime configured_backends=" +
+                            std::to_string(configuration.targets.size()) +
+                            formatAppliedSnapshotFields(applied));
 
     SignalState signalState;
     auto nextPublish = Clock::now() + 1s;
@@ -243,11 +294,10 @@ int runRuntimeDsrControlLoop(xdp::XdpAttachment& attachment,
       const auto now = Clock::now();
 
       for (const auto& transition : checker->pollProbeTransitions(now)) {
-        output.appendOutputLine(
-            "XDP_HEALTH target=" + transition.id +
-            " from=" + health::probeStateName(transition.from) +
-            " to=" + health::probeStateName(transition.to) +
-            " reason=" + transition.reason);
+        output.appendOutputLine("XDP_HEALTH target=" + transition.id +
+                                " from=" + health::probeStateName(transition.from) +
+                                " to=" + health::probeStateName(transition.to) +
+                                " reason=" + transition.reason);
       }
       consumeRuntimeSignals(signalFd.fd(), signalState);
       if (signalState.stop) break;
@@ -265,10 +315,11 @@ int runRuntimeDsrControlLoop(xdp::XdpAttachment& attachment,
             output.appendOutputLine("XDP_RELOAD status=unchanged" +
                                     formatAppliedSnapshotFields(applied));
           } else {
-            auto candidateChecker = std::make_unique<health::UdpProbeChecker>(
-                buildProbeTargets(candidate), checker->copyProbeSnapshots());
-            auto snapshot = buildRuntimeSnapshot(
-                candidate, *candidateChecker, nextRuntimeGeneration(applied));
+            auto candidateChecker =
+                std::make_unique<health::UdpProbeChecker>(buildProbeTargets(candidate),
+                                                          checker->copyProbeSnapshots());
+            auto snapshot =
+                buildRuntimeSnapshot(candidate, *candidateChecker, nextRuntimeGeneration(applied));
             consumeRuntimeSignals(signalFd.fd(), signalState);
             if (signalState.stop) break;
 
@@ -285,10 +336,9 @@ int runRuntimeDsrControlLoop(xdp::XdpAttachment& attachment,
             output.appendOutputLine("XDP_PUBLISH status=applied reason=reload" +
                                     formatAppliedSnapshotFields(applied));
 
-            output.appendOutputLine(
-                "XDP_RELOAD status=applied configured_backends=" +
-                std::to_string(configuration.targets.size()) +
-                formatAppliedSnapshotFields(applied));
+            output.appendOutputLine("XDP_RELOAD status=applied configured_backends=" +
+                                    std::to_string(configuration.targets.size()) +
+                                    formatAppliedSnapshotFields(applied));
           }
         } catch (const xdp::RuntimePublishError& error) {
           if (error.committed()) throw;
@@ -296,9 +346,9 @@ int runRuntimeDsrControlLoop(xdp::XdpAttachment& attachment,
           output.appendOutputLine("XDP_PUBLISH status=failed reason=reload" +
                                   formatAppliedSnapshotFields(applied));
 
-          output.appendOutputLine("XDP_RELOAD status=rejected reason=" +
-                                  sanitizeErrorReason(error) +
-                                  formatAppliedSnapshotFields(applied));
+          output.appendOutputLine(
+              "XDP_RELOAD status=rejected reason=" + sanitizeErrorReason(error) +
+              formatAppliedSnapshotFields(applied));
         } catch (const RuntimeControlError&) {
           throw;
         } catch (const std::exception& error) {
@@ -307,69 +357,35 @@ int runRuntimeDsrControlLoop(xdp::XdpAttachment& attachment,
             output.appendOutputLine("XDP_PUBLISH status=failed reason=reload" +
                                     formatAppliedSnapshotFields(applied));
 
-          output.appendOutputLine("XDP_RELOAD status=rejected reason=" +
-                                  sanitizeErrorReason(error) +
-                                  formatAppliedSnapshotFields(applied));
+          output.appendOutputLine(
+              "XDP_RELOAD status=rejected reason=" + sanitizeErrorReason(error) +
+              formatAppliedSnapshotFields(applied));
         }
       }
 
-      if (Clock::now() >= nextPublish) {
-        auto snapshot = buildRuntimeSnapshot(configuration, *checker,
-                                             nextRuntimeGeneration(applied));
-        if (!haveSameActiveTargets(snapshot, applied)) {
-          consumeRuntimeSignals(signalFd.fd(), signalState);
-          if (signalState.stop) break;
-
-          nextPublish = Clock::now() + 1s;
-          bool committed = false;
-
-          try {
-            attachment.publishRuntime(snapshot);
-
-            committed = true;
-            applied = snapshot;
-
-            output.appendOutputLine("XDP_PUBLISH status=applied reason=health" +
-                                    formatAppliedSnapshotFields(applied));
-          } catch (const xdp::RuntimePublishError& error) {
-            if (error.committed()) throw;
-
-            output.appendOutputLine("XDP_PUBLISH status=failed reason=health" +
-                                    formatAppliedSnapshotFields(applied));
-          } catch (const RuntimeControlError&) {
-            throw;
-          } catch (const std::exception&) {
-            if (committed) throw;
-
-            output.appendOutputLine("XDP_PUBLISH status=failed reason=health" +
-                                    formatAppliedSnapshotFields(applied));
-          }
-        }
-      }
+      if (!publishChangedHealthySnapshot(attachment,
+                                         configuration,
+                                         checker,
+                                         applied,
+                                         signalFd,
+                                         signalState,
+                                         nextPublish,
+                                         output))
+        break;
 
       output.flushPendingOutput();
 
-      pollfd descriptors[2]{
-          {signalFd.fd(), POLLIN, 0},
-          {STDOUT_FILENO,
-           static_cast<short>(output.hasPendingOutput() ? POLLOUT : 0), 0}};
-      if (poll(descriptors, 2, 20) < 0 && errno != EINTR)
-        throw RuntimeControlError("runtime poll 失败");
-      if ((descriptors[0].revents | descriptors[1].revents) &
-          (POLLERR | POLLHUP | POLLNVAL))
-        throw RuntimeControlError("runtime 输出或信号描述符失效");
+      waitForRuntimeSignalsOrOutput(signalFd, output);
     }
 
     attachment.detachProgram();
 
     checker.reset();
 
-    output.appendOutputLine(
-        formatRuntimeStatisticsLine(attachment.readRuntimeStats()));
+    output.appendOutputLine(formatRuntimeStatisticsLine(attachment.readRuntimeStats()));
 
-    output.appendOutputLine(
-        "DETACHED dev=" + ingress + " mode=" + xdp::xdpAttachModeName(mode) +
-        " prog_id=" + std::to_string(attachment.programId()));
+    output.appendOutputLine("DETACHED dev=" + ingress + " mode=" + xdp::xdpAttachModeName(mode) +
+                            " prog_id=" + std::to_string(attachment.programId()));
 
     output.drainOutputOnStop();
 
