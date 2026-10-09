@@ -2,7 +2,7 @@
 
 一个用于学习和验证四层负载均衡的 C++20 实验项目。可以运行 TCP/UDP 用户态代理，观察轮询、健康检查与流绑定；也可以在 Linux 隔离网络中运行 XDP UDP DSR，对比两条转发路径的行为和成本。
 
-用户态与 XDP 是两个独立程序：`l4lb` 通过 socket 转发，`l4lb-xdp` 管理内核 XDP 程序与配置。项目已完成 V0.1—V1.2 的开发与验收，以及 R1—R4 编码规范重构；版本变化与阶段标签见 [CHANGELOG](CHANGELOG.md)。
+用户态与 XDP 是两个独立程序：`l4lb` 通过 socket 转发，`l4lb-xdp` 管理内核 XDP 程序与配置。项目已完成 V0.1—V1.2 的开发与验收，以及 R1—R4 编码规范重构；版本变化与阶段标签见 [CHANGELOG](CHANGELOG.md)。 本轮内部结构整理已于 2026-10-09 完成全轮五阶段及独立综合验收；工作树未发布。内部类与具名实现的阅读顺序见 [ARCHITECTURE](ARCHITECTURE.md#current-source-index)。
 
 ## 已实现能力
 

@@ -11,30 +11,23 @@
 namespace l4lb::net {
 inline constexpr std::size_t kBufferLimit = 64 * 1024;
 inline constexpr std::size_t kLowWater = 32 * 1024;
+
 using Clock = std::chrono::steady_clock;
 
 /** 固定容量环形队列；size/room是总量，I/O只使用连续span。 */
 class TcpPendingBuffer {
  public:
   std::size_t size() const { return size_; }
-
   std::size_t room() const { return kBufferLimit - size_; }
 
-  std::size_t readableBytes() const {
-    return std::min(size_, kBufferLimit - readOffset_);
-  }
-
-  std::size_t writableBytes() const {
-    return std::min(room(), kBufferLimit - writeOffset());
-  }
+  std::size_t readableBytes() const { return std::min(size_, kBufferLimit - readOffset_); }
+  std::size_t writableBytes() const { return std::min(room(), kBufferLimit - writeOffset()); }
 
   const char* data() const { return bytes_.data() + readOffset_; }
-
   char* writable() { return bytes_.data() + writeOffset(); }
 
   void commitWrittenBytes(std::size_t writtenBytes) {
-    if (writtenBytes > writableBytes())
-      throw std::logic_error("buffer write span overflow");
+    if (writtenBytes > writableBytes()) throw std::logic_error("buffer write span overflow");
     size_ += writtenBytes;
   }
 
@@ -46,9 +39,7 @@ class TcpPendingBuffer {
   }
 
  private:
-  std::size_t writeOffset() const {
-    return (readOffset_ + size_) % kBufferLimit;
-  }
+  std::size_t writeOffset() const { return (readOffset_ + size_) % kBufferLimit; }
 
   std::array<char, kBufferLimit> bytes_{};
   std::size_t readOffset_ = 0, size_ = 0;
@@ -62,8 +53,7 @@ struct TcpIdleDeadline {
     if (bytes) lastIoTime = now;
   }
 
-  bool expired(Clock::time_point now,
-               std::chrono::milliseconds duration) const {
+  bool expired(Clock::time_point now, std::chrono::milliseconds duration) const {
     return now - lastIoTime >= duration;
   }
 };
@@ -72,15 +62,14 @@ struct TcpIdleDeadline {
 class EndpointTokens {
  public:
   struct Target {
-    std::uint64_t session;
+    std::uint64_t sessionId;
     int side;
   };
 
-  std::uint64_t registerEndpoint(std::uint64_t session, int side) {
-    if (nextToken_ == UINT64_MAX)
-      throw std::overflow_error("endpoint token exhausted");
+  std::uint64_t registerEndpoint(std::uint64_t sessionId, int side) {
+    if (nextToken_ == UINT64_MAX) throw std::overflow_error("endpoint token exhausted");
     const auto token = nextToken_++;
-    entries_.emplace(token, Target{session, side});
+    entries_.emplace(token, Target{sessionId, side});
     return token;
   }
 

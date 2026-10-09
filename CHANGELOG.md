@@ -4,6 +4,21 @@
 
 审批、交接、首轮失败与返工过程完整保留于[历史变更记录](docs/history/changelog-history.md)。历史测试数量属于当时版本，不代表当前测试规模；当前构建与验证入口见 [README](README.md)。
 
+## 内部结构整理（工作树，未发布）— 完成于 2026-10-09
+
+### 内部结构与兼容性
+
+- 本轮 R1—R4 代码阶段已独立接受：同文件匿名命名空间内分离内部类声明与非简单方法实现，提取八个具名 helper，整理有限内部状态名称和职责组。
+- 保持 CLI、配置、日志、指标、共享 ABI、网络语义及原所有权/异常/停止边界；当前源码阅读入口见 [ARCHITECTURE](ARCHITECTURE.md#current-source-index)。
+- R4 首审发现函数边界缺空行，第一轮纠正后独立接受；首次 FAIL 与纠正记录保留，未延期为技术债。
+
+### 综合验证状态
+
+- R5 综合自测与独立验收已完成：七种独立构建成功；四种完整普通 CTest 配置中 OFF Debug/Release 各33/33、ON Debug/Release 各44/44，原测试没有跳过，CLI 权限断言以普通 UID1000 验证。
+- 六个原真实内核入口已通过：loader、maps、静态 DSR、runtime、output 保留 generic/native 全部用例；MapStoreKernel 完成 detached test-run 两对象各104次 publish、并发 reader、提交前后故障及退休 ID/FD 检查。验证使用隔离网络 namespace，资源退出检查通过。
+- 以上矩阵由 Builder 自测及 Reviewer 独立综合验收通过，全轮五阶段已完成收尾；当前工作树未发布，没有新增 tag 或 Release。
+- 原测试夹具和环境观察 OBS-005/006 保留；本轮未修复、未新增正式性能测量，历史性能数据仍只对应原产品与测量条件。
+
 ## 编码规范重构 — 完成于 2026-10-06
 
 ### 变更

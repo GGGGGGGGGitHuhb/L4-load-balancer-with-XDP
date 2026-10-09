@@ -58,8 +58,8 @@ int main() {
     tokens.unregisterEndpoint(peer);
     tokens.unregisterEndpoint(old);
     auto fresh = tokens.registerEndpoint(2, 0);
-    check(!tokens.findEndpoint(old) &&
-              tokens.findEndpoint(fresh)->session == 2 && tokens.size() == 1,
+    check(!tokens.findEndpoint(old) && tokens.findEndpoint(fresh)->sessionId == 2 &&
+              tokens.size() == 1,
           "stale batch token");
     tokens.unregisterEndpoint(fresh);
     check(tokens.size() == 0, "tokens empty");

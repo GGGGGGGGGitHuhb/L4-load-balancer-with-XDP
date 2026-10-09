@@ -50,6 +50,8 @@ flowchart LR
 
 四类 BPF 程序和共享 C ABI 位于 `src/xdp/`。测试、fixture 与 benchmark 工具位于 `tests/`，不进入生产运行依赖。
 
+内部实现先读同 `.cpp` 匿名命名空间中的类声明、接口组和状态，再读按原顺序排列的类外方法。网络入口见 [TcpReactor.cpp](src/net/TcpReactor.cpp)、[UdpReactor.cpp](src/net/UdpReactor.cpp)，装配入口见上表两个 Service；XDP runtime 的输出和 UDP socket transport 也采用这一组织方式。短转发、简单访问器与原完整重载事务仍按其职责保留。此整理改变源码阅读组织，不新增线程、公共接口或运行功能。
+
 ## 3. 关键数据流与控制流
 
 ### 3.1 用户态启动与装配
@@ -77,6 +79,8 @@ flowchart LR
 - reactor 持有 flow 表和每个 flow 的 connected 后端 socket；已有 flow 保留原绑定。
 - 回复通过 listener 的 IP_PKTINFO 保持实际目的 IP 为源地址。
 - 成功发送更新空闲时限；flow 按超时与容量规则管理，没有用户态待发队列或可靠重传。
+
+具名 helper 保留原错误域和资源 owner：TCP `dispatchTcpReadyEvents` 在每个就绪事件前检查停止，`connectSessionBackend` 仍由原 `SessionFailure` catch 处理；UDP `registerFlowIndexesAndSocket` 包住双索引和 epoll 注册及原回滚，`resolveFlowTokenForDatagram` 保留过期清理、创建 flow 与异常传播。它们都借用 reactor 已拥有的状态，不新增连接或 flow owner。
 
 用户态 `health_check=tcp_connect` 对 TCP/UDP 均进行 TCP 握手探测；用于 UDP 时只是操作员提供的代理信号，不等于 UDP 应用健康证明。
 
@@ -108,6 +112,10 @@ generation 不回绕，健康集合的发布失败可在后续循环按既定节
 
 runtime 使用 UDP nonce echo 探测，校验身份和截止；它与用户态 TCP 握手探测是不同契约。runtime 输出使用有界非阻塞队列，避免无限缓存；细节见[运行期控制规格](docs/specs/xdp-runtime-control.md)。
 
+[RuntimeDsrService](src/control/RuntimeDsrService.cpp) 的 `publishChangedHealthySnapshot` 只负责原健康差异发布；提交前遇到停止时返回 false，由外层循环退出。重载仍保留完整候选事务及原 catch；健康发布失败保留 applied，提交后或永久输出错误仍致命。`waitForRuntimeSignalsOrOutput` 仅保留原等待段，输出 flush 仍在调用之前。
+
+[UdpProbeChecker.cpp](src/health/UdpProbeChecker.cpp) 的 `sendDueProbePackets` 先处理到期，再发送；`receivePendingProbeReplies` 按原轮转预算处理回复，保持完成时钟与截止优先。两个调用仍在 `pollProbeTransitions` 的同一个总 catch 中，异常取消所有 probe 后传播；nonce 与 probe 资源均由原 checker 持有。
+
 ## 4. 状态所有权、回调与资源生命周期
 
 ### 4.1 状态由谁持有
@@ -130,7 +138,7 @@ runtime 使用 UDP nonce echo 探测，校验身份和截止；它与用户态 T
 - `setXxxCallback` 只保存回调；服务完成装配后才进入 reactor。
 - 短 lambda 转发到具名响应函数。reactor 借用回调容器，只在当前 run 的调用线程使用，返回后不保存；没有跨线程投递。
 - BackendSelector、BackendHealthProvider 和 syscall 注入属于同步策略/替代接口，不应当作持久事件队列理解。
-- MetricsService 借用 selection 的 owner 槽；服务成员顺序使 metrics 先析构，selection 随后析构。
+- MetricsService 借用 selection 的 owner 槽；该槽先于 metrics 构造，selection 在服务生命周期 try 中创建。服务完成回调装配后才运行 reactor，成员顺序使 metrics 先析构，selection 随后析构。
 - store 的借用 FD 只能在 libbpf object 存活时使用。XdpAttachment 析构函数体关闭 object 后，runtimeMaps_ 随后析构仅关闭自有 activeFd，不再访问借用 FD。
 
 ### 4.3 停止与错误传播
